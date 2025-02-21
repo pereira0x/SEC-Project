@@ -17,16 +17,20 @@ DepChain is a simplified permissioned blockchain system with high dependability 
 ## Project Structure
 ```
 DepChain/
-│── src/                     # Source code
-│   ├── consensus/           # Byzantine Read/Write Epoch Consensus implementation
-│   ├── networking/          # UDP-based communication and message handling
-│   ├── blockchain/          # Simple in-memory blockchain service
-│   ├── client/              # Client library for submitting transactions
-│   ├── crypto/              # Cryptographic operations using Java Crypto API
-│── test/                    # Automated tests (JUnit)
-│── docs/                    # Documentation and design rationale
-│── README.md                # Project description and usage guide
-│── build.gradle             # Build automation (Gradle)
+│── src/                        # Source code
+│   ├── main/
+|   |   ├── java/
+│   |   |   ├── client/         # Client library for submitting transactions
+│   |   |   ├── consensus/      # Byzantine Read/Write Epoch Consensus implementation
+│   |   |   ├── crypto/         # Cryptographic operations using Java Crypto API
+│   |   |   ├── networking/     # UDP-based communication and message handling
+│   |   |   ├── util/           # Utility classes and helper functions
+|   |   ├── resources/          # Cryptographic keys and configuration files
+│── test/                       # Automated tests (JUnit)
+│   ├── java/
+│   |   ├── network/            # Network reliability tests
+│── README.md                   # Project description and usage guide
+│── build.gradle                # Build automation (Gradle)
 ```
 
 ## Installation and Setup
