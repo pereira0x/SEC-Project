@@ -30,21 +30,28 @@ DepChain/
 │   ├── java/
 │   |   ├── network/            # Network reliability tests
 │── README.md                   # Project description and usage guide
-│── build.gradle                # Build automation (Gradle)
 ```
 
 ## Installation and Setup
 ### Prerequisites
 - Java Development Kit (JDK) 17+
-- Gradle
+- Maven
 
 ### Build and Run
-TODO: Add instructions for building and running the project.
+To build the project:
+```sh
+mvn clean install
+```
+To run the system:
+```sh
+mvn exec:java -Dexec.mainClass="<CLASS>"
+```
+Replace `<CLASS>` with the desired main class, e.g., `main.java.sec.client.Client`.
 
 ## Testing
 To run unit and integration tests:
 ```sh
-./gradlew test
+mvn test
 ```
 The test suite includes:
 - Functional correctness tests for the consensus algorithm.
