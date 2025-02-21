@@ -1,4 +1,4 @@
-package model;
+package consensus;
 
 import java.io.Serializable;
 import java.util.Arrays;
