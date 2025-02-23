@@ -13,5 +13,9 @@ public class AuthenticatedPerfectLink {
     public void send(String ip, int port, String data) {
         stubbornLink.send(ip, port, data);
     }
+
+    public void receive(int port) {
+        stubbornLink.receive(port);
+    }
     
 }

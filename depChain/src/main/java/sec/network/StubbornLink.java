@@ -14,4 +14,8 @@ public class StubbornLink {
         fairLossLink.send(ip, port, message);
     }
 
+    public void receive(int port) {
+        fairLossLink.receive(port);
+    }
+
 }
