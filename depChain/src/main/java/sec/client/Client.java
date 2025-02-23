@@ -1,10 +1,11 @@
-package main.java.sec.client;
+package sec.client;
 
-import main.java.sec.network.MessageSender;
+import sec.network.AuthenticatedPerfectLink;
 
 public class Client {
     public static void main(String[] args) {
-        MessageSender sender = new MessageSender();
-        sender.send("Hello World!");
+        AuthenticatedPerfectLink channel = new AuthenticatedPerfectLink();
+        channel.send("127.0.0.1", 1234, "Hello, World!");
+
     }
 }
