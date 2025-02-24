@@ -13,15 +13,17 @@ public class DepChainClient {
         int clientPort = Integer.parseInt(args[0]);
         // For simplicity, assume leader is process 1 on localhost:8001.
         InetSocketAddress leaderAddr = new InetSocketAddress("localhost", 8001);
-        // Add client’s address to Config.
-        int clientId = ClientIdGenerator.getNextClientId();
-        Config.clientAddresses.put(clientId, new InetSocketAddress("localhost", clientPort));
-        
-        // Generate client key pair.
-        KeyPair kp = CryptoUtil.generateKeyPair();
+
+        // Load configuration from config.txt and resources folder.
+        Config.loadConfiguration(
+            "src/main/java/depchain/config.txt",
+            "src/main/resources"
+        );
+
         // Create PerfectLink for the client.
-        PerfectLink pl = new PerfectLink(clientId, clientPort, Config.processAddresses, kp.getPrivate(), Config.publicKeys);
-        ClientLibrary clientLib = new ClientLibrary(pl, 1, leaderAddr);
+        int clientId = 5;
+        PerfectLink pl = new PerfectLink(clientId, clientPort, Config.processAddresses, Config.getPrivateKey(clientId), Config.publicKeys);
+        ClientLibrary clientLib = new ClientLibrary(pl, 1, leaderAddr, clientId);
         
         System.out.println("Client " + clientId + " sending append request...");
         String response = clientLib.append("Hello, DepChain!");

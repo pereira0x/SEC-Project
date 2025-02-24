@@ -41,10 +41,12 @@ public class ConsensusInstance {
     private void broadcastRead() {
         Message readMsg = new Message(Message.Type.READ, epoch, "", leaderId, null);
         for (int pid : allProcessIds) {
-            try {
-                perfectLink.send(pid, readMsg);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (pid != leaderId) {
+                try {
+                    perfectLink.send(pid, readMsg);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
         // Collect STATE responses asynchronously.
@@ -80,10 +82,12 @@ public class ConsensusInstance {
     private void broadcastWrite(String candidate) {
         Message writeMsg = new Message(Message.Type.WRITE, epoch, candidate, leaderId, null);
         for (int pid : allProcessIds) {
-            try {
-                perfectLink.send(pid, writeMsg);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (pid != leaderId) {
+                try {
+                    perfectLink.send(pid, writeMsg);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
         // Wait for ACCEPT messages.
@@ -108,10 +112,12 @@ public class ConsensusInstance {
     private void broadcastDecided(String candidate) {
         Message decidedMsg = new Message(Message.Type.DECIDED, epoch, candidate, leaderId, null);
         for (int pid : allProcessIds) {
-            try {
-                perfectLink.send(pid, decidedMsg);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (pid != leaderId) {
+                try {
+                    perfectLink.send(pid, decidedMsg);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
         decide(candidate);
@@ -123,16 +129,16 @@ public class ConsensusInstance {
         switch (msg.type) {
             case READ:
                 // Non‑leaders respond to READ with their STATE.
-                if (myId != leaderId) {
-                    Message stateMsg = new Message(Message.Type.STATE, epoch,
-                                                  (localValue == null ? "" : localValue),
-                                                  myId, null);
-                    try {
-                        perfectLink.send(msg.senderId, stateMsg);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                // if (myId != leaderId) {
+                Message stateMsg = new Message(Message.Type.STATE, epoch,
+                                                (localValue == null ? "" : localValue),
+                                                myId, null);
+                try {
+                    perfectLink.send(msg.senderId, stateMsg);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
+                // }
                 break;
             case WRITE:
                 // Upon WRITE, update our local state and send an ACCEPT.
@@ -161,6 +167,7 @@ public class ConsensusInstance {
     }
     
     public String waitForDecision() throws InterruptedException, ExecutionException {
-        return decisionFuture.get();
+        String decision = decisionFuture.get();
+        return decision;
     }
 }

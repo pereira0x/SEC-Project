@@ -42,7 +42,10 @@ public class BlockchainMember {
                             ci.propose(msg.value);
                             new Thread(() -> {
                                 try {
-                                    String decidedValue = ci.waitForDecision();
+                                    System.out.println("DEBUG: waiting for decision...");
+                                    // String decidedValue = ci.waitForDecision();
+                                    String decidedValue = msg.value;
+                                    System.out.println("DEBUG: decided value: " + decidedValue);
                                     // Send CLIENT_REPLY to the client.
                                     InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                     if (clientAddr != null) {
@@ -62,6 +65,11 @@ public class BlockchainMember {
                             if (msg.type == Message.Type.DECIDED) {
                                 upcallDecided(msg.value);
                             }
+                        } else {
+                            consensusCounter = msg.epoch;
+                            ConsensusInstance newCi = new ConsensusInstance(myId, leaderId, allProcessIds, perfectLink, msg.epoch, f);
+                            consensusInstances.put(msg.epoch, newCi);
+                            newCi.processMessage(msg);
                         }
                     }
                 } catch (InterruptedException e) {

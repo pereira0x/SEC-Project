@@ -36,11 +36,12 @@ public class PerfectLink {
             while (!socket.isClosed()) {
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 try {
-                    socket.receive(packet);
+                    socket.receive(packet); // threads blocks here waiting for incoming packet
                     // Deserialize packet data into a Message object.
                     ByteArrayInputStream bis = new ByteArrayInputStream(packet.getData(), packet.getOffset(), packet.getLength());
                     ObjectInputStream ois = new ObjectInputStream(bis);
                     Message msg = (Message) ois.readObject();
+                    System.out.println("DEBUG: Received message from " + msg.senderId + " of type " + msg.type);
                     
                     // Verify the message signature using sender’s public key.
                     PublicKey senderKey = publicKeys.get(msg.senderId);
@@ -77,6 +78,7 @@ public class PerfectLink {
         oos.flush();
         byte[] data = bos.toByteArray();
         DatagramPacket packet = new DatagramPacket(data, data.length, address);
+        System.out.println("DEBUG: Sending message to " + destId + " of type " + msg.type);
         socket.send(packet);
     }
     
