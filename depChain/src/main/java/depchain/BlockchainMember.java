@@ -66,10 +66,10 @@ public class BlockchainMember {
                                 upcallDecided(msg.value);
                             }
                         } else {
-                            consensusCounter = msg.epoch;
-                            ConsensusInstance newCi = new ConsensusInstance(myId, leaderId, allProcessIds, perfectLink, msg.epoch, f);
-                            consensusInstances.put(msg.epoch, newCi);
-                            newCi.processMessage(msg);
+                            // consensusCounter = msg.epoch;
+                            // ConsensusInstance newCi = new ConsensusInstance(myId, leaderId, allProcessIds, perfectLink, msg.epoch, f);
+                            // consensusInstances.put(msg.epoch, newCi);
+                            // newCi.processMessage(msg);
                         }
                     }
                 } catch (InterruptedException e) {
