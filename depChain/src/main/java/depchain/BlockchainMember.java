@@ -31,7 +31,7 @@ public class BlockchainMember {
         new Thread(() -> {
             while (true) {
                 try {
-                    Message msg = perfectLink.deliver();
+                    Message msg = perfectLink.deliver();  // waits for new elements to be added to the linked blocking queue
                     // If a CLIENT_REQUEST is received and this node is leader,
                     // then start a consensus instance for the client request.
                     if (msg.type == Message.Type.CLIENT_REQUEST) {

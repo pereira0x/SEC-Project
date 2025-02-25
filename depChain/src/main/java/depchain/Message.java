@@ -13,7 +13,7 @@ public class Message implements Serializable {
     public final String value;      // The candidate value (e.g., the string to append).
     public final int senderId;      // The sender's ID (for clients, use a distinct range).
     public final byte[] signature;  // Signature over the message content (computed by sender).
-    
+
     public Message(Type type, int epoch, String value, int senderId, byte[] signature) {
         this.type = type;
         this.epoch = epoch;
