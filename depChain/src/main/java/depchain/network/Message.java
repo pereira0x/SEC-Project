@@ -1,4 +1,4 @@
-package depchain;
+package depchain.network;
 
 import java.io.Serializable;
 

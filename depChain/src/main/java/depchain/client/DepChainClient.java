@@ -1,7 +1,11 @@
-package depchain;
+package depchain.client;
 
 import java.net.*;
 import java.security.KeyPair;
+
+import depchain.library.ClientLibrary;
+import depchain.network.PerfectLink;
+import depchain.utils.Config;
 
 public class DepChainClient {
     public static void main(String[] args) throws Exception {
@@ -16,8 +20,8 @@ public class DepChainClient {
 
         // Load configuration from config.txt and resources folder.
         Config.loadConfiguration(
-            "src/main/java/depchain/config.txt",
-            "src/main/resources"
+            "src/main/java/resources/config/config.txt",
+            "src/main/java/resources/keys"
         );
 
         // Create PerfectLink for the client.

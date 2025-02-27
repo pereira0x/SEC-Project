@@ -1,4 +1,4 @@
-package depchain;
+package depchain.network;
 
 import java.net.*;
 import java.io.*;
@@ -6,6 +6,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.ConcurrentMap;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import depchain.utils.CryptoUtil;
+import depchain.utils.Config;
 
 public class PerfectLink {
     private final int myId;

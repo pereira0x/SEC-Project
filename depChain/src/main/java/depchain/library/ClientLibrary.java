@@ -1,7 +1,11 @@
-package depchain;
+package depchain.library;
 
 import java.net.*;
 import java.util.concurrent.*;
+
+import depchain.network.Message;
+import depchain.network.PerfectLink;
+import depchain.network.Message.Type;
 
 public class ClientLibrary {
     private final PerfectLink perfectLink;

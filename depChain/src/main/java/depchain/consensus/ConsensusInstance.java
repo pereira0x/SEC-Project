@@ -1,7 +1,11 @@
-package depchain;
+package depchain.consensus;
 
 import java.util.*;
 import java.util.concurrent.*;
+
+import depchain.network.Message;
+import depchain.network.PerfectLink;
+import depchain.network.Message.Type;
 
 public class ConsensusInstance {
     private final int myId;

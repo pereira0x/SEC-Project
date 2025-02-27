@@ -1,7 +1,11 @@
-package depchain;
+package depchain.blockchain;
 
 import java.net.*;
 import java.util.*;
+
+import depchain.network.PerfectLink;
+import depchain.utils.Config;
+
 import java.security.*;
 
 public class DepChainServer {
@@ -18,8 +22,8 @@ public class DepChainServer {
 
         // Load configuration from config.txt and resources folder.
         Config.loadConfiguration(
-            "src/main/java/depchain/config.txt",
-            "src/main/resources"
+            "src/main/java/resources/config/config.txt",
+            "src/main/java/resources/keys"
         );
 
         // Create PerfectLink instance.

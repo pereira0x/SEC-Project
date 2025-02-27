@@ -1,7 +1,14 @@
-package depchain;
+package depchain.blockchain;
 
 import java.util.*;
 import java.util.concurrent.*;
+
+import depchain.consensus.ConsensusInstance;
+import depchain.network.Message;
+import depchain.network.PerfectLink;
+import depchain.network.Message.Type;
+import depchain.utils.Config;
+
 import java.net.InetSocketAddress;
 
 public class BlockchainMember {
