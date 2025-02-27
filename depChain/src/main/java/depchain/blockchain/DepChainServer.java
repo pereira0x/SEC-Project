@@ -7,6 +7,8 @@ import depchain.network.PerfectLink;
 import depchain.utils.Config;
 
 import java.security.*;
+import io.github.cdimascio.dotenv.Dotenv;
+
 
 public class DepChainServer {
     public static void main(String[] args) throws Exception {
@@ -15,16 +17,23 @@ public class DepChainServer {
             System.out.println("Usage: DepChainServer <processId> <port>");
             return;
         }
+        Dotenv dotenv = Dotenv.load();
         int processId = Integer.parseInt(args[0]);
         int port = Integer.parseInt(args[1]);
         int leaderId = 1;  // assume process 1 is leader
         List<Integer> allProcessIds = Arrays.asList(1, 2, 3, 4);
 
         // Load configuration from config.txt and resources folder.
-        Config.loadConfiguration(
-            "src/main/java/resources/config/config.txt",
-            "src/main/java/resources/keys"
-        );
+        String configFilePath = dotenv.get("CONFIG_FILE_PATH");
+        String keysFolderPath = dotenv.get("KEYS_FOLDER_PATH");
+
+        if (configFilePath == null || keysFolderPath == null) {
+            System.err.println("Environment variables CONFIG_FILE_PATH or KEYS_FOLDER_PATH are not set.");
+            return;
+        }
+
+        // Load configuration from environment variables
+        Config.loadConfiguration(configFilePath, keysFolderPath);
 
         // Create PerfectLink instance.
         PerfectLink pl = new PerfectLink(processId, port, Config.processAddresses, Config.getPrivateKey(processId), Config.publicKeys);

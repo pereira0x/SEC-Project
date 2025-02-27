@@ -6,6 +6,8 @@ import java.security.KeyPair;
 import depchain.library.ClientLibrary;
 import depchain.network.PerfectLink;
 import depchain.utils.Config;
+import io.github.cdimascio.dotenv.Dotenv;
+
 
 public class DepChainClient {
     public static void main(String[] args) throws Exception {
@@ -14,15 +16,23 @@ public class DepChainClient {
             System.out.println("Usage: DepChainClient <clientPort>");
             return;
         }
+        Dotenv dotenv = Dotenv.load();
         int clientPort = Integer.parseInt(args[0]);
         // For simplicity, assume leader is process 1 on localhost:8001.
         InetSocketAddress leaderAddr = new InetSocketAddress("localhost", 8001);
 
         // Load configuration from config.txt and resources folder.
-        Config.loadConfiguration(
-            "src/main/java/resources/config/config.txt",
-            "src/main/java/resources/keys"
-        );
+        // Load configuration from config.txt and resources folder.
+        String configFilePath = dotenv.get("CONFIG_FILE_PATH");
+        String keysFolderPath = dotenv.get("KEYS_FOLDER_PATH");
+
+        if (configFilePath == null || keysFolderPath == null) {
+            System.err.println("Environment variables CONFIG_FILE_PATH or KEYS_FOLDER_PATH are not set.");
+            return;
+        }
+
+        // Load configuration from environment variables
+        Config.loadConfiguration(configFilePath, keysFolderPath);
 
         // Create PerfectLink for the client.
         int clientId = 5;
