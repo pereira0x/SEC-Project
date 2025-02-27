@@ -6,6 +6,7 @@ import java.util.concurrent.*;
 import depchain.network.Message;
 import depchain.network.PerfectLink;
 import depchain.network.Message.Type;
+import depchain.utils.CryptoUtil;
 
 public class ConsensusInstance {
     private final int myId;
@@ -43,7 +44,8 @@ public class ConsensusInstance {
 
     // Leader sends READ messages to all.
     private void broadcastRead() {
-        Message readMsg = new Message(Message.Type.READ, epoch, "", leaderId, null);
+
+        Message readMsg = new Message(Message.Type.READ, epoch, "", leaderId, null, CryptoUtil.generateNonce());
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {

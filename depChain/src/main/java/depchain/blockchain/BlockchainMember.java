@@ -60,7 +60,7 @@ public class BlockchainMember {
                                     InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                     if (clientAddr != null) {
                                         Message reply = new Message(Message.Type.CLIENT_REPLY, instanceId, decidedValue,
-                                                myId, null);
+                                                myId, null, msg.nonce);
                                         perfectLink.send(msg.senderId, reply);
                                     }
                                 } catch (Exception e) {

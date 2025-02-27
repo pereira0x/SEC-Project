@@ -6,6 +6,7 @@ import java.util.concurrent.*;
 import depchain.network.Message;
 import depchain.network.PerfectLink;
 import depchain.network.Message.Type;
+import depchain.utils.CryptoUtil;
 
 public class ClientLibrary {
     private final PerfectLink perfectLink;
@@ -23,7 +24,8 @@ public class ClientLibrary {
     // Append a string to the blockchain.
     public String append(String request) throws Exception {
         // Create a CLIENT_REQUEST message. (Assume the client sets its own ID.)
-        Message reqMsg = new Message(Message.Type.CLIENT_REQUEST, 0, request, clientId, null);
+        byte[] nonce = CryptoUtil.generateNonce();
+        Message reqMsg = new Message(Message.Type.CLIENT_REQUEST, 0, request, clientId, null, nonce);
         perfectLink.send(leaderId, reqMsg);
         // Wait for a CLIENT_REPLY.
         while (true) {
