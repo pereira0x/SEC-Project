@@ -9,13 +9,14 @@ import depchain.utils.CryptoUtil;
 import depchain.utils.Config;
 
 public class PerfectLink {
+    public static final int MAX_WORKERS = 30;
     private final int myId;
     private final DatagramSocket socket;
     private final ConcurrentMap<Integer, InetSocketAddress> processAddresses;
     private final PrivateKey myPrivateKey;
     private final ConcurrentMap<Integer, PublicKey> publicKeys;
 
-    private final ExecutorService listenerService = Executors.newSingleThreadExecutor();
+    private final ExecutorService workerPool; // Worker pool
     private final BlockingQueue<Message> deliveredQueue = new LinkedBlockingQueue<>();
 
     public PerfectLink(int myId, int port, ConcurrentMap<Integer, InetSocketAddress> processAddresses,
@@ -25,40 +26,44 @@ public class PerfectLink {
         this.processAddresses = processAddresses;
         this.myPrivateKey = myPrivateKey;
         this.publicKeys = publicKeys;
+        this.workerPool = Executors.newFixedThreadPool(MAX_WORKERS); // Worker pool
 
         // Start listener
-        listenerService.submit(this::startListener);
+        new Thread(this::startListener, "PerfectLink-Listener").start();
     }
 
     private void startListener() {
         byte[] buffer = new byte[4096];
         while (!socket.isClosed()) {
+            System.out.println("DEBUG:Received message");
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             try {
                 socket.receive(packet);
-
-                try (ByteArrayInputStream bis = new ByteArrayInputStream(packet.getData(), packet.getOffset(),
-                        packet.getLength());
-                        ObjectInputStream ois = new ObjectInputStream(bis)) {
-
-                    Message msg = (Message) ois.readObject();
-                    System.out.println("DEBUG: Received message from " + msg.senderId + " of type " + msg.type);
-
-                    PublicKey senderKey = publicKeys.get(msg.senderId);
-                    if (senderKey != null
-                            && CryptoUtil.verify(msg.getSignableContent().getBytes(), msg.signature, senderKey)) {
-                        deliveredQueue.offer(msg);
-                    } else {
-                        System.err.println("Message signature verification failed for sender: " + msg.senderId);
-                    }
-                }
+                workerPool.submit(() -> processMessage(packet)); // Submit work to worker pool
             } catch (SocketException e) {
-                if (socket.isClosed())
-                    break;
+                if (socket.isClosed()) break;
                 System.err.println("Socket error: " + e.getMessage());
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void processMessage(DatagramPacket packet) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(packet.getData(), packet.getOffset(), packet.getLength());
+             ObjectInputStream ois = new ObjectInputStream(bis)) {
+
+            Message msg = (Message) ois.readObject();
+            System.out.println("DEBUG: Received message from " + msg.senderId + " of type " + msg.type);
+
+            PublicKey senderKey = publicKeys.get(msg.senderId);
+            if (senderKey != null && CryptoUtil.verify(msg.getSignableContent().getBytes(), msg.signature, senderKey)) {
+                deliveredQueue.offer(msg);
+            } else {
+                System.err.println("Message signature verification failed for sender: " + msg.senderId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -75,7 +80,7 @@ public class PerfectLink {
         }
 
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(bos))) {
+             ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(bos))) {
             oos.writeObject(signedMsg);
             oos.flush();
             byte[] data = bos.toByteArray();
@@ -92,6 +97,7 @@ public class PerfectLink {
 
     public void close() {
         socket.close();
-        listenerService.shutdownNow();
+        // close worker pool - kill all threads
+        workerPool.shutdownNow();
     }
 }

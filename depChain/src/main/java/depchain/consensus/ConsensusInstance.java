@@ -38,7 +38,7 @@ public class ConsensusInstance {
             localTimestamp = epoch; // Simplification: using epoch as timestamp.
         }
         if (myId == leaderId) {
-            broadcastRead();
+            //broadcastRead();
         }
     }
 
