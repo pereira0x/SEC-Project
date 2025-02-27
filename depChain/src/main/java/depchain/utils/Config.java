@@ -1,6 +1,7 @@
 package depchain.utils;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -14,6 +15,10 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import depchain.utils.Logger;
+import depchain.utils.Logger.LogLevel;
 
 public class Config {
 
@@ -38,33 +43,28 @@ public class Config {
         loadKeys(resourcesFolder);
     }
 
-    private static void loadAddresses(String configFilePath) throws IOException {
-        try (BufferedReader br = new BufferedReader(new FileReader(configFilePath))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                // Example line: "server, 1, localhost:8001"
-                String[] parts = line.split(",");
-                if (parts.length < 3) {
-                    continue; // or throw an exception
-                }
-                String type = parts[0].trim(); // "server" or "client"
-                int id = Integer.parseInt(parts[1].trim());
-                String hostPort = parts[2].trim(); // e.g. "localhost:8001"
+private static void loadAddresses(String configFilePath) throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode rootNode = mapper.readTree(new File(configFilePath));
 
-                String[] hp = hostPort.split(":");
-                String host = hp[0];
-                int port = Integer.parseInt(hp[1]);
+    for (JsonNode node : rootNode) {
+        String type = node.get("type").asText();
+        int id = node.get("id").asInt();
+        String host = node.get("host").asText();
+        int port = node.get("port").asInt();
+        Logger.log(LogLevel.DEBUG, "Loaded: " + type + " " + id + " " + host + ":" + port);
 
-                if (type.equalsIgnoreCase("server")) {
-                    processAddresses.put(id, new InetSocketAddress(host, port));
-                } else if (type.equalsIgnoreCase("client")) {
-                    clientAddresses.put(id, new InetSocketAddress(host, port));
-                }
-            }
+        InetSocketAddress address = new InetSocketAddress(host, port);
+
+        if (type.equalsIgnoreCase("server")) {
+            processAddresses.put(id, address);
+        } else if (type.equalsIgnoreCase("client")) {
+            clientAddresses.put(id, address);
         }
     }
+}
 
-    private static void loadKeys(String resourcesFolder) throws Exception {
+private static void loadKeys(String resourcesFolder) throws Exception {
         // For servers 1..4:
         for (int serverId = 1; serverId <= 4; serverId++) {
             String privKeyPath = resourcesFolder + "/priv_key_" + serverId + ".pem";

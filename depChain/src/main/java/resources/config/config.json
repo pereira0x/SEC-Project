@@ -1,0 +1,32 @@
+[
+    {
+        "type": "server",
+        "id": 1,
+        "host": "localhost",
+        "port": 8001
+    },
+    {
+        "type": "server",
+        "id": 2,
+        "host": "localhost",
+        "port": 8002
+    },
+    {
+        "type": "server",
+        "id": 3,
+        "host": "localhost",
+        "port": 8003
+    },
+    {
+        "type": "server",
+        "id": 4,
+        "host": "localhost",
+        "port": 8004
+    },
+    {
+        "type": "client",
+        "id": 5,
+        "host": "localhost",
+        "port": 9001
+    }
+]
