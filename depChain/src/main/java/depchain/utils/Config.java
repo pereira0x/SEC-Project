@@ -30,9 +30,8 @@ public class Config {
     public static ConcurrentHashMap<Integer, PrivateKey> privateKeys = new ConcurrentHashMap<>();
 
     /**
-     * Call this once at startup to read:
-     *   - server/client host:port info from config.txt
-     *   - private/public keys from PEM files in resources
+     * Call this once at startup to read: - server/client host:port info from config.txt - private/public keys from PEM
+     * files in resources
      */
     public static void loadConfiguration(String configFilePath, String resourcesFolder) throws Exception {
         loadAddresses(configFilePath);
@@ -48,7 +47,7 @@ public class Config {
                 if (parts.length < 3) {
                     continue; // or throw an exception
                 }
-                String type = parts[0].trim();  // "server" or "client"
+                String type = parts[0].trim(); // "server" or "client"
                 int id = Integer.parseInt(parts[1].trim());
                 String hostPort = parts[2].trim(); // e.g. "localhost:8001"
 
@@ -69,10 +68,10 @@ public class Config {
         // For servers 1..4:
         for (int serverId = 1; serverId <= 4; serverId++) {
             String privKeyPath = resourcesFolder + "/priv_key_" + serverId + ".pem";
-            String pubKeyPath  = resourcesFolder + "/pub_key_" + serverId + ".pem";
+            String pubKeyPath = resourcesFolder + "/pub_key_" + serverId + ".pem";
 
             PrivateKey priv = loadPrivateKey(privKeyPath);
-            PublicKey pub   = loadPublicKey(pubKeyPath);
+            PublicKey pub = loadPublicKey(pubKeyPath);
 
             privateKeys.put(serverId, priv);
             publicKeys.put(serverId, pub);
@@ -80,10 +79,10 @@ public class Config {
 
         // For the single client (ID=1 in config.txt)
         String privKeyClientPath = resourcesFolder + "/priv_key_client.pem";
-        String pubKeyClientPath  = resourcesFolder + "/pub_key_client.pem";
+        String pubKeyClientPath = resourcesFolder + "/pub_key_client.pem";
 
         PrivateKey privClient = loadPrivateKey(privKeyClientPath);
-        PublicKey pubClient   = loadPublicKey(pubKeyClientPath);
+        PublicKey pubClient = loadPublicKey(pubKeyClientPath);
 
         privateKeys.put(5, privClient);
         publicKeys.put(5, pubClient);
@@ -95,9 +94,7 @@ public class Config {
     private static PrivateKey loadPrivateKey(String pemFilePath) throws Exception {
         String keyPem = new String(Files.readAllBytes(Paths.get(pemFilePath)), StandardCharsets.UTF_8);
         // Strip off headers/footers
-        keyPem = keyPem
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
+        keyPem = keyPem.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "")
                 .replaceAll("\\s", "");
 
         byte[] decoded = Base64.getDecoder().decode(keyPem);
@@ -112,9 +109,7 @@ public class Config {
     private static PublicKey loadPublicKey(String pemFilePath) throws Exception {
         String keyPem = new String(Files.readAllBytes(Paths.get(pemFilePath)), StandardCharsets.UTF_8);
         // Strip off headers/footers
-        keyPem = keyPem
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
+        keyPem = keyPem.replace("-----BEGIN PUBLIC KEY-----", "").replace("-----END PUBLIC KEY-----", "")
                 .replaceAll("\\s", "");
 
         byte[] decoded = Base64.getDecoder().decode(keyPem);

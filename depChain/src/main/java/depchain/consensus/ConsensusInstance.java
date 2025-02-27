@@ -12,15 +12,15 @@ public class ConsensusInstance {
     private final int leaderId;
     private final List<Integer> allProcessIds;
     private final PerfectLink perfectLink;
-    private final int epoch;  // In our design, epoch doubles as the consensus instance ID.
+    private final int epoch; // In our design, epoch doubles as the consensus instance ID.
     private volatile String localValue = null;
     private volatile int localTimestamp = 0; // For simplicity, use epoch as timestamp.
     private final int quorumSize; // e.g., quorum = floor((N + f) / 2) + 1.
-    
+
     private final CompletableFuture<String> decisionFuture = new CompletableFuture<>();
 
-    public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds,
-                             PerfectLink perfectLink, int epoch, int f) {
+    public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
+            int f) {
         this.myId = myId;
         this.leaderId = leaderId;
         this.allProcessIds = new ArrayList<>(allProcessIds);
@@ -28,7 +28,7 @@ public class ConsensusInstance {
         this.epoch = epoch;
         this.quorumSize = ((allProcessIds.size() + f) / 2) + 1;
     }
-    
+
     // Called by the leader (or by a process that initiates consensus) to set the proposal.
     public void propose(String v) {
         // Set our local value if not already set.
@@ -40,7 +40,7 @@ public class ConsensusInstance {
             broadcastRead();
         }
     }
-    
+
     // Leader sends READ messages to all.
     private void broadcastRead() {
         Message readMsg = new Message(Message.Type.READ, epoch, "", leaderId, null);
@@ -81,7 +81,7 @@ public class ConsensusInstance {
             broadcastWrite(candidate);
         }).start();
     }
-    
+
     // Leader broadcasts WRITE message.
     private void broadcastWrite(String candidate) {
         Message writeMsg = new Message(Message.Type.WRITE, epoch, candidate, leaderId, null);
@@ -100,8 +100,7 @@ public class ConsensusInstance {
             while (acceptCount < quorumSize) {
                 try {
                     Message msg = perfectLink.deliver();
-                    if (msg.type == Message.Type.ACCEPT && msg.epoch == epoch &&
-                        candidate.equals(msg.value)) {
+                    if (msg.type == Message.Type.ACCEPT && msg.epoch == epoch && candidate.equals(msg.value)) {
                         acceptCount++;
                     }
                 } catch (InterruptedException e) {
@@ -111,7 +110,7 @@ public class ConsensusInstance {
             broadcastDecided(candidate);
         }).start();
     }
-    
+
     // Leader broadcasts DECIDED message.
     private void broadcastDecided(String candidate) {
         Message decidedMsg = new Message(Message.Type.DECIDED, epoch, candidate, leaderId, null);
@@ -126,17 +125,17 @@ public class ConsensusInstance {
         }
         decide(candidate);
     }
-    
+
     // This method is invoked (by any process) when a message is delivered.
     public void processMessage(Message msg) {
-        if (msg.epoch != epoch) return;
+        if (msg.epoch != epoch)
+            return;
         switch (msg.type) {
             case READ:
                 // Non‑leaders respond to READ with their STATE.
                 // if (myId != leaderId) {
-                Message stateMsg = new Message(Message.Type.STATE, epoch,
-                                                (localValue == null ? "" : localValue),
-                                                myId, null);
+                Message stateMsg = new Message(Message.Type.STATE, epoch, (localValue == null ? "" : localValue), myId,
+                        null);
                 try {
                     perfectLink.send(msg.senderId, stateMsg);
                 } catch (Exception e) {
@@ -163,13 +162,13 @@ public class ConsensusInstance {
                 break;
         }
     }
-    
+
     private void decide(String candidate) {
         if (!decisionFuture.isDone()) {
             decisionFuture.complete(candidate);
         }
     }
-    
+
     public String waitForDecision() throws InterruptedException, ExecutionException {
         String decision = decisionFuture.get();
         return decision;

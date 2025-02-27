@@ -48,6 +48,34 @@ mvn exec:java -Dexec.mainClass="<CLASS>"
 ```
 Replace `<CLASS>` with the desired main class, e.g., `main.java.sec.client.Client`.
 
+If you need to pass arguments to the main class, use the `-Dexec.args` parameter:
+```sh
+mvn exec:java -Dexec.mainClass="<CLASS>" -Dexec.args="arg1 arg2"
+```
+
+To run the server:
+```sh
+mvn exec:java -Dexec.mainClass="depchain.blockchain.DepChainServer" -Dexec.args="1 8001"
+```
+
+To run the client:
+```sh
+mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="9001"
+```
+
+### Configuration
+Environment variables can be set in the `.env` file located in the root directory. The following variables are available:
+- `CONFIG_FILE_PATH`: Path to the configuration file.
+- `KEYS_FOLDER_PATH`: Path to the folder containing cryptographic keys.
+- `DEBUG`: Enable/disable debug mode.
+
+### Formatting
+
+To format the code according to the project's style guide:
+```sh
+mvn formatter:format
+```
+
 ## Testing
 To run unit and integration tests:
 ```sh
