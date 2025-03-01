@@ -80,13 +80,13 @@ public class ConsensusInstance {
                     }
                 }
             }
-            broadcastWrite(candidate);
+            //broadcastWrite(candidate);
         }).start();
     }
 
     // Leader broadcasts WRITE message.
     private void broadcastWrite(String candidate) {
-        Message writeMsg = new Message(Message.Type.WRITE, epoch, candidate, leaderId, null);
+        Message writeMsg = new Message(Message.Type.WRITE, epoch, candidate, leaderId, null, CryptoUtil.generateNonce());
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -115,7 +115,7 @@ public class ConsensusInstance {
 
     // Leader broadcasts DECIDED message.
     private void broadcastDecided(String candidate) {
-        Message decidedMsg = new Message(Message.Type.DECIDED, epoch, candidate, leaderId, null);
+        Message decidedMsg = new Message(Message.Type.DECIDED, epoch, candidate, leaderId, null, null);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -137,7 +137,7 @@ public class ConsensusInstance {
                 // Non‑leaders respond to READ with their STATE.
                 // if (myId != leaderId) {
                 Message stateMsg = new Message(Message.Type.STATE, epoch, (localValue == null ? "" : localValue), myId,
-                        null);
+                        null, null);
                 try {
                     perfectLink.send(msg.senderId, stateMsg);
                 } catch (Exception e) {
@@ -149,7 +149,7 @@ public class ConsensusInstance {
                 // Upon WRITE, update our local state and send an ACCEPT.
                 localValue = msg.value;
                 localTimestamp = epoch;
-                Message acceptMsg = new Message(Message.Type.ACCEPT, epoch, msg.value, myId, null);
+                Message acceptMsg = new Message(Message.Type.ACCEPT, epoch, msg.value, myId, null, null);
                 try {
                     perfectLink.send(leaderId, acceptMsg);
                 } catch (Exception e) {

@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class Message implements Serializable {
     public enum Type {
-        READ, STATE, WRITE, ACCEPT, DECIDED, CLIENT_REQUEST, CLIENT_REPLY
+        READ, STATE, WRITE, ACCEPT, DECIDED, CLIENT_REQUEST, CLIENT_REPLY, ACK,
     }
 
     public final Type type;

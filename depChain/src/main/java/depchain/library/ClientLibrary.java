@@ -1,6 +1,7 @@
 package depchain.library;
 
 import java.net.*;
+import java.util.Arrays;
 import java.util.concurrent.*;
 
 import depchain.network.Message;
@@ -27,10 +28,10 @@ public class ClientLibrary {
         byte[] nonce = CryptoUtil.generateNonce();
         Message reqMsg = new Message(Message.Type.CLIENT_REQUEST, 0, request, clientId, null, nonce);
         perfectLink.send(leaderId, reqMsg);
-        // Wait for a CLIENT_REPLY.
+        // Wait for a CLIENT_REPLY OR ACK
         while (true) {
             Message reply = perfectLink.deliver();
-            if (reply.type == Message.Type.CLIENT_REPLY) {
+            if (reply.type == Message.Type.ACK && Arrays.equals(reply.nonce, nonce)) {
                 return reply.value;
             }
         }
