@@ -5,11 +5,13 @@ import java.io.*;
 import java.util.concurrent.*;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import depchain.utils.Logger;
+import depchain.utils.Logger.LogLevel;
 import depchain.utils.CryptoUtil;
 import depchain.utils.Config;
+import depchain.utils.ByteArrayWrapper;
 
 public class PerfectLink {
     public static final int MAX_WORKERS = 50;
@@ -18,12 +20,15 @@ public class PerfectLink {
     private final ConcurrentMap<Integer, InetSocketAddress> processAddresses;
     private final PrivateKey myPrivateKey;
     private final ConcurrentMap<Integer, PublicKey> publicKeys;
-    // list for the nonces of acks to be received
+    // list for the nonces of acks sent
     private final List<byte[]> ackQueue = new ArrayList<>();
-    // list for the nonces of sent messages
-    private final List<byte[]> sentQueue = new ArrayList<>();
+    // list for the nonces of sent messages using ByteArrayWrapper
+    private final ConcurrentMap<ByteArrayWrapper, Boolean> sentQueue = new ConcurrentHashMap<>();
+    // Map to store resend tasks
+    private final ConcurrentMap<ByteArrayWrapper, ScheduledFuture<?>> resendTasks = new ConcurrentHashMap<>();
 
-    private final ExecutorService workerPool; // Worker pool
+    private final ExecutorService listenerWorkerPool; // Worker pool
+    private final ScheduledExecutorService senderWorkerPool; // Worker pool
     private final BlockingQueue<Message> deliveredQueue = new LinkedBlockingQueue<>();
 
     public PerfectLink(int myId, int port, ConcurrentMap<Integer, InetSocketAddress> processAddresses,
@@ -33,7 +38,8 @@ public class PerfectLink {
         this.processAddresses = processAddresses;
         this.myPrivateKey = myPrivateKey;
         this.publicKeys = publicKeys;
-        this.workerPool = Executors.newFixedThreadPool(MAX_WORKERS); // Worker pool
+        this.listenerWorkerPool = Executors.newFixedThreadPool(MAX_WORKERS); // Worker pool
+        this.senderWorkerPool = Executors.newScheduledThreadPool(MAX_WORKERS); // Worker pool
 
         // Start listener
         new Thread(this::startListener, "PerfectLink-Listener").start();
@@ -42,23 +48,18 @@ public class PerfectLink {
     private void startListener() {
         byte[] buffer = new byte[8192];
         while (!socket.isClosed()) {
-            System.out.println("DEBUG: Received message");
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             try {
                 socket.receive(packet);
-                System.out.println("Number of acks in ackQueue: " + ackQueue.size());
-                System.out.println("ACK queue content: ");
-                for (byte[] n : ackQueue) {
-                    System.out.println(Arrays.toString(n));
-                }
-                System.out.println("Number of sent in sentQueue: " + sentQueue.size());
-                workerPool.submit(() -> processMessage(packet)); // Submit work to worker pool
+                Logger.log(LogLevel.DEBUG, "Received packet from " + packet.getSocketAddress());
+
+                listenerWorkerPool.submit(() -> processMessage(packet)); // Submit work to worker pool
             } catch (SocketException e) {
                 if (socket.isClosed())
                     break;
-                System.err.println("Socket error: " + e.getMessage());
+                Logger.log(LogLevel.ERROR, "Socket exception: " + e.toString());
             } catch (Exception e) {
-                e.printStackTrace();
+                Logger.log(LogLevel.ERROR, "Exception: " + e.toString());
             }
         }
     }
@@ -67,97 +68,47 @@ public class PerfectLink {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(packet.getData(), packet.getOffset(),
                 packet.getLength());
                 ObjectInputStream ois = new ObjectInputStream(bis)) {
-            // Thread.sleep(5000);
             Message msg = (Message) ois.readObject();
-            System.out.println("DEBUG: Received message from " + msg.senderId + " of type " + msg.type);
+            Logger.log(LogLevel.DEBUG, "Received message of type " + msg.type + " from " + msg.senderId);
 
             PublicKey senderKey = publicKeys.get(msg.senderId);
             // verify the signature of the message
             if (senderKey != null && CryptoUtil.verify(msg.getSignableContent().getBytes(), msg.signature, senderKey)) {
                 switch (msg.type) {
                     case CLIENT_REQUEST:
-                        System.out.println("CLIENT_REQUEST RECEIVED with nonce: " + Arrays.toString(msg.nonce));
-                         //deliveredQueue.offer(msg);
                         // Send ACK to sender
-                        Message firstAckMsg = new Message(Message.Type.ACK, msg.epoch, msg.value, myId, null,
+                        Message ackMsg = new Message(Message.Type.ACK, msg.epoch, msg.value, myId, null,
                                 msg.nonce);
                         ackQueue.add(msg.nonce);
-
-                        send(msg.senderId, firstAckMsg);
-
-
+                        send(msg.senderId, ackMsg);
+                        // deliveredQueue.offer(msg); // TODO: decide with consensus
                         break;
+                        
                     case ACK:
-                        System.out.println("ACK RECEIVED content");
-                        System.out.println(Arrays.toString(msg.nonce));
-                        System.out.println(msg.nonce);
-                        System.out.println("ACK queue content: ");
-                        for (byte[] n : ackQueue) {
-                            System.out.println(Arrays.toString(n));
-                            System.out.println(n);
-                        }
-                        // last ack of "handshake" received
-                        // if ack Queue non empty means we were waiting for the second ack
-                        if (!ackQueue.isEmpty()) {
-                            // remove from ackQueue the message that has the same nonce
-                            for (byte[] n : ackQueue) {
-                                if (Arrays.equals(n, msg.nonce)) {
-                                    ackQueue.remove(n);
-                                    // Thread.sleep(5000);
-                                    break;
-                                }
+                        ByteArrayWrapper nonceWrapper = new ByteArrayWrapper(msg.nonce);
+                        
+                        if (sentQueue.containsKey(nonceWrapper)) {
+                            sentQueue.put(nonceWrapper, true);
+                            
+                            // Cancel the resend task
+                            ScheduledFuture<?> task = resendTasks.remove(nonceWrapper);
+                            if (task != null) {
+                                task.cancel(false);
                             }
                         }
-
-                        // first ack of the "handshake" received
-                        else {
-                            Message secondAckMsg = msg;
-
-                            // remove from sent the message that has the same nonce
-                            for (byte[] n : sentQueue) {
-                                if (Arrays.equals(n, msg.nonce)) {
-                                    sentQueue.remove(n);
-                                    break;
-                                }
-                            }
-
-                            send(msg.senderId, secondAckMsg);
-                            //deliveredQueue.offer(msg);
-
-                        }
+                        
+                        deliveredQueue.offer(msg);
                         break;
+                        
                     default:
-                        System.err.println("Unknown message type: " + msg.type);
+                        Logger.log(LogLevel.ERROR, "Unknown message type: " + msg.type);
                         break;
                 }
             } else {
-                System.err.println("Message signature verification failed for sender: " + msg.senderId);
+                Logger.log(LogLevel.ERROR, "Signature verification failed for message from " + msg.senderId);
             }
-
-            /*
-             * Message msg = (Message) ois.readObject();
-             * System.out.println("DEBUG: Received message from " + msg.senderId +
-             * " of type " + msg.type);
-             * 
-             * PublicKey senderKey = publicKeys.get(msg.senderId);
-             * if (senderKey != null &&
-             * CryptoUtil.verify(msg.getSignableContent().getBytes(), msg.signature,
-             * senderKey)) {
-             * deliveredQueue.offer(msg);
-             * 
-             * // Send ACK to sender
-             * Message ackMsg = new Message(Message.Type.ACK, msg.epoch, msg.value, myId,
-             * null, msg.nonce);
-             * send(msg.senderId, ackMsg);
-             * 
-             * 
-             * } else {
-             * System.err.println("Message signature verification failed for sender: " +
-             * msg.senderId);
-             * }
-             */
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.log(LogLevel.ERROR, "Exception: " + e.toString());
         }
     }
 
@@ -167,29 +118,85 @@ public class PerfectLink {
             throw new Exception("Unknown destination: " + destId);
         }
 
-        Message signedMsg = msg;
-        if (msg.signature == null) {
-            byte[] sig = CryptoUtil.sign(msg.getSignableContent().getBytes(), myPrivateKey);
-            signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce);
-        }
+        senderWorkerPool.submit(() -> {
+            Message signedMsg = msg;
+            if (msg.signature == null) {
+                // sign message
+                byte[] sig;
+                try {
+                    sig = CryptoUtil.sign(msg.getSignableContent().getBytes(), myPrivateKey);
+                } catch (Exception e) {
+                    Logger.log(LogLevel.ERROR, "Failed to sign message: " + e.toString());
+                    return;
+                }
+                signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce);
+            }
+    
+            if (msg.type != Message.Type.ACK) {
+                ByteArrayWrapper nonceWrapper = new ByteArrayWrapper(msg.nonce);
+                sentQueue.put(nonceWrapper, false);
+            }
 
-        if (msg.type != Message.Type.ACK) {
-            sentQueue.add(signedMsg.nonce);
-        }
+            try {
+                sendMessage(address, signedMsg);
+                if (msg.type != Message.Type.ACK) {
+                    scheduleResend(destId, signedMsg);
+                }
+            } catch (Exception e) {
+                Logger.log(LogLevel.ERROR, "Failed to send message: " + e.toString());
+            }
+        });
+    }
 
-        // TODO: TIMEOUT to send message again NOT IMPLEMENTED
-
+    private void sendMessage(InetSocketAddress address, Message msg) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(bos))) {
-            oos.writeObject(signedMsg);
+            oos.writeObject(msg);
             oos.flush();
             byte[] data = bos.toByteArray();
             DatagramPacket packet = new DatagramPacket(data, data.length, address);
 
-            System.out.println("DEBUG: Sending message to " + destId + " of type " + msg.type);
-            System.out.println("DEBUG: Message nonce: " + Arrays.toString(msg.nonce));
             socket.send(packet);
         }
+    }
+
+    private void scheduleResend(int destId, Message msg) {
+        ByteArrayWrapper nonceWrapper = new ByteArrayWrapper(msg.nonce);
+        
+        ScheduledFuture<?> future = senderWorkerPool.scheduleAtFixedRate(() -> {
+            try {
+                Boolean ackReceived = sentQueue.get(nonceWrapper);
+                if (ackReceived == null || !ackReceived) {
+                    Logger.log(LogLevel.DEBUG, "Resending message to " + destId + " of type " + msg.type);
+                    InetSocketAddress address = processAddresses.getOrDefault(destId, Config.clientAddresses.get(destId));
+                    if (address != null) {
+                        sendMessage(address, msg);
+                    } else {
+                        Logger.log(LogLevel.ERROR, "Unknown destination: " + destId);
+                        // Cancel the task if we can't send
+                        ScheduledFuture<?> task = resendTasks.remove(nonceWrapper);
+                        if (task != null) {
+                            task.cancel(false);
+                        }
+                        sentQueue.remove(nonceWrapper);
+                    }
+                } else {
+                    Logger.log(Logger.LogLevel.DEBUG, "ACK received for message to " + destId + " of type " + msg.type);
+                    // Cancel the scheduled task
+                    ScheduledFuture<?> task = resendTasks.remove(nonceWrapper);
+                    if (task != null) {
+                        task.cancel(false);
+                    }
+                    // Remove from sentQueue to prevent memory leaks
+                    sentQueue.remove(nonceWrapper);
+                }
+            } catch (Exception e) {
+                Logger.log(LogLevel.ERROR, "Failed to resend message: " + e.toString());
+            }
+        }, 5L, 5L, TimeUnit.SECONDS);
+        
+        // Store the future so we can cancel it later
+        resendTasks.put(nonceWrapper, future);
     }
 
     public Message deliver() throws InterruptedException {
@@ -197,8 +204,20 @@ public class PerfectLink {
     }
 
     public void close() {
+        // Cancel all scheduled tasks
+        for (ScheduledFuture<?> task : resendTasks.values()) {
+            if (task != null) {
+                task.cancel(false);
+            }
+        }
+        
+        resendTasks.clear();
+        sentQueue.clear();
+        
+        // Shutdown executor services
+        senderWorkerPool.shutdownNow();
+        listenerWorkerPool.shutdownNow();
+        
         socket.close();
-        // close worker pool - kill all threads
-        workerPool.shutdownNow();
     }
 }
