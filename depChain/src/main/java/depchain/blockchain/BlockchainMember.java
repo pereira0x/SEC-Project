@@ -15,29 +15,26 @@ import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 
 public class BlockchainMember {
-    private final int myId;
+    private final int memberId;
+    private final int memberPort;
     private final int leaderId; // Static leader ID.
     private final List<Integer> allProcessIds;
-    private final PerfectLink perfectLink;
+    private PerfectLink perfectLink;
     private final List<String> blockchain; // In-memory blockchain.
     private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>();
     private final int f; // Maximum number of Byzantine faults allowed.
     private final ExecutorService consensusExecutor = Executors.newSingleThreadExecutor();
     private int consensusCounter = 0;
 
-    public static void main(String[] args) throws Exception {
-        // Usage: java BlockchainMember <processId> <port>
-        if (args.length < 2) {
-            Logger.log(LogLevel.ERROR, "Usage: BlockchainMember <processId> <port>");
-            return;
-        }
+    public BlockchainMember(int memberId, int memberPort, int leaderId, int f) {
+        this.memberId = memberId;
+        this.memberPort = memberPort;
+        this.leaderId = leaderId;
+        this.allProcessIds = Arrays.asList(1, 2, 3, 4);
+        this.blockchain = new ArrayList<>();
+        this.f = f;
 
         Dotenv dotenv = Dotenv.load();
-        int processId = Integer.parseInt(args[0]);
-        int port = Integer.parseInt(args[1]);
-        int leaderId = 1; // assume process 1 is leader
-        List<Integer> allProcessIds = Arrays.asList(1, 2, 3, 4);
-        
         // Load configuration from config.txt and resources folder.
         String configFilePath = dotenv.get("CONFIG_FILE_PATH");
         String keysFolderPath = dotenv.get("KEYS_FOLDER_PATH");
@@ -47,28 +44,41 @@ public class BlockchainMember {
             return;
         }
 
-        // Load configuration from environment variables
-        Config.loadConfiguration(configFilePath, keysFolderPath);
-        Logger.log(LogLevel.DEBUG, "Configuration loaded from paths: " + configFilePath + ", " + keysFolderPath);
+        try {
+            Config.loadConfiguration(configFilePath, keysFolderPath);
+        } catch (Exception e) {
+            Logger.log(LogLevel.ERROR, "Failed to load configuration: " + e.getMessage());
+            return;
+        }
 
-        // Create PerfectLink instance.
-        PerfectLink pl = new PerfectLink(processId, port, Config.processAddresses, Config.getPrivateKey(processId),
-                Config.publicKeys);
-                
-        // Assume maximum Byzantine faults f = 1 for 4 processes.
-        BlockchainMember bm = new BlockchainMember(processId, leaderId, allProcessIds, pl, 1);
-        Logger.log(LogLevel.INFO, "BlockchainMember " + processId + " started on port " + port);
-        // The server runs indefinitely.
+        PerfectLink pl;
+        try {
+            pl = new PerfectLink(memberId, memberPort, Config.processAddresses, Config.getPrivateKey(memberId),
+                    Config.publicKeys);
+        } catch (Exception e) {
+            Logger.log(LogLevel.ERROR, "Failed to create PerfectLink: " + e.getMessage());
+            return;
+        }
+        this.perfectLink = pl;
+
+
+        startMessageHandler();
     }
 
-    public BlockchainMember(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int f) {
-        this.myId = myId;
-        this.leaderId = leaderId;
-        this.allProcessIds = allProcessIds;
-        this.perfectLink = perfectLink;
-        this.blockchain = new ArrayList<>();
-        this.f = f;
-        startMessageHandler();
+    public static void main(String[] args) throws Exception {
+        // Usage: java BlockchainMember <memberId> <memberPort>
+        if (args.length < 2) {
+            Logger.log(LogLevel.ERROR, "Usage: BlockchainMember <processId> <port>");
+            return;
+        }
+
+        int memberId = Integer.parseInt(args[0]);
+        int memberPort = Integer.parseInt(args[1]);
+        int leaderId = 1; // assume process 1 is leader
+                
+        // Assume maximum Byzantine faults f = 1 for 4 processes.
+        BlockchainMember blockchainMember = new BlockchainMember(memberId, memberPort, leaderId, 1);
+        Logger.log(LogLevel.INFO, "BlockchainMember " + memberId + " started on port " + memberPort);
     }
 
     // Message handler loop.
@@ -81,9 +91,9 @@ public class BlockchainMember {
                     // If a CLIENT_REQUEST is received and this node is leader,
                     // then start a consensus instance for the client request.
                     if (msg.type == Message.Type.CLIENT_REQUEST) {
-                        if (myId == leaderId) {
+                        if (memberId == leaderId) {
                             int instanceId = consensusCounter++;
-                            ConsensusInstance ci = new ConsensusInstance(myId, leaderId, allProcessIds, perfectLink,
+                            ConsensusInstance ci = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
                                     instanceId, f);
                             consensusInstances.put(instanceId, ci);
                             ci.propose(msg.value);
@@ -97,7 +107,7 @@ public class BlockchainMember {
                                     InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                     if (clientAddr != null) {
                                         Message reply = new Message(Message.Type.CLIENT_REPLY, instanceId, decidedValue,
-                                                myId, null, msg.nonce);
+                                                memberId, null, msg.nonce);
                                         perfectLink.send(msg.senderId, reply);
                                     }
                                 } catch (Exception e) {
@@ -134,16 +144,16 @@ public class BlockchainMember {
     private void upcallDecided(String value) {
         synchronized (blockchain) {
             blockchain.add(value);
-            Logger.log(LogLevel.INFO, "Node " + myId + " appended value: " + value);
+            Logger.log(LogLevel.INFO, "Node " + memberId + " appended value: " + value);
         }
     }
 
     // Method for externally starting a consensus instance (if needed).
     public Future<String> startConsensus(String clientRequest) {
         int instanceId = consensusCounter++;
-        ConsensusInstance ci = new ConsensusInstance(myId, leaderId, allProcessIds, perfectLink, instanceId, f);
+        ConsensusInstance ci = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink, instanceId, f);
         consensusInstances.put(instanceId, ci);
-        if (myId == leaderId) {
+        if (memberId == leaderId) {
             ci.propose(clientRequest);
         }
         return CompletableFuture.supplyAsync(() -> {
