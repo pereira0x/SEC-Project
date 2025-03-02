@@ -38,7 +38,7 @@ public class ConsensusInstance {
             localTimestamp = epoch; // Simplification: using epoch as timestamp.
         }
         if (myId == leaderId) {
-            //broadcastRead();
+            // broadcastRead();
         }
     }
 
@@ -80,13 +80,14 @@ public class ConsensusInstance {
                     }
                 }
             }
-            //broadcastWrite(candidate);
+            // broadcastWrite(candidate);
         }).start();
     }
 
     // Leader broadcasts WRITE message.
     private void broadcastWrite(String candidate) {
-        Message writeMsg = new Message(Message.Type.WRITE, epoch, candidate, leaderId, null, CryptoUtil.generateNonce());
+        Message writeMsg = new Message(Message.Type.WRITE, epoch, candidate, leaderId, null,
+                CryptoUtil.generateNonce());
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {

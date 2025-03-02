@@ -77,29 +77,28 @@ public class PerfectLink {
                 switch (msg.type) {
                     case CLIENT_REQUEST:
                         // Send ACK to sender
-                        Message ackMsg = new Message(Message.Type.ACK, msg.epoch, msg.value, myId, null,
-                                msg.nonce);
+                        Message ackMsg = new Message(Message.Type.ACK, msg.epoch, msg.value, myId, null, msg.nonce);
                         ackQueue.add(msg.nonce);
                         send(msg.senderId, ackMsg);
                         // deliveredQueue.offer(msg); // TODO: decide with consensus
                         break;
-                        
+
                     case ACK:
                         ByteArrayWrapper nonceWrapper = new ByteArrayWrapper(msg.nonce);
-                        
+
                         if (sentQueue.containsKey(nonceWrapper)) {
                             sentQueue.put(nonceWrapper, true);
-                            
+
                             // Cancel the resend task
                             ScheduledFuture<?> task = resendTasks.remove(nonceWrapper);
                             if (task != null) {
                                 task.cancel(false);
                             }
                         }
-                        
+
                         deliveredQueue.offer(msg);
                         break;
-                        
+
                     default:
                         Logger.log(LogLevel.ERROR, "Unknown message type: " + msg.type);
                         break;
@@ -131,7 +130,7 @@ public class PerfectLink {
                 }
                 signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce);
             }
-    
+
             if (msg.type != Message.Type.ACK) {
                 ByteArrayWrapper nonceWrapper = new ByteArrayWrapper(msg.nonce);
                 sentQueue.put(nonceWrapper, false);
@@ -162,13 +161,14 @@ public class PerfectLink {
 
     private void scheduleResend(int destId, Message msg) {
         ByteArrayWrapper nonceWrapper = new ByteArrayWrapper(msg.nonce);
-        
+
         ScheduledFuture<?> future = senderWorkerPool.scheduleAtFixedRate(() -> {
             try {
                 Boolean ackReceived = sentQueue.get(nonceWrapper);
                 if (ackReceived == null || !ackReceived) {
                     Logger.log(LogLevel.DEBUG, "Resending message to " + destId + " of type " + msg.type);
-                    InetSocketAddress address = processAddresses.getOrDefault(destId, Config.clientAddresses.get(destId));
+                    InetSocketAddress address = processAddresses.getOrDefault(destId,
+                            Config.clientAddresses.get(destId));
                     if (address != null) {
                         sendMessage(address, msg);
                     } else {
@@ -194,7 +194,7 @@ public class PerfectLink {
                 Logger.log(LogLevel.ERROR, "Failed to resend message: " + e.toString());
             }
         }, 5L, 5L, TimeUnit.SECONDS);
-        
+
         // Store the future so we can cancel it later
         resendTasks.put(nonceWrapper, future);
     }
@@ -210,14 +210,14 @@ public class PerfectLink {
                 task.cancel(false);
             }
         }
-        
+
         resendTasks.clear();
         sentQueue.clear();
-        
+
         // Shutdown executor services
         senderWorkerPool.shutdownNow();
         listenerWorkerPool.shutdownNow();
-        
+
         socket.close();
     }
 }
