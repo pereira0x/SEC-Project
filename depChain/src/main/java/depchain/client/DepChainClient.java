@@ -42,5 +42,7 @@ public class DepChainClient {
         Logger.log(LogLevel.INFO, "Client sending append request...");
         String response = clientLib.append("Hello, DepChain!");
         Logger.log(LogLevel.INFO, "Client received response: " + response);
+        String response2 = clientLib.append("Hello, DepChain! 2");
+        Logger.log(LogLevel.INFO, "Client received response: " + response2);
     }
 }

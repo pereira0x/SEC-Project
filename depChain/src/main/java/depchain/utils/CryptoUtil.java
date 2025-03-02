@@ -19,4 +19,11 @@ public class CryptoUtil {
         signature.update(data);
         return signature.verify(sigBytes);
     }
+
+    public static byte[] generateNonce() {
+        SecureRandom random = new SecureRandom();
+        byte[] nonce = new byte[16];
+        random.nextBytes(nonce);
+        return nonce;
+    }
 }

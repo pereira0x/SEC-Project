@@ -43,28 +43,28 @@ public class Config {
         loadKeys(resourcesFolder);
     }
 
-private static void loadAddresses(String configFilePath) throws IOException {
-    ObjectMapper mapper = new ObjectMapper();
-    JsonNode rootNode = mapper.readTree(new File(configFilePath));
+    private static void loadAddresses(String configFilePath) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(new File(configFilePath));
 
-    for (JsonNode node : rootNode) {
-        String type = node.get("type").asText();
-        int id = node.get("id").asInt();
-        String host = node.get("host").asText();
-        int port = node.get("port").asInt();
-        Logger.log(LogLevel.DEBUG, "Loaded: " + type + " " + id + " " + host + ":" + port);
+        for (JsonNode node : rootNode) {
+            String type = node.get("type").asText();
+            int id = node.get("id").asInt();
+            String host = node.get("host").asText();
+            int port = node.get("port").asInt();
+            Logger.log(LogLevel.DEBUG, "Loaded: " + type + " " + id + " " + host + ":" + port);
 
-        InetSocketAddress address = new InetSocketAddress(host, port);
+            InetSocketAddress address = new InetSocketAddress(host, port);
 
-        if (type.equalsIgnoreCase("server")) {
-            processAddresses.put(id, address);
-        } else if (type.equalsIgnoreCase("client")) {
-            clientAddresses.put(id, address);
+            if (type.equalsIgnoreCase("server")) {
+                processAddresses.put(id, address);
+            } else if (type.equalsIgnoreCase("client")) {
+                clientAddresses.put(id, address);
+            }
         }
     }
-}
 
-private static void loadKeys(String resourcesFolder) throws Exception {
+    private static void loadKeys(String resourcesFolder) throws Exception {
         // For servers 1..4:
         for (int serverId = 1; serverId <= 4; serverId++) {
             String privKeyPath = resourcesFolder + "/priv_key_" + serverId + ".pem";
