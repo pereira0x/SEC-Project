@@ -101,7 +101,7 @@ public class DepChainClient {
     }
 
     // Now you can access clientLib in other methods
-    void append(String message) {
+    public void append(String message) {
         Logger.log(LogLevel.INFO, "Client sending append request...");
         try {
             String response = clientLib.append(message);

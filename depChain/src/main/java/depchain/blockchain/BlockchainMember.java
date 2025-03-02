@@ -102,12 +102,14 @@ public class BlockchainMember {
                                     Logger.log(LogLevel.DEBUG, "Waiting for decision...");
                                     // String decidedValue = ci.waitForDecision();
                                     String decidedValue = msg.value;
+                                    // Append the decided value to the blockchain.
+                                    upcallDecided(decidedValue);
                                     Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
-                                    // Send CLIENT_REPLY to the client.
+                                    // Send ACK to the client.
                                     InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                     if (clientAddr != null) {
-                                        Message reply = new Message(Message.Type.CLIENT_REPLY, instanceId, decidedValue,
-                                                memberId, null, msg.nonce);
+                                        Message reply = new Message(Type.ACK, msg.epoch, decidedValue, memberId, null,
+                                                msg.nonce);
                                         perfectLink.send(msg.senderId, reply);
                                     }
                                 } catch (Exception e) {

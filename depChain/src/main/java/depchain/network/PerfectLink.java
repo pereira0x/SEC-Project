@@ -80,7 +80,7 @@ public class PerfectLink {
                         Message ackMsg = new Message(Message.Type.ACK, msg.epoch, msg.value, myId, null, msg.nonce);
                         ackQueue.add(msg.nonce);
                         send(msg.senderId, ackMsg);
-                        // deliveredQueue.offer(msg); // TODO: decide with consensus
+                        deliveredQueue.offer(msg); // TODO: decide with consensus
                         break;
 
                     case ACK:
@@ -193,7 +193,7 @@ public class PerfectLink {
             } catch (Exception e) {
                 Logger.log(LogLevel.ERROR, "Failed to resend message: " + e.toString());
             }
-        }, 5L, 5L, TimeUnit.SECONDS);
+        }, 2L, 2L, TimeUnit.SECONDS);
 
         // Store the future so we can cancel it later
         resendTasks.put(nonceWrapper, future);
