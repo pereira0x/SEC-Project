@@ -1,17 +1,32 @@
 package depchain.network;
 
-import java.net.*;
-import java.io.*;
-import java.util.concurrent.*;
-import java.util.List;
-import java.util.ArrayList;
+// import everything needed
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import depchain.utils.Config;
+import depchain.utils.CryptoUtil;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
-import depchain.utils.CryptoUtil;
-import depchain.utils.Config;
-import depchain.utils.ByteArrayWrapper;
 
 public class PerfectLink {
     public static final int MAX_WORKERS = 50;
@@ -21,11 +36,12 @@ public class PerfectLink {
     private final PrivateKey myPrivateKey;
     private final ConcurrentMap<Integer, PublicKey> publicKeys;
     // list for the nonces of acks sent
-    private final List<byte[]> ackQueue = new ArrayList<>();
-    // list for the nonces of sent messages using ByteArrayWrapper
-    private final ConcurrentMap<ByteArrayWrapper, Boolean> sentQueue = new ConcurrentHashMap<>();
+    /* private final List<byte[]> ackQueue = new ArrayList<>(); */
+    private long ackCounter = 0;
+    // list for the nonces of sent messages using nonce (long)
+    private final ConcurrentMap<Long, Boolean> sentQueue = new ConcurrentHashMap<>();
     // Map to store resend tasks
-    private final ConcurrentMap<ByteArrayWrapper, ScheduledFuture<?>> resendTasks = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, ScheduledFuture<?>> resendTasks = new ConcurrentHashMap<>();
 
     private final ExecutorService listenerWorkerPool; // Worker pool
     private final ScheduledExecutorService senderWorkerPool; // Worker pool
@@ -69,28 +85,34 @@ public class PerfectLink {
                 packet.getLength());
                 ObjectInputStream ois = new ObjectInputStream(bis)) {
             Message msg = (Message) ois.readObject();
-            Logger.log(LogLevel.DEBUG, "Received message of type " + msg.type + " from " + msg.senderId);
+            Logger.log(LogLevel.DEBUG, "Received message of type " + msg.type + " from " + msg.senderId + " with nonce " + msg.nonce);
 
             PublicKey senderKey = publicKeys.get(msg.senderId);
             // verify the signature of the message
-            if (senderKey != null && CryptoUtil.verify(msg.getSignableContent().getBytes(), msg.signature, senderKey)) {
+            // TODO: check signature verification
+            if (senderKey != null /* && CryptoUtil.verify(msg.getSignableContent().getBytes(), msg.signature, senderKey) */) {
                 switch (msg.type) {
                     case CLIENT_REQUEST:
                         // Send ACK to sender
                         Message ackMsg = new Message(Message.Type.ACK, msg.epoch, msg.value, myId, null, msg.nonce);
-                        ackQueue.add(msg.nonce);
                         send(msg.senderId, ackMsg);
-                        deliveredQueue.offer(msg); // TODO: decide with consensus
+
+                       // we have not seen that nonce before
+                        if(ackCounter <= msg.nonce){
+                            deliveredQueue.offer(msg);
+                            ackCounter++;
+                            
+                        }
                         break;
 
                     case ACK:
-                        ByteArrayWrapper nonceWrapper = new ByteArrayWrapper(msg.nonce);
+                        
 
-                        if (sentQueue.containsKey(nonceWrapper)) {
-                            sentQueue.put(nonceWrapper, true);
+                        if (sentQueue.containsKey(msg.nonce)) {
+                            sentQueue.put(msg.nonce, true);
 
                             // Cancel the resend task
-                            ScheduledFuture<?> task = resendTasks.remove(nonceWrapper);
+                            ScheduledFuture<?> task = resendTasks.remove(msg.nonce);
                             if (task != null) {
                                 task.cancel(false);
                             }
@@ -116,6 +138,7 @@ public class PerfectLink {
         if (address == null) {
             throw new Exception("Unknown destination: " + destId);
         }
+        Logger.log(LogLevel.DEBUG, "Sending message to " + destId + " of type " + msg.type + " with nonce " + msg.nonce);
 
         senderWorkerPool.submit(() -> {
             Message signedMsg = msg;
@@ -132,8 +155,7 @@ public class PerfectLink {
             }
 
             if (msg.type != Message.Type.ACK) {
-                ByteArrayWrapper nonceWrapper = new ByteArrayWrapper(msg.nonce);
-                sentQueue.put(nonceWrapper, false);
+                sentQueue.put(msg.nonce, false);
             }
 
             try {
@@ -160,11 +182,10 @@ public class PerfectLink {
     }
 
     private void scheduleResend(int destId, Message msg) {
-        ByteArrayWrapper nonceWrapper = new ByteArrayWrapper(msg.nonce);
 
         ScheduledFuture<?> future = senderWorkerPool.scheduleAtFixedRate(() -> {
             try {
-                Boolean ackReceived = sentQueue.get(nonceWrapper);
+                Boolean ackReceived = sentQueue.get(msg.nonce);
                 if (ackReceived == null || !ackReceived) {
                     Logger.log(LogLevel.DEBUG, "Resending message to " + destId + " of type " + msg.type);
                     InetSocketAddress address = processAddresses.getOrDefault(destId,
@@ -174,21 +195,21 @@ public class PerfectLink {
                     } else {
                         Logger.log(LogLevel.ERROR, "Unknown destination: " + destId);
                         // Cancel the task if we can't send
-                        ScheduledFuture<?> task = resendTasks.remove(nonceWrapper);
+                        ScheduledFuture<?> task = resendTasks.remove(msg.nonce);
                         if (task != null) {
                             task.cancel(false);
                         }
-                        sentQueue.remove(nonceWrapper);
+                        sentQueue.remove(msg.nonce);
                     }
                 } else {
                     Logger.log(Logger.LogLevel.DEBUG, "ACK received for message to " + destId + " of type " + msg.type);
                     // Cancel the scheduled task
-                    ScheduledFuture<?> task = resendTasks.remove(nonceWrapper);
+                    ScheduledFuture<?> task = resendTasks.remove(msg.nonce);
                     if (task != null) {
                         task.cancel(false);
                     }
                     // Remove from sentQueue to prevent memory leaks
-                    sentQueue.remove(nonceWrapper);
+                    sentQueue.remove(msg.nonce);
                 }
             } catch (Exception e) {
                 Logger.log(LogLevel.ERROR, "Failed to resend message: " + e.toString());
@@ -196,7 +217,7 @@ public class PerfectLink {
         }, 2L, 2L, TimeUnit.SECONDS);
 
         // Store the future so we can cancel it later
-        resendTasks.put(nonceWrapper, future);
+        resendTasks.put(msg.nonce, future);
     }
 
     public Message deliver() throws InterruptedException {

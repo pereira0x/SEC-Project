@@ -1,13 +1,12 @@
 package depchain;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.FixMethodOrder;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.runners.MethodSorters;
 
-import depchain.client.DepChainClient;
 import depchain.blockchain.BlockchainMember;
+import depchain.client.DepChainClient;
 
 /**
  * Unit test for MessageSender.

@@ -1,12 +1,14 @@
 package depchain.consensus;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import depchain.network.Message;
 import depchain.network.PerfectLink;
-import depchain.network.Message.Type;
-import depchain.utils.CryptoUtil;
 
 public class ConsensusInstance {
     private final int myId;
@@ -44,8 +46,8 @@ public class ConsensusInstance {
 
     // Leader sends READ messages to all.
     private void broadcastRead() {
-
-        Message readMsg = new Message(Message.Type.READ, epoch, "", leaderId, null, CryptoUtil.generateNonce());
+        //TODO: CHANGE THIS NONCE
+        Message readMsg = new Message(Message.Type.READ, epoch, "", leaderId, null, -1);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -87,7 +89,7 @@ public class ConsensusInstance {
     // Leader broadcasts WRITE message.
     private void broadcastWrite(String candidate) {
         Message writeMsg = new Message(Message.Type.WRITE, epoch, candidate, leaderId, null,
-                CryptoUtil.generateNonce());
+                -1);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -116,7 +118,7 @@ public class ConsensusInstance {
 
     // Leader broadcasts DECIDED message.
     private void broadcastDecided(String candidate) {
-        Message decidedMsg = new Message(Message.Type.DECIDED, epoch, candidate, leaderId, null, null);
+        Message decidedMsg = new Message(Message.Type.DECIDED, epoch, candidate, leaderId, null, -1);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -138,7 +140,7 @@ public class ConsensusInstance {
                 // Non‑leaders respond to READ with their STATE.
                 // if (myId != leaderId) {
                 Message stateMsg = new Message(Message.Type.STATE, epoch, (localValue == null ? "" : localValue), myId,
-                        null, null);
+                        null, -1);
                 try {
                     perfectLink.send(msg.senderId, stateMsg);
                 } catch (Exception e) {
@@ -150,7 +152,7 @@ public class ConsensusInstance {
                 // Upon WRITE, update our local state and send an ACCEPT.
                 localValue = msg.value;
                 localTimestamp = epoch;
-                Message acceptMsg = new Message(Message.Type.ACCEPT, epoch, msg.value, myId, null, null);
+                Message acceptMsg = new Message(Message.Type.ACCEPT, epoch, msg.value, myId, null, -1);
                 try {
                     perfectLink.send(leaderId, acceptMsg);
                 } catch (Exception e) {

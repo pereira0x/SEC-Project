@@ -12,9 +12,9 @@ public class Message implements Serializable {
     public final String value; // The candidate value (e.g., the string to append).
     public final int senderId; // The sender's ID (for clients, use a distinct range).
     public final byte[] signature; // Signature over the message content (computed by sender).
-    public final byte[] nonce; // nonce for the message (computed by sender).
+    public long nonce; // nonce for the message (computed by sender).
 
-    public Message(Type type, int epoch, String value, int senderId, byte[] signature, byte[] nonce) {
+    public Message(Type type, int epoch, String value, int senderId, byte[] signature, long nonce) {
         this.type = type;
         this.epoch = epoch;
         this.value = value;
@@ -23,8 +23,12 @@ public class Message implements Serializable {
         this.nonce = nonce;
     }
 
+    public void setNonce(long nonce) {
+        this.nonce = nonce;
+    }   
+
     // Returns a string representation of the content to be signed.
     public String getSignableContent() {
-        return type.toString() + "|" + epoch + "|" + value + "|" + senderId + "|" + new String(nonce);
+        return type.toString() + "|" + epoch + "|" + value + "|" + senderId + "|" + nonce;
     }
 }
