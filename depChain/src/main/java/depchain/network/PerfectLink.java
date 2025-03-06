@@ -1,6 +1,5 @@
 package depchain.network;
 
-// import everything needed
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -13,6 +12,9 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -22,6 +24,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+
+import depchain.utils.ByteArrayWrapper;
 
 import depchain.utils.Config;
 import depchain.utils.CryptoUtil;
