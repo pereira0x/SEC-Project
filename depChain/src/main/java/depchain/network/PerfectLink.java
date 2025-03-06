@@ -1,17 +1,34 @@
 package depchain.network;
 
-import java.net.*;
-import java.io.*;
-import java.util.concurrent.*;
-import java.util.List;
-import java.util.ArrayList;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import depchain.utils.ByteArrayWrapper;
+import depchain.utils.Config;
+import depchain.utils.CryptoUtil;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
-import depchain.utils.CryptoUtil;
-import depchain.utils.Config;
-import depchain.utils.ByteArrayWrapper;
 
 public class PerfectLink {
     public static final int MAX_WORKERS = 50;
@@ -80,7 +97,13 @@ public class PerfectLink {
                         Message ackMsg = new Message(Message.Type.ACK, msg.epoch, msg.value, myId, null, msg.nonce);
                         ackQueue.add(msg.nonce);
                         send(msg.senderId, ackMsg);
-                        // deliveredQueue.offer(msg); // TODO: decide with consensus
+                        
+                        if(!ackQueue.contains(msg.nonce)){
+                            // Deliver the message
+                            //deliveredQueue.offer(msg);
+                            ackQueue.add(msg.nonce);
+
+                        }
                         break;
 
                     case ACK:
