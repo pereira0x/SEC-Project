@@ -60,7 +60,7 @@ mvn exec:java -Dexec.mainClass="depchain.blockchain.BlockchainMember" -Dexec.arg
 
 To run the client:
 ```sh
-mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="9001"
+mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="5 9001"
 ```
 
 ### Configuration
