@@ -9,20 +9,21 @@ import depchain.utils.Config;
 import io.github.cdimascio.dotenv.Dotenv;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
+import java.util.Scanner;
 
 public class DepChainClient {
-    public static void main(String[] args) throws Exception {
-        // Usage: java DepChainClient <clientPort>
-        if (args.length < 1 || args.length > 2) {
-            Logger.log(LogLevel.ERROR, "Usage: DepChainClient <clientPort>");
-            return;
-        }
+
+    private ClientLibrary clientLib;
+    private int clientPort;
+    private int clientId;
+
+    // constructor
+    public DepChainClient(int clientId, int clientPort) {
+        this.clientId = clientId;
+        this.clientPort = clientPort;
+
 
         Dotenv dotenv = Dotenv.load();
-        int clientPort = Integer.parseInt(args[0]);
-        // For simplicity, assume leader is process 1 on localhost:8001.
-        InetSocketAddress leaderAddr = new InetSocketAddress("localhost", 8001);
-
         String configFilePath = dotenv.get("CONFIG_FILE_PATH");
         String keysFolderPath = dotenv.get("KEYS_FOLDER_PATH");
 
@@ -31,18 +32,82 @@ public class DepChainClient {
             return;
         }
 
-        Config.loadConfiguration(configFilePath, keysFolderPath);
+        try {
+            Config.loadConfiguration(configFilePath, keysFolderPath);
+        } catch (Exception e) {
+            Logger.log(LogLevel.ERROR, "Failed to load configuration: " + e.getMessage());
+            return;
+        }
 
-        int clientId = 5;
-        PerfectLink pl = new PerfectLink(clientId, clientPort, Config.processAddresses, Config.getPrivateKey(clientId),
-                Config.publicKeys);
-        Logger.log(LogLevel.INFO, "Client library created.");
-        ClientLibrary clientLib = new ClientLibrary(pl, 1, leaderAddr, clientId);
+        // Assume leader is the always running process with id 1 on localhost:8001
+        InetSocketAddress leaderAddr = new InetSocketAddress("localhost", 8001);
 
+        PerfectLink pl;
+        try {
+            pl = new PerfectLink(clientId, clientPort, Config.processAddresses, Config.getPrivateKey(clientId),
+                    Config.publicKeys);
+        } catch (Exception e) {
+            Logger.log(LogLevel.ERROR, "Failed to create PerfectLink: " + e.getMessage());
+            return;
+        }
+        
+        this.clientLib = new ClientLibrary(pl, 1, leaderAddr, clientId);
+    }
+
+    public static void main(String[] args) throws Exception {
+        if (args.length < 2) {
+            Logger.log(LogLevel.ERROR, "Usage: DepChainClient <clientId> <clientPort>");
+            return;
+            }
+
+        int clientId = Integer.parseInt(args[0]);
+        int clientPort = Integer.parseInt(args[1]);
+
+        DepChainClient client = new DepChainClient(clientId, clientPort);
+
+        final Scanner scanner = new Scanner(System.in);
+
+        String line = "";
+        while (!line.equals("exit")) {
+            System.out.flush();
+            System.out.print("> ");
+
+            line = scanner.nextLine();
+
+            // empty line
+            if (line.isEmpty()) {
+                continue;
+            }
+
+            // command is first word, rest is arguments
+            String[] parts = line.split(" ");
+            String command = parts[0];
+            switch (command) {
+                case "append":
+                    if (parts.length < 2 || parts.length > 2) {
+                        Logger.log(LogLevel.ERROR, "Usage: append <message>");
+                    }
+                    client.append(parts[1]);
+                case "exit":
+                    break;
+                default:
+                    Logger.log(LogLevel.ERROR, "Unknown command: " + command);
+            }
+        }
+        Logger.log(LogLevel.INFO, "Exiting...");
+        scanner.close();
+        // stop the client
+        System.exit(0);
+    }
+
+    // Now you can access clientLib in other methods
+    public void append(String message) {
         Logger.log(LogLevel.INFO, "Client sending append request...");
-        String response = clientLib.append("Hello, DepChain!");
-        Logger.log(LogLevel.INFO, "Client received response: " + response);
-        String response2 = clientLib.append("Hello, DepChain! 2");
-        Logger.log(LogLevel.INFO, "Client received response: " + response2);
+        try {
+            String response = clientLib.append(message);
+            Logger.log(LogLevel.INFO, "Client received response: " + response);
+        } catch (Exception e) {
+            Logger.log(LogLevel.ERROR, "Failed to append message: " + e.getMessage());
+        }
     }
 }
