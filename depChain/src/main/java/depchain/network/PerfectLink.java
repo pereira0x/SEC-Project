@@ -12,9 +12,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -24,9 +22,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
-
-import depchain.utils.ByteArrayWrapper;
 
 import depchain.utils.Config;
 import depchain.utils.CryptoUtil;
@@ -43,6 +38,9 @@ public class PerfectLink {
     // list for the nonces of acks sent
     /* private final List<byte[]> ackQueue = new ArrayList<>(); */
     private long ackCounter = 0;
+
+    private final ArrayList<Session> sessions = new ArrayList<>();
+    
     // list for the nonces of sent messages using nonce (long)
     private final ConcurrentMap<Long, Boolean> sentQueue = new ConcurrentHashMap<>();
     // Map to store resend tasks
@@ -64,6 +62,22 @@ public class PerfectLink {
 
         // Start listener
         new Thread(this::startListener, "PerfectLink-Listener").start();
+
+        //HARDCODED start the session with server
+        if(myId == 5) {
+            startSession(1);
+        }
+    }
+
+    public void startSession(int destId) {
+        InetSocketAddress address = processAddresses.getOrDefault(destId, Config.clientAddresses.get(destId));
+        if (address == null) {
+            Logger.log(LogLevel.ERROR, "Unknown destination: " + destId);
+            return;
+        }
+        Logger.log(LogLevel.DEBUG, "Starting session with " + destId);
+
+        Message msg = new Message(Message.Type.START_SESSION, 0, "", myId, null, 0);
     }
 
     private void startListener() {
