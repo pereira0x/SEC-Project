@@ -55,7 +55,7 @@ mvn exec:java -Dexec.mainClass="<CLASS>" -Dexec.args="arg1 arg2"
 
 To run the server:
 ```sh
-mvn exec:java -Dexec.mainClass="depchain.blockchain.DepChainServer" -Dexec.args="1 8001"
+mvn exec:java -Dexec.mainClass="depchain.blockchain.BlockchainMember" -Dexec.args="1 8001"
 ```
 
 To run the client:
