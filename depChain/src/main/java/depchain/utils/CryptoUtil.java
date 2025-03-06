@@ -3,6 +3,7 @@ package depchain.utils;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.security.SecureRandom;
 
 public class CryptoUtil {
     // Signs data using SHA256withRSA.
@@ -20,11 +21,11 @@ public class CryptoUtil {
         signature.update(data);
         return signature.verify(sigBytes);
     }
-        //UNUSED
-/*     public static byte[] generateNonce() {
+    
+    public static long generateNonce() {
+        // generate long random number
         SecureRandom random = new SecureRandom();
-        byte[] nonce = new byte[16];
-        random.nextBytes(nonce);
-        return nonce;
-    } */
+        return random.nextLong();
+
+    }
 }

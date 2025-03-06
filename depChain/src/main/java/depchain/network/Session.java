@@ -9,6 +9,7 @@ public class Session {
     private final int destId;
     private final InetSocketAddress destAddr;
     private final SecretKey sessionKey;
+    private long ackCounter = 0;
 
     public Session(int destId, InetSocketAddress destAddr, SecretKey sessionKey) {
         this.destId = destId;
@@ -16,6 +17,8 @@ public class Session {
         this.sessionKey = sessionKey;
     }
 
-
+    public int getDestId() {
+        return destId;
+    }
     
 }
