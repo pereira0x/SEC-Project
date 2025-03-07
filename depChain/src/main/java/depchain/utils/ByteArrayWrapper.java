@@ -2,7 +2,10 @@ package depchain.utils;
 
 import java.util.Arrays;
 
-public class ByteArrayWrapper {
+import java.io.Serializable;
+
+public class ByteArrayWrapper implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final byte[] data;
 
     public ByteArrayWrapper(byte[] data) {
