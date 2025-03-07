@@ -19,20 +19,8 @@ public class ClientServerCorrectCommunicationTest {
         BlockchainMember server = new BlockchainMember(1, 8001, 1, 1);
         DepChainClient client = new DepChainClient(5, 9001);
 
-        // Wait for the client to connect to the server.
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         client.append("Hello");
         assertTrue(server.getBlockchain().contains("Hello"));
-    }
-
-    @Test
-    public void ClientServerCorrectCommunicationTest2() {
-        assertTrue(true);
     }
 
 }

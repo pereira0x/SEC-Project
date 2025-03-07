@@ -242,6 +242,14 @@ public class PerfectLink {
 
     public void send(int destId, Message msg) throws Exception {
         InetSocketAddress address = processAddresses.getOrDefault(destId, Config.clientAddresses.get(destId));
+
+        if (msg.type != Message.Type.START_SESSION && msg.type != Message.Type.ACK_SESSION) {
+            while (!activeSessionMap.getOrDefault(destId, false)) {
+                Logger.log(LogLevel.INFO, "Waiting for session with process " + destId + " to be established...");
+                Thread.sleep(2000);
+            }
+        }
+
         if (address == null) {
             throw new Exception("Unknown destination: " + destId);
         }
@@ -264,7 +272,6 @@ public class PerfectLink {
                     }
                     
                 } catch (Exception e) {
-                    System.out.println("-------" + msg.type);
                     Logger.log(LogLevel.ERROR, "Failed to sign message: " + e.toString());
                     return;
                 }
