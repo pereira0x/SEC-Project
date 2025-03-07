@@ -106,7 +106,6 @@ public class PerfectLink {
             return;
         }
 
-        Logger.log(LogLevel.INFO, "Starting session with process " + destId);
         long nonce = CryptoUtil.generateNonce();
         Message msg = new Message(Message.Type.START_SESSION, -1, null, myId, null, nonce);
 
@@ -114,7 +113,6 @@ public class PerfectLink {
             activeSessionMap.put(destId, false); // Mark session as initiating
             send(destId, msg);
             scheduleResend(destId, msg);
-            Logger.log(LogLevel.DEBUG, "Session request sent to process " + destId + " with nonce " + nonce);
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to start session with process " + destId + ": " + e.toString());
             activeSessionMap.remove(destId);
@@ -127,8 +125,7 @@ public class PerfectLink {
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             try {
                 socket.receive(packet);
-               /*  Logger.log(LogLevel.DEBUG, "Received packet from " + packet.getSocketAddress());
- */
+            //    Logger.log(LogLevel.DEBUG, "Received packet from " + packet.getSocketAddress());
                 listenerWorkerPool.submit(() -> processMessage(packet));
             } catch (SocketException e) {
                 if (socket.isClosed())
@@ -151,10 +148,7 @@ public class PerfectLink {
             PublicKey senderKey = publicKeys.get(msg.senderId);
 
             // In a real implementation, you would verify the signature here
-            if (senderKey != null /*
-                                   * && CryptoUtil.verify(msg.getSignableContent().getBytes(), msg.signature,
-                                   * senderKey)
-                                   */) {
+            if (senderKey != null) {
                 switch (msg.type) {
 
                     case ACK:
@@ -170,7 +164,6 @@ public class PerfectLink {
                                 task.cancel(false);
                             }
 
-                            //deliveredQueue.offer(msg);
                         }
                         break;
 
@@ -178,15 +171,12 @@ public class PerfectLink {
                         if (activeSessionMap.containsKey(msg.senderId) && !activeSessionMap.get(msg.senderId)) {
 
                             // decrypt session key with private key
-                            Logger.log(LogLevel.INFO, "Received ACK for session request from process " + msg.senderId);
-
                             SecretKey sessionKey = CryptoUtil.decryptSecretKey(msg.sessionKey.getData(), myPrivateKey);
                             Session newSession = new Session(msg.senderId, processAddresses.get(msg.senderId), sessionKey);
                             sessions.put(msg.senderId, newSession);
 
                         
                             activeSessionMap.put(msg.senderId, true);
-                            Logger.log(LogLevel.INFO, "Session established with process " + msg.senderId);
                             ScheduledFuture<?> task = resendTasks.remove(msg.nonce);
                             if (task != null)
                                 task.cancel(false);
@@ -194,12 +184,8 @@ public class PerfectLink {
                         break;
 
                     case START_SESSION:
-                        // Someone wants to start a session with us
-                        Logger.log(LogLevel.INFO, "Received session request from process " + msg.senderId);
-
                         InetSocketAddress address = processAddresses.getOrDefault(msg.senderId,
                                 Config.clientAddresses.get(msg.senderId));
-                        Logger.log(LogLevel.INFO, "Address: " + address);
 
 
                         // Create a new session with the requester if we don't have one already
@@ -229,9 +215,9 @@ public class PerfectLink {
 
                         // Check authenticity of the message
                         if(CryptoUtil.checkHMACHmacSHA256(msg.getSignableContent().getBytes(), msg.signature, sessions.get(msg.senderId).getSessionKey())) {
-                            Logger.log(LogLevel.DEBUG, "Signature verification passed for message from " + msg.senderId);
+                            // Logger.log(LogLevel.DEBUG, "Signature verification passed for message from " + msg.senderId);
                         } else {
-                            Logger.log(LogLevel.ERROR, "Signature verification failed for message from " + msg.senderId);
+                            // Logger.log(LogLevel.ERROR, "Signature verification failed for message from " + msg.senderId);
                             return;
                         }
 
@@ -241,18 +227,14 @@ public class PerfectLink {
 
                         // Process the message if we haven't seen it before
                         if (ackCounter <= msg.nonce) {
-                            System.out.println("Adding message to delivered queue");
                             deliveredQueue.offer(msg);
                             ackCounter++;
                         }
                         break;
                 }
 
-                /* for (Session session : sessions.values()) {
-                    System.out.println(session);
-                } */
             } else {
-                Logger.log(LogLevel.ERROR, "Signature verification failed for message from " + msg.senderId);
+                Logger.log(LogLevel.ERROR, "Unknown sender: " + msg.senderId);
             }
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Exception: " + e.toString());
@@ -265,8 +247,6 @@ public class PerfectLink {
         if (address == null) {
             throw new Exception("Unknown destination: " + destId);
         }
-        Logger.log(LogLevel.DEBUG,
-                "Sending message to " + destId + " of type " + msg.type + " with nonce " + msg.nonce);
 
         senderWorkerPool.submit(() -> {
             Message signedMsg = msg;
@@ -279,7 +259,6 @@ public class PerfectLink {
                     }
                     // Other messages are signed with the session key
                     else {
-                        System.out.println("Signing message with session key");
                         sessions.get(destId).getSessionKey();
                         SecretKey sessionKey = sessions.get(destId).getSessionKey();
                         sig = CryptoUtil.getHMACHmacSHA256(msg.getSignableContent().getBytes(), sessionKey);
@@ -287,6 +266,7 @@ public class PerfectLink {
                     }
                     
                 } catch (Exception e) {
+                    System.out.println("-------" + msg.type);
                     Logger.log(LogLevel.ERROR, "Failed to sign message: " + e.toString());
                     return;
                 }
@@ -304,6 +284,7 @@ public class PerfectLink {
             }
 
             try {
+                Logger.log(LogLevel.DEBUG, "Sending message to " + destId + " of type " + msg.type);
                 sendMessage(address, signedMsg);
 
                 // Don't schedule resends for ACK messages
@@ -326,7 +307,6 @@ public class PerfectLink {
             DatagramPacket packet = new DatagramPacket(data, data.length, address);
 
             socket.send(packet);
-            Logger.log(LogLevel.DEBUG, "Message sent to " + address + " of type " + msg.type);
         }
     }
 
