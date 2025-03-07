@@ -5,11 +5,13 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
+import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 
@@ -28,12 +30,35 @@ public class CryptoUtil {
         return signature.sign();
     }
 
+    public static byte[] getHMACHmacSHA256(byte[] data, SecretKey secretKey) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(secretKey);
+            return mac.doFinal(data);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     // Verifies the given signature for the data.
     public static boolean verify(byte[] data, byte[] sigBytes, PublicKey publicKey) throws Exception {
         Signature signature = Signature.getInstance("SHA256withRSA");
         signature.initVerify(publicKey);
         signature.update(data);
         return signature.verify(sigBytes);
+    }
+
+    public static boolean checkHMACHmacSHA256(byte[] data, byte[] hmac, SecretKey secretKey) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(secretKey);
+            byte[] computedHmac = mac.doFinal(data);
+            return MessageDigest.isEqual(computedHmac, hmac);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public static long generateNonce() {

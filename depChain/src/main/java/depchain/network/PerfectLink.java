@@ -156,17 +156,6 @@ public class PerfectLink {
                                    * senderKey)
                                    */) {
                 switch (msg.type) {
-                    case CLIENT_REQUEST:
-                        // Send ACK to sender
-                        Message ackMsg = new Message(Message.Type.ACK, msg.epoch, msg.value, myId, null, msg.nonce);
-                        send(msg.senderId, ackMsg);
-
-                        // Process the message if we haven't seen it before
-                        if (ackCounter <= msg.nonce) {
-                            deliveredQueue.offer(msg);
-                            ackCounter++;
-                        }
-                        break;
 
                     case ACK:
                         // Check if this is an ACK for a session initiation message
@@ -237,7 +226,24 @@ public class PerfectLink {
                         break;
 
                     default:
-                        Logger.log(LogLevel.ERROR, "Unknown message type: " + msg.type);
+
+                        // Check authenticity of the message
+                        if(CryptoUtil.verify(msg.getSignableContent().getBytes(), msg.signature, senderKey)) {
+                            Logger.log(LogLevel.DEBUG, "Signature verification passed for message from " + msg.senderId);
+                        } else {
+                            Logger.log(LogLevel.ERROR, "Signature verification failed for message from " + msg.senderId);
+                            return;
+                        }
+
+                        // Send ACK to sender
+                        Message ackMsg = new Message(Message.Type.ACK, msg.epoch, msg.value, myId, null, msg.nonce);
+                        send(msg.senderId, ackMsg);
+
+                        // Process the message if we haven't seen it before
+                        if (ackCounter <= msg.nonce) {
+                            deliveredQueue.offer(msg);
+                            ackCounter++;
+                        }
                         break;
                 }
 
@@ -269,7 +275,20 @@ public class PerfectLink {
                 // Sign message
                 byte[] sig;
                 try {
-                    sig = CryptoUtil.sign(msg.getSignableContent().getBytes(), myPrivateKey);
+                    // START SESSION messages (and ACKs) are signed with the private key
+                    if(msg.sessionKey == null) {
+                        sig = CryptoUtil.sign(msg.getSignableContent().getBytes(), myPrivateKey);
+                        // modify signature on porpose
+                        // sig[0] = (byte) (sig[0] + 1);
+                    }
+                    // Other messages are signed with the session key
+                    else {
+                        sessions.get(destId).getSessionKey();
+                        SecretKey sessionKey = sessions.get(destId).getSessionKey();
+                        sig = CryptoUtil.getHMACHmacSHA256(msg.getSignableContent().getBytes(), sessionKey);
+
+                    }
+                    
                 } catch (Exception e) {
                     Logger.log(LogLevel.ERROR, "Failed to sign message: " + e.toString());
                     return;
