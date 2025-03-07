@@ -40,7 +40,6 @@ public class PerfectLink {
     private final ConcurrentMap<Integer, InetSocketAddress> processAddresses;
     private final PrivateKey myPrivateKey;
     private final ConcurrentMap<Integer, PublicKey> publicKeys;
-    private long ackCounter = 0;
 
     private final ConcurrentMap<Integer, Session> sessions = new ConcurrentHashMap<>();
 
@@ -48,15 +47,15 @@ public class PerfectLink {
     private final ConcurrentMap<Integer, Boolean> activeSessionMap = new ConcurrentHashMap<>();
 
     // Map to track sent messages by nonce
-    private final ConcurrentMap<Long, Boolean> sentQueue = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, Boolean> sentQueue = new ConcurrentHashMap<>();
 
     /*
      * // Map to track session initiation messages by nonce
-     * private final ConcurrentMap<Long, Integer> initSessionQueue = new
+     * private final ConcurrentMap<int, Integer> initSessionQueue = new
      * ConcurrentHashMap<>();
      */
     // Map to store resend tasks
-    private final ConcurrentMap<Long, ScheduledFuture<?>> resendTasks = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, ScheduledFuture<?>> resendTasks = new ConcurrentHashMap<>();
 
     private final ExecutorService listenerWorkerPool;
     private final ScheduledExecutorService senderWorkerPool;
@@ -106,7 +105,7 @@ public class PerfectLink {
             return;
         }
 
-        long nonce = CryptoUtil.generateNonce();
+        int nonce = CryptoUtil.generateNonce();
         Message msg = new Message(Message.Type.START_SESSION, -1, null, myId, null, nonce);
 
         try {
@@ -214,10 +213,8 @@ public class PerfectLink {
                     default:
 
                         // Check authenticity of the message
-                        if(CryptoUtil.checkHMACHmacSHA256(msg.getSignableContent().getBytes(), msg.signature, sessions.get(msg.senderId).getSessionKey())) {
-                            // Logger.log(LogLevel.DEBUG, "Signature verification passed for message from " + msg.senderId);
-                        } else {
-                            // Logger.log(LogLevel.ERROR, "Signature verification failed for message from " + msg.senderId);
+                        if(!CryptoUtil.checkHMACHmacSHA256(msg.getSignableContent().getBytes(), msg.signature, sessions.get(msg.senderId).getSessionKey())) {
+                            Logger.log(LogLevel.ERROR, "Signature verification failed for message from " + msg.senderId);
                             return;
                         }
 
@@ -226,9 +223,10 @@ public class PerfectLink {
                         send(msg.senderId, ackMsg);
 
                         // Process the message if we haven't seen it before
-                        if (ackCounter <= msg.nonce) {
+                        Session session = sessions.get(msg.senderId);
+                        if (session.getAckCounter() <= msg.nonce) {
                             deliveredQueue.offer(msg);
-                            ackCounter++;
+                            session.incrementAckCounter();
                         }
                         break;
                 }

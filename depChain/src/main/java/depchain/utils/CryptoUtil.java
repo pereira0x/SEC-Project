@@ -61,11 +61,10 @@ public class CryptoUtil {
         }
     }
 
-    public static long generateNonce() {
-        // generate long random number
+    public static int generateNonce() {
+        // generate int random number
         SecureRandom random = new SecureRandom();
-        return random.nextLong();
-
+        return random.nextInt();
     }
 
     public static SecretKey generateSecretKey() {
