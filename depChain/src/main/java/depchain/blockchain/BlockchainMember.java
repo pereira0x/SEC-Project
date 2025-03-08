@@ -94,17 +94,17 @@ public class BlockchainMember {
                         if (memberId == leaderId) {
                             int instanceId = consensusCounter++;
                             ConsensusInstance ci = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                    instanceId, f);
+                                    instanceId, f, blockchain);
                             consensusInstances.put(instanceId, ci);
                             ci.propose(msg.value);
                             new Thread(() -> {
                                 try {
                                     Logger.log(LogLevel.DEBUG, "Waiting for decision...");
-                                    // String decidedValue = ci.waitForDecision();
-                                    String decidedValue = msg.value;
+                                    String decidedValue = ci.waitForDecision();
+                                    // String decidedValue = msg.value;
+                                    Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
                                     // Append the decided value to the blockchain.
                                     upcallDecided(decidedValue);
-                                    Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
                                     // Send ACK to the client.
                                     InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                     if (clientAddr != null) {
@@ -127,11 +127,11 @@ public class BlockchainMember {
                                 upcallDecided(msg.value);
                             }
                         } else {
-                            // consensusCounter = msg.epoch;
-                            // ConsensusInstance newCi = new ConsensusInstance(myId, leaderId, allProcessIds,
-                            // perfectLink, msg.epoch, f);
-                            // consensusInstances.put(msg.epoch, newCi);
-                            // newCi.processMessage(msg);
+                            // instantiate a new consensus instance
+                            ConsensusInstance newCi = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
+                                    msg.epoch, f, blockchain);
+                            consensusInstances.put(msg.epoch, newCi);
+                            newCi.processMessage(msg);
                         }
                     }
                 } catch (InterruptedException e) {
@@ -154,7 +154,7 @@ public class BlockchainMember {
     // Method for externally starting a consensus instance (if needed).
     public Future<String> startConsensus(String clientRequest) {
         int instanceId = consensusCounter++;
-        ConsensusInstance ci = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink, instanceId, f);
+        ConsensusInstance ci = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink, instanceId, f, blockchain);
         consensusInstances.put(instanceId, ci);
         if (memberId == leaderId) {
             ci.propose(clientRequest);

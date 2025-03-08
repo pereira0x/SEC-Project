@@ -10,6 +10,9 @@ import java.util.concurrent.ExecutionException;
 import depchain.network.Message;
 import depchain.network.PerfectLink;
 
+import depchain.utils.Logger;
+import depchain.utils.Logger.LogLevel;
+
 public class ConsensusInstance {
     private final int myId;
     private final int leaderId;
@@ -19,17 +22,18 @@ public class ConsensusInstance {
     private volatile String localValue = null;
     private volatile int localTimestamp = 0; // For simplicity, use epoch as timestamp.
     private final int quorumSize; // e.g., quorum = floor((N + f) / 2) + 1.
-
-    private final CompletableFuture<String> decisionFuture = new CompletableFuture<>();
+    private Map<Integer, Message> stateResponses = new HashMap<>();
+    private static List<String> blockchain = new ArrayList<>();
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
-            int f) {
+            int f, List<String> blockchain) {
         this.myId = myId;
         this.leaderId = leaderId;
         this.allProcessIds = new ArrayList<>(allProcessIds);
         this.perfectLink = perfectLink;
         this.epoch = epoch;
-        this.quorumSize = ((allProcessIds.size() + f) / 2) + 1;
+        this.quorumSize = ((allProcessIds.size() + f) / 2);
+        this.blockchain = blockchain;
     }
 
     // Called by the leader (or by a process that initiates consensus) to set the proposal.
@@ -40,7 +44,7 @@ public class ConsensusInstance {
             localTimestamp = epoch; // Simplification: using epoch as timestamp.
         }
         if (myId == leaderId) {
-            // broadcastRead();
+            broadcastRead();
         }
     }
 
@@ -48,6 +52,8 @@ public class ConsensusInstance {
     private void broadcastRead() {
         //TODO: CHANGE THIS NONCE
         Message readMsg = new Message(Message.Type.READ, epoch, "", leaderId, null, -1);
+        // Start by appending the leader's own state.
+        stateResponses.put(leaderId, readMsg);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -57,33 +63,20 @@ public class ConsensusInstance {
                 }
             }
         }
-        // Collect STATE responses asynchronously.
-        new Thread(() -> {
-            Map<Integer, Message> stateResponses = new HashMap<>();
-            while (stateResponses.size() < quorumSize) {
-                try {
-                    Message msg = perfectLink.deliver();
-                    if (msg.type == Message.Type.STATE && msg.epoch == epoch) {
-                        stateResponses.put(msg.senderId, msg);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            // Determine candidate value: choose the one with highest “timestamp” if any are set.
-            String candidate = localValue;
-            int maxTimestamp = localTimestamp;
-            for (Message m : stateResponses.values()) {
-                if (m.value != null && !m.value.isEmpty()) {
-                    // In our simplified case, we use the epoch field as the timestamp.
-                    if (m.epoch > maxTimestamp) {
-                        candidate = m.value;
-                        maxTimestamp = m.epoch;
-                    }
-                }
-            }
-            // broadcastWrite(candidate);
-        }).start();
+
+        // Determine candidate value: choose the one with highest “timestamp” if any are set.
+        // String candidate = localValue;
+        // int maxTimestamp = localTimestamp;
+        // for (Message m : stateResponses.values()) {
+        //     if (m.value != null && !m.value.isEmpty()) {
+        //         // In our simplified case, we use the epoch field as the timestamp.
+        //         if (m.epoch > maxTimestamp) {
+        //             candidate = m.value;
+        //             maxTimestamp = m.epoch;
+        //         }
+        //     }
+        // }
+        // broadcastWrite(candidate);
     }
 
     // Leader broadcasts WRITE message.
@@ -128,7 +121,6 @@ public class ConsensusInstance {
                 }
             }
         }
-        decide(candidate);
     }
 
     // This method is invoked (by any process) when a message is delivered.
@@ -137,16 +129,17 @@ public class ConsensusInstance {
             return;
         switch (msg.type) {
             case READ:
-                // Non‑leaders respond to READ with their STATE.
-                // if (myId != leaderId) {
-                Message stateMsg = new Message(Message.Type.STATE, epoch, (localValue == null ? "" : localValue), myId,
-                        null, -1);
+                // get the state of the blockchain of the process' last appended value
+                Message stateMsg = new Message(Message.Type.STATE, epoch, blockchain, myId,
+                        null, -1, null);
                 try {
                     perfectLink.send(msg.senderId, stateMsg);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                // }
+                break;
+            case STATE:
+                stateResponses.put(msg.senderId, msg);
                 break;
             case WRITE:
                 // Upon WRITE, update our local state and send an ACCEPT.
@@ -159,23 +152,30 @@ public class ConsensusInstance {
                     e.printStackTrace();
                 }
                 break;
-            case DECIDED:
-                decide(msg.value);
-                break;
             default:
                 // Ignore other message types.
                 break;
         }
     }
 
-    private void decide(String candidate) {
-        if (!decisionFuture.isDone()) {
-            decisionFuture.complete(candidate);
-        }
-    }
+    // private void decide(String candidate) {
+    //     if (!decisionFuture.isDone()) {
+    //         decisionFuture.complete(candidate);
+    //     }
+    // }
 
     public String waitForDecision() throws InterruptedException, ExecutionException {
-        String decision = decisionFuture.get();
-        return decision;
+        // check if a quorum has already been reached
+        while (stateResponses.size() < quorumSize) {
+            Thread.sleep(1000);
+            Logger.log(LogLevel.DEBUG, "Still waiting for quorum to be met...");
+        }
+
+        // For now, just print the states of the blockchain of all processes.
+        for (Message m : stateResponses.values()) {
+            Logger.log(LogLevel.INFO, "State of process " + m.senderId + ": " + m.state);
+        }
+
+        return localValue;
     }
 }
