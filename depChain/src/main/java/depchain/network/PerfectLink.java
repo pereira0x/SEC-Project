@@ -155,9 +155,7 @@ public class PerfectLink {
                 switch (msg.type) {
 
                     case ACK:
-                        // Check if this is an ACK for a session initiation message
                         // Regular ACK for another message type
-                        // TODO: CHANGEEEE TO ACKCOUNTER OF SESSION
                         if (session != null && session.getSentCounter() == msg.nonce) {
                             deliveredQueue.offer(msg);
                             session.incrementSentCounter();
@@ -296,18 +294,6 @@ public class PerfectLink {
                 signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce);
             }
 
-            // Add message to the appropriate tracking queue based on type
-            /*
-             * if (msg.type == Message.Type.CLIENT_REQUEST || msg.type ==
-             * Message.Type.CLIENT_REPLY) {
-             * Session session = sessions.get(destId);
-             * //sentQueue.put(msg.nonce, false);
-             * }
-             */
-            /* Session session = sessions.get(destId);
-            if (session != null) {
-                session.incrementSentCounter(); // Track sent messages inside the session
-            } */
 
             try {
                 Logger.log(LogLevel.DEBUG, "Sending message to " + destId + " of type " + msg.type);
