@@ -108,7 +108,8 @@ public class BlockchainMember {
                                     // Send ACK to the client.
                                     InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                     if (clientAddr != null) {
-                                        Message reply = new Message(Type.ACK, msg.epoch, decidedValue, memberId, null,
+                                        // TODO: EPOCH NUMBER MUST BE A NEW ONE
+                                        Message reply = new Message(Type.CLIENT_REPLY, msg.epoch, decidedValue, memberId, null,
                                                 msg.nonce);
                                         perfectLink.send(msg.senderId, reply);
                                     }

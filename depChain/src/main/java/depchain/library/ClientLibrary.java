@@ -27,7 +27,7 @@ public class ClientLibrary {
         // Wait for a CLIENT_REPLY OR ACK
         while (true) {
             Message reply = perfectLink.deliver();
-            if (reply.type == Message.Type.ACK && (reply.nonce == nonce)) {
+            if (reply.type == Message.Type.CLIENT_REPLY) {
                 nonce++;
                 return reply.value;
             }
