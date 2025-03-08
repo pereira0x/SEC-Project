@@ -230,6 +230,7 @@ public class PerfectLink {
                         send(msg.senderId, ackMsg);
 
                         // Process the message if we haven't seen it before
+                        System.out.println("DEBUG--------- " + msg.nonce + " " + session.getAckCounter());
                         if (session != null && session.getAckCounter() == msg.nonce) {
                             deliveredQueue.offer(msg);
                             session.incrementAckCounter();
@@ -238,9 +239,9 @@ public class PerfectLink {
                 }
 
                 // print sessions
-                for(Session s : sessions.values()) {
-                    Logger.log(LogLevel.DEBUG, s.toString());
-                }
+                // for(Session s : sessions.values()) {
+                //     Logger.log(LogLevel.DEBUG, s.toString());
+                // }
 
             } else {
                 Logger.log(LogLevel.ERROR, "Unknown sender: " + msg.senderId);
