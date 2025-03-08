@@ -12,6 +12,8 @@ public class Session {
     private final InetSocketAddress destAddr;
     private final SecretKey sessionKey;
     private int ackCounter = 0;
+    private int sentCounter = 0;
+
 
     public Session(int destId, InetSocketAddress destAddr, SecretKey sessionKey) {
         this.destId = destId;
@@ -44,6 +46,14 @@ public class Session {
     public void incrementAckCounter() {
         ackCounter++;
     }
+        
+    public int getSentCounter() {
+        return sentCounter;
+    }
+
+    public void incrementSentCounter() {
+        sentCounter++;
+    }
 
     @Override
     public String toString() {
@@ -51,6 +61,8 @@ public class Session {
                 "destId=" + destId +
                 ", destAddr=" + destAddr +
                 ", sessionKey=" + sessionKey +
+                ", ackCounter=" + ackCounter +
+                ", sentCounter=" + sentCounter +
                 '}';
     }
                                                      
