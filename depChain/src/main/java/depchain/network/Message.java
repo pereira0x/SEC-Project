@@ -49,23 +49,18 @@ public class Message implements Serializable {
 
         // only put non null values
         String content = "";
-        if (type != null) {
-            content += type.toString();
-        }
-        if (epoch != 0) {
-            content += epoch;
-        }
-        if (value != null) {
-            content += value;
-        }
-        if (senderId != 0) {
-            content += senderId;
-        }
-        if (nonce != 0) {
-            content += nonce;
-        }
+        content += type.toString();
+        content += epoch;
+        content += value;
+        content += senderId;
+        content += nonce;
         if (sessionKey != null) {
             content += sessionKey.getData();
+        }
+        if (state != null) {
+            for (Object obj : state) {
+                content += obj.toString();
+            }
         }
         return content;
     }
