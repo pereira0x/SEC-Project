@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.HashMap;
+import java.util.Map;
 
 import depchain.network.Message;
 import depchain.network.PerfectLink;
@@ -181,19 +183,35 @@ public class ConsensusInstance {
             Logger.log(LogLevel.INFO, "State of process " + m.senderId + ": " + m.state + " (choice: " + m.value + ")");
         }
 
-        // Determine candidate value:
-        // 1. Check the most voted answer that has the same highest epoch number in regards to the value
+        // Determine candidate value using a dictionary
+        // 1. Check the most voted answer
         // 2. If there is no such value, choose the leaders own local value
-        String candidate = localValue;
-        int maxTimestamp = localTimestamp;
+        Map<String, Integer> votes = new HashMap<>();
+
         for (Message m : stateResponses.values()) {
             if (m.value != null && !m.value.isEmpty()) {
-                // In our simplified case, we use the epoch field as the timestamp.
-                if (m.epoch > maxTimestamp) {
-                    candidate = m.value;
-                    maxTimestamp = m.epoch;
-                }
+                votes.put(m.value, votes.getOrDefault(m.value, 0) + 1);
             }
+        }
+
+        // Determine the candidate with the most votes
+        String candidate = null;
+        int maxVotes = 0;
+        boolean tie = false;
+
+        for (Map.Entry<String, Integer> entry : votes.entrySet()) {
+            if (entry.getValue() > maxVotes) {
+                maxVotes = entry.getValue();
+                candidate = entry.getKey();
+                tie = false;
+            } else if (entry.getValue() == maxVotes) {
+                tie = true;
+            }
+        }
+
+        // If there's a tie or no votes, use the leader's local value
+        if (tie) {
+            candidate = localValue;
         }
 
         return candidate;
