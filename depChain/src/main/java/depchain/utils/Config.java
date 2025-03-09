@@ -28,6 +28,9 @@ public class Config {
     // Mapping from client IDs to their network addresses.
     public static ConcurrentHashMap<Integer, InetSocketAddress> clientAddresses = new ConcurrentHashMap<>();
 
+    // Mapping from process IDs to their behavior (e.g., "correct" or "byzantine").
+    public static ConcurrentHashMap<Integer, String> processBehaviors = new ConcurrentHashMap<>();
+
     // Mapping from process (or client) IDs to their public keys.
     public static ConcurrentHashMap<Integer, PublicKey> publicKeys = new ConcurrentHashMap<>();
 
@@ -52,7 +55,9 @@ public class Config {
             int id = node.get("id").asInt();
             String host = node.get("host").asText();
             int port = node.get("port").asInt();
-            Logger.log(LogLevel.DEBUG, "Loaded: " + type + " " + id + " " + host + ":" + port);
+            String behavior = node.get("behavior").asText();
+            processBehaviors.put(id, behavior);
+            Logger.log(LogLevel.DEBUG, "Loaded: " + type + " " + id + " " + host + ":" + port + " " + behavior);
 
             InetSocketAddress address = new InetSocketAddress(host, port);
 

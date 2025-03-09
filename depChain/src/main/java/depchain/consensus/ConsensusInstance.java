@@ -46,7 +46,7 @@ public class ConsensusInstance {
 
     // Leader sends READ messages to all.
     private void broadcastRead() {
-        //TODO: CHANGE THIS NONCE
+        // TODO: CHANGE THIS NONCE
         Message readMsg = new Message(Message.Type.READ, epoch, "", leaderId, null, -1);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
@@ -88,8 +88,7 @@ public class ConsensusInstance {
 
     // Leader broadcasts WRITE message.
     private void broadcastWrite(String candidate) {
-        Message writeMsg = new Message(Message.Type.WRITE, epoch, candidate, leaderId, null,
-                -1);
+        Message writeMsg = new Message(Message.Type.WRITE, epoch, candidate, leaderId, null, -1);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
