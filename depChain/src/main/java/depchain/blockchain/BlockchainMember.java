@@ -20,7 +20,7 @@ public class BlockchainMember {
     private final int leaderId; // Static leader ID.
     private final List<Integer> allProcessIds;
     private PerfectLink perfectLink;
-    private final List<String> blockchain; // In-memory blockchain.
+    private ArrayList blockchain; // In-memory blockchain.
     private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>();
     private final int f; // Maximum number of Byzantine faults allowed.
     private final ExecutorService consensusExecutor = Executors.newSingleThreadExecutor();
@@ -168,7 +168,7 @@ public class BlockchainMember {
         });
     }
 
-    public List<String> getBlockchain() {
+    public ArrayList getBlockchain() {
         synchronized (blockchain) {
             return new ArrayList<>(blockchain);
         }

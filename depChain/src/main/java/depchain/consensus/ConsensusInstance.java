@@ -21,18 +21,18 @@ public class ConsensusInstance {
     private final int epoch; // In our design, epoch doubles as the consensus instance ID.
     private volatile String localValue = null;
     private volatile int localTimestamp = 0; // For simplicity, use epoch as timestamp.
-    private final int quorumSize; // e.g., quorum = floor((N + f) / 2) + 1.
+    private final float quorumSize; // e.g., quorum = floor((N + f) / 2).
     private Map<Integer, Message> stateResponses = new HashMap<>();
-    private static List<String> blockchain = new ArrayList<>();
+    private final ArrayList blockchain;
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
-            int f, List<String> blockchain) {
+            int f, ArrayList blockchain) {
         this.myId = myId;
         this.leaderId = leaderId;
         this.allProcessIds = new ArrayList<>(allProcessIds);
         this.perfectLink = perfectLink;
         this.epoch = epoch;
-        this.quorumSize = ((allProcessIds.size() + f) / 2);
+        this.quorumSize = ((float) ( allProcessIds.size() + f) / 2);
         this.blockchain = blockchain;
     }
 
@@ -50,10 +50,12 @@ public class ConsensusInstance {
 
     // Leader sends READ messages to all.
     private void broadcastRead() {
-        //TODO: CHANGE THIS NONCE
-        Message readMsg = new Message(Message.Type.READ, epoch, "", leaderId, null, -1);
+        Message readMsg = new Message(Message.Type.READ, epoch, localValue, myId, null, -1);
+        // produce a STATE message just to add to the list
+        Message stateMsg = new Message(Message.Type.STATE, epoch, localValue, myId,
+                null, -1, null, blockchain);
         // Start by appending the leader's own state.
-        stateResponses.put(leaderId, readMsg);
+        stateResponses.put(leaderId, stateMsg);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -94,7 +96,7 @@ public class ConsensusInstance {
         }
         // Wait for ACCEPT messages.
         new Thread(() -> {
-            int acceptCount = 0;
+            float acceptCount = 0;
             while (acceptCount < quorumSize) {
                 try {
                     Message msg = perfectLink.deliver();
@@ -125,13 +127,16 @@ public class ConsensusInstance {
 
     // This method is invoked (by any process) when a message is delivered.
     public void processMessage(Message msg) {
-        if (msg.epoch != epoch)
+        if (msg.epoch != epoch){
+            Logger.log(LogLevel.DEBUG, "Received message for a different consensus instance...");
             return;
+        }
         switch (msg.type) {
             case READ:
-                // get the state of the blockchain of the process' last appended value
-                Message stateMsg = new Message(Message.Type.STATE, epoch, blockchain, myId,
-                        null, -1, null);
+                // get the state of the blockchain of the process
+                // and for now return the msg value itself as the process choice
+                Message stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId,
+                        null, -1, null, blockchain);
                 try {
                     perfectLink.send(msg.senderId, stateMsg);
                 } catch (Exception e) {
@@ -166,16 +171,31 @@ public class ConsensusInstance {
 
     public String waitForDecision() throws InterruptedException, ExecutionException {
         // check if a quorum has already been reached
-        while (stateResponses.size() < quorumSize) {
-            Thread.sleep(1000);
+        while ((float) stateResponses.size() < quorumSize) {
+            Thread.sleep(500);
             Logger.log(LogLevel.DEBUG, "Still waiting for quorum to be met...");
+            Thread.sleep(500);
         }
 
-        // For now, just print the states of the blockchain of all processes.
         for (Message m : stateResponses.values()) {
-            Logger.log(LogLevel.INFO, "State of process " + m.senderId + ": " + m.state);
+            Logger.log(LogLevel.INFO, "State of process " + m.senderId + ": " + m.state + " (choice: " + m.value + ")");
         }
 
-        return localValue;
+        // Determine candidate value:
+        // 1. Check the most voted answer that has the same highest epoch number in regards to the value
+        // 2. If there is no such value, choose the leaders own local value
+        String candidate = localValue;
+        int maxTimestamp = localTimestamp;
+        for (Message m : stateResponses.values()) {
+            if (m.value != null && !m.value.isEmpty()) {
+                // In our simplified case, we use the epoch field as the timestamp.
+                if (m.epoch > maxTimestamp) {
+                    candidate = m.value;
+                    maxTimestamp = m.epoch;
+                }
+            }
+        }
+
+        return candidate;
     }
 }
