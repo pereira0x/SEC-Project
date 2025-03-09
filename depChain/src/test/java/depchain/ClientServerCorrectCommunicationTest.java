@@ -16,11 +16,14 @@ public class ClientServerCorrectCommunicationTest {
 
     @Test
     public void ClientServerCorrectCommunicationTest() {
-        BlockchainMember server = new BlockchainMember(1, 8001, 1, 1);
-        DepChainClient client = new DepChainClient(5, 9001);
+        BlockchainMember server1 = new BlockchainMember(1, 8001, 1, 1);
+        BlockchainMember server2 = new BlockchainMember(2, 8002, 1, 1);
+        BlockchainMember server3 = new BlockchainMember(3, 8003, 1, 1);
+        BlockchainMember server4 = new BlockchainMember(4, 8004, 1, 1);
+        DepChainClient client1 = new DepChainClient(5, 9001);
 
-        client.append("Hello");
-        assertTrue(server.getBlockchain().contains("Hello"));
+        client1.append("Hello");
+        assertTrue(server1.getBlockchain().contains("Hello"));
     }
 
 }
