@@ -55,7 +55,7 @@ public class CryptoUtil {
             mac.init(secretKey);
             byte[] computedHmac = mac.doFinal(data);
             return MessageDigest.isEqual(computedHmac, hmac);
-        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }

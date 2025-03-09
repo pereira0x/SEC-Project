@@ -221,6 +221,16 @@ public class PerfectLink {
                         break;
 
                     default:
+                        // Wait for session to be established before processing further messages
+                        try {
+                            while (!activeSessionMap.getOrDefault(msg.senderId, false)) {
+                                Logger.log(LogLevel.INFO, "Waiting for session with process " + msg.senderId + " to be established...");
+                                Thread.sleep(500);
+                            }
+                        } catch (InterruptedException e) {
+                            Logger.log(LogLevel.ERROR, "Interrupted while waiting for session: " + e.toString());
+                        }
+
                         // Check authenticity of the message
                         // TODO: sometimes this fails and I suspect it's due to concurrent access <- assess this
                         synchronized (sessions) {
@@ -267,6 +277,7 @@ public class PerfectLink {
             throw new Exception("Unknown destination: " + destId);
         }
 
+        // Wait for session to be established before sending messages
         try {
             if (msg.type != Message.Type.START_SESSION && msg.type != Message.Type.ACK_SESSION) {
                 while (!activeSessionMap.getOrDefault(destId, false)) {
