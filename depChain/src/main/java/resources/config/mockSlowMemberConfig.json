@@ -4,7 +4,7 @@
     "id": 1,
     "host": "localhost",
     "port": 8001,
-    "behavior": "correct"
+    "behavior": "mockSlowMember"
   },
   {
     "type": "server",

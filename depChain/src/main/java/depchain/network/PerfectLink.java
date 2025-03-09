@@ -48,9 +48,8 @@ public class PerfectLink {
     // ConcurrentHashMap<>();
 
     /*
-     * // Map to track session initiation messages by nonce
-     * private final ConcurrentMap<int, Integer> initSessionQueue = new
-     * ConcurrentHashMap<>();
+     * // Map to track session initiation messages by nonce private final ConcurrentMap<int, Integer> initSessionQueue =
+     * new ConcurrentHashMap<>();
      */
 
     // Global map for session initiation resends
@@ -162,8 +161,7 @@ public class PerfectLink {
 
                             // Cancel the resend task
                             ScheduledFuture<?> task = sessionResendTasks
-                                    .getOrDefault(msg.senderId, new ConcurrentHashMap<>())
-                                    .remove(msg.nonce);
+                                    .getOrDefault(msg.senderId, new ConcurrentHashMap<>()).remove(msg.nonce);
 
                             if (task != null) {
                                 task.cancel(false);
@@ -203,9 +201,8 @@ public class PerfectLink {
                         }
 
                         // encrypt session key with public key of sender
-                        byte[] encryptedSessionKey = CryptoUtil.encryptSecretKey(
-                                sessions.get(msg.senderId).getSessionKey(),
-                                senderKey);
+                        byte[] encryptedSessionKey = CryptoUtil
+                                .encryptSecretKey(sessions.get(msg.senderId).getSessionKey(), senderKey);
                         ByteArrayWrapper encryptedSessionKeyWrapper = new ByteArrayWrapper(encryptedSessionKey);
 
                         // send ACK
@@ -238,7 +235,7 @@ public class PerfectLink {
                 }
 
                 // print sessions
-                for(Session s : sessions.values()) {
+                for (Session s : sessions.values()) {
                     Logger.log(LogLevel.DEBUG, s.toString());
                 }
 
@@ -293,7 +290,6 @@ public class PerfectLink {
             } else {
                 signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce);
             }
-
 
             try {
                 Logger.log(LogLevel.DEBUG, "Sending message to " + destId + " of type " + msg.type);
@@ -377,21 +373,23 @@ public class PerfectLink {
 
     public void close() {
         for (ScheduledFuture<?> task : resendTasks.values()) {
-            if (task != null) task.cancel(false);
+            if (task != null)
+                task.cancel(false);
         }
         resendTasks.clear();
-    
+
         for (ConcurrentMap<Integer, ScheduledFuture<?>> sessionTasks : sessionResendTasks.values()) {
             for (ScheduledFuture<?> task : sessionTasks.values()) {
-                if (task != null) task.cancel(false);
+                if (task != null)
+                    task.cancel(false);
             }
         }
         sessionResendTasks.clear();
         activeSessionMap.clear();
-    
+
         senderWorkerPool.shutdownNow();
         listenerWorkerPool.shutdownNow();
         socket.close();
     }
-    
+
 }

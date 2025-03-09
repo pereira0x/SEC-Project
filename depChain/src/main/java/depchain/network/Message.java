@@ -38,7 +38,7 @@ public class Message implements Serializable {
 
     public void setNonce(int nonce) {
         this.nonce = nonce;
-    }   
+    }
 
     // Returns a string representation of the content to be signed.
     public String getSignableContent() {

@@ -18,6 +18,7 @@ public class BlockchainMember {
     private final int memberId;
     private final int memberPort;
     private final int leaderId; // Static leader ID.
+    private String behavior;
     private final List<Integer> allProcessIds;
     private PerfectLink perfectLink;
     private final List<String> blockchain; // In-memory blockchain.
@@ -50,6 +51,8 @@ public class BlockchainMember {
             Logger.log(LogLevel.ERROR, "Failed to load configuration: " + e.getMessage());
             return;
         }
+        String behavior = Config.processBehaviors.get(memberId);
+        this.behavior = behavior != null ? behavior : "correct";
 
         PerfectLink pl;
         try {
@@ -60,7 +63,6 @@ public class BlockchainMember {
             return;
         }
         this.perfectLink = pl;
-
 
         startMessageHandler();
     }
@@ -75,7 +77,7 @@ public class BlockchainMember {
         int memberId = Integer.parseInt(args[0]);
         int memberPort = Integer.parseInt(args[1]);
         int leaderId = 1; // assume process 1 is leader
-                
+
         // Assume maximum Byzantine faults f = 1 for 4 processes.
         BlockchainMember blockchainMember = new BlockchainMember(memberId, memberPort, leaderId, 1);
         Logger.log(LogLevel.INFO, "BlockchainMember " + memberId + " started on port " + memberPort);
@@ -109,9 +111,22 @@ public class BlockchainMember {
                                     InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                     if (clientAddr != null) {
                                         // TODO: EPOCH NUMBER MUST BE A NEW ONE
-                                        Message reply = new Message(Type.CLIENT_REPLY, msg.epoch, decidedValue, memberId, null,
-                                                msg.nonce);
-                                        perfectLink.send(msg.senderId, reply);
+                                        Message reply = new Message(Type.CLIENT_REPLY, msg.epoch, decidedValue,
+                                                memberId, null, msg.nonce);
+                                        switch (this.behavior) {
+                                            case "mockSlowMember":
+                                                try {
+                                                    Thread.sleep(6000);
+                                                    perfectLink.send(msg.senderId, reply);
+                                                } catch (InterruptedException e) {
+                                                    e.printStackTrace();
+                                                }
+                                                break;
+
+                                            default:
+                                                perfectLink.send(msg.senderId, reply);
+                                                break;
+                                        }
                                     }
                                 } catch (Exception e) {
                                     e.printStackTrace();
