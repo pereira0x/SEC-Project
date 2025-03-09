@@ -223,7 +223,7 @@ public class PerfectLink {
                     default:
                         // Wait for session to be established before processing further messages
                         try {
-                            while (!activeSessionMap.getOrDefault(msg.senderId, false)) {
+                            while (sessions.get(msg.senderId) == null) {
                                 Logger.log(LogLevel.INFO, "Waiting for session with process " + msg.senderId + " to be established...");
                                 Thread.sleep(500);
                             }
@@ -233,13 +233,11 @@ public class PerfectLink {
 
                         // Check authenticity of the message
                         // TODO: sometimes this fails and I suspect it's due to concurrent access <- assess this
-                        synchronized (sessions) {
-                            if (!CryptoUtil.checkHMACHmacSHA256(msg.getSignableContent().getBytes(), msg.signature,
-                                    sessions.get(msg.senderId).getSessionKey())) {
-                                Logger.log(LogLevel.ERROR,
-                                        "Signature verification failed for message from " + msg.senderId);
-                                return;
-                            }
+                        if (!CryptoUtil.checkHMACHmacSHA256(msg.getSignableContent().getBytes(), msg.signature,
+                                sessions.get(msg.senderId).getSessionKey())) {
+                            Logger.log(LogLevel.ERROR,
+                                    "Signature verification failed for message from " + msg.senderId);
+                            return;
                         }
 
                         // Send ACK to sender
@@ -282,7 +280,7 @@ public class PerfectLink {
             if (msg.type != Message.Type.START_SESSION && msg.type != Message.Type.ACK_SESSION) {
                 while (!activeSessionMap.getOrDefault(destId, false)) {
                     Logger.log(LogLevel.INFO, "Waiting for session with process " + destId + " to be established...");
-                    Thread.sleep(2000);
+                    Thread.sleep(500);
                 }
             }
         } catch (InterruptedException e) {

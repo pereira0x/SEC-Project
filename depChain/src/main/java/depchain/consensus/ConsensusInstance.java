@@ -172,9 +172,9 @@ public class ConsensusInstance {
     public String waitForDecision() throws InterruptedException, ExecutionException {
         // check if a quorum has already been reached
         while ((float) stateResponses.size() < quorumSize) {
-            Thread.sleep(500);
+            Thread.sleep(250);
             Logger.log(LogLevel.DEBUG, "Still waiting for quorum to be met...");
-            Thread.sleep(500);
+            Thread.sleep(250);
         }
 
         for (Message m : stateResponses.values()) {
