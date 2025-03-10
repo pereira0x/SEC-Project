@@ -162,7 +162,6 @@ public class PerfectLink {
                     case ACK:
                         // Regular ACK for another message type
                         if (session != null && session.getSentCounter() == msg.nonce) {
-                            deliveredQueue.offer(msg);
                             session.incrementSentCounter();
 
                             // Cancel the resend task
@@ -246,7 +245,7 @@ public class PerfectLink {
 
                         // Process the message if we haven't seen it before
                         if (session != null && session.getAckCounter() == msg.nonce) {
-                            deliveredQueue.offer(msg);
+                            deliveredQueue.put(msg);
                             session.incrementAckCounter();
                         }
                         break;
@@ -319,9 +318,9 @@ public class PerfectLink {
             // Use the appropriate constructor based on whether session key is present
             if (msg.sessionKey != null) {
                 if (msg.type == Message.Type.STATE) {
-                    signedMsg = new Message(msg.type, msg.epoch, "", msg.senderId, sig, msg.nonce, msg.sessionKey, msg.state);
+                    signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, msg.sessionKey, msg.state);
                 } else {
-                    signedMsg = new Message(msg.type, msg.epoch, "", msg.senderId, sig, msg.nonce, msg.sessionKey);
+                    signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, msg.sessionKey);
                 }
             } else {
                 signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce);

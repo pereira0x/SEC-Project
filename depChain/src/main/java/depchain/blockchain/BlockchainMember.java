@@ -4,6 +4,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import depchain.consensus.ConsensusInstance;
+import depchain.consensus.State;
+import depchain.consensus.TimestampValuePair;
 import depchain.network.Message;
 import depchain.network.PerfectLink;
 import depchain.network.Message.Type;
@@ -20,18 +22,18 @@ public class BlockchainMember {
     private final int leaderId; // Static leader ID.
     private final List<Integer> allProcessIds;
     private PerfectLink perfectLink;
-    private ArrayList blockchain; // In-memory blockchain.
+    private State blockchain; // In-memory blockchain.
     private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>();
     private final int f; // Maximum number of Byzantine faults allowed.
     private final ExecutorService consensusExecutor = Executors.newSingleThreadExecutor();
-    private int consensusCounter = 0;
+    private int epochNumber = 0;
 
     public BlockchainMember(int memberId, int memberPort, int leaderId, int f) {
         this.memberId = memberId;
         this.memberPort = memberPort;
         this.leaderId = leaderId;
         this.allProcessIds = Arrays.asList(1, 2, 3, 4);
-        this.blockchain = new ArrayList<>();
+        this.blockchain = new State();
         this.f = f;
 
         Dotenv dotenv = Dotenv.load();
@@ -92,19 +94,21 @@ public class BlockchainMember {
                     // then start a consensus instance for the client request.
                     if (msg.type == Message.Type.CLIENT_REQUEST) {
                         if (memberId == leaderId) {
-                            int instanceId = consensusCounter++;
+                            int instanceId = epochNumber++;
                             ConsensusInstance ci = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
                                     instanceId, f, blockchain);
                             consensusInstances.put(instanceId, ci);
-                            ci.propose(msg.value);
                             new Thread(() -> {
+                                ci.propose(msg.value);
                                 try {
                                     Logger.log(LogLevel.DEBUG, "Waiting for decision...");
                                     String decidedValue = ci.waitForDecision();
                                     // String decidedValue = msg.value;
                                     Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
+                                    TimestampValuePair write = new TimestampValuePair(epochNumber, decidedValue);
+                                    blockchain.add(write);
                                     // Append the decided value to the blockchain.
-                                    upcallDecided(decidedValue);
+                                    // upcallDecided(decidedValue);
                                     // Send ACK to the client.
                                     InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                     if (clientAddr != null) {
@@ -124,7 +128,7 @@ public class BlockchainMember {
                         if (ci != null) {
                             ci.processMessage(msg);
                             if (msg.type == Message.Type.DECIDED) {
-                                upcallDecided(msg.value);
+                                // upcallDecided(msg.value);
                             }
                         } else {
                             // instantiate a new consensus instance
@@ -144,16 +148,16 @@ public class BlockchainMember {
     }
 
     // Upcall: when a decision is reached, append the decided value to our blockchain.
-    private void upcallDecided(String value) {
-        synchronized (blockchain) {
-            blockchain.add(value);
-            Logger.log(LogLevel.INFO, "Node " + memberId + " appended value: " + value);
-        }
-    }
+    // private void upcallDecided(String value) {
+    //     synchronized (blockchain) {
+    //         blockchain.add(value);
+    //         Logger.log(LogLevel.INFO, "Node " + memberId + " appended value: " + value);
+    //     }
+    // }
 
     // Method for externally starting a consensus instance (if needed).
     public Future<String> startConsensus(String clientRequest) {
-        int instanceId = consensusCounter++;
+        int instanceId = epochNumber++;
         ConsensusInstance ci = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink, instanceId, f, blockchain);
         consensusInstances.put(instanceId, ci);
         if (memberId == leaderId) {
@@ -168,9 +172,7 @@ public class BlockchainMember {
         });
     }
 
-    public ArrayList getBlockchain() {
-        synchronized (blockchain) {
-            return new ArrayList<>(blockchain);
-        }
+    public ArrayList<String> getBlockchain() {
+        return blockchain.getBlockchain();
     }
 }

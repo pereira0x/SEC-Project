@@ -15,6 +15,8 @@ import depchain.network.PerfectLink;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 
+import depchain.consensus.State;
+
 public class ConsensusInstance {
     private final int myId;
     private final int leaderId;
@@ -25,10 +27,10 @@ public class ConsensusInstance {
     private volatile int localTimestamp = 0; // For simplicity, use epoch as timestamp.
     private final float quorumSize; // e.g., quorum = floor((N + f) / 2).
     private Map<Integer, Message> stateResponses = new HashMap<>();
-    private final ArrayList blockchain;
+    private final State blockchain;
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
-            int f, ArrayList blockchain) {
+            int f, State blockchain) {
         this.myId = myId;
         this.leaderId = leaderId;
         this.allProcessIds = new ArrayList<>(allProcessIds);
@@ -67,20 +69,6 @@ public class ConsensusInstance {
                 }
             }
         }
-
-        // Determine candidate value: choose the one with highest “timestamp” if any are set.
-        // String candidate = localValue;
-        // int maxTimestamp = localTimestamp;
-        // for (Message m : stateResponses.values()) {
-        //     if (m.value != null && !m.value.isEmpty()) {
-        //         // In our simplified case, we use the epoch field as the timestamp.
-        //         if (m.epoch > maxTimestamp) {
-        //             candidate = m.value;
-        //             maxTimestamp = m.epoch;
-        //         }
-        //     }
-        // }
-        // broadcastWrite(candidate);
     }
 
     // Leader broadcasts WRITE message.
@@ -179,41 +167,46 @@ public class ConsensusInstance {
             Thread.sleep(250);
         }
 
+        // // Print the state of all processes.
         for (Message m : stateResponses.values()) {
-            Logger.log(LogLevel.INFO, "State of process " + m.senderId + ": " + m.state + " (choice: " + m.value + ")");
+            Logger.log(LogLevel.INFO, "State of process " + m.senderId + ": " + m.state);
         }
 
-        // Determine candidate value using a dictionary
-        // 1. Check the most voted answer
-        // 2. If there is no such value, choose the leaders own local value
-        Map<String, Integer> votes = new HashMap<>();
+        // for (Message m : stateResponses.values()) {
+        //     Logger.log(LogLevel.INFO, "State of process " + m.senderId + ": " + m.state + " (choice: " + m.value + ")");
+        // }
 
-        for (Message m : stateResponses.values()) {
-            if (m.value != null && !m.value.isEmpty()) {
-                votes.put(m.value, votes.getOrDefault(m.value, 0) + 1);
-            }
-        }
+        // // Determine candidate value using a dictionary
+        // // 1. Check the most voted answer
+        // // 2. If there is no such value, choose the leaders own local value
+        // Map<String, Integer> votes = new HashMap<>();
 
-        // Determine the candidate with the most votes
-        String candidate = null;
-        int maxVotes = 0;
-        boolean tie = false;
+        // for (Message m : stateResponses.values()) {
+        //     if (m.value != null && !m.value.isEmpty()) {
+        //         votes.put(m.value, votes.getOrDefault(m.value, 0) + 1);
+        //     }
+        // }
 
-        for (Map.Entry<String, Integer> entry : votes.entrySet()) {
-            if (entry.getValue() > maxVotes) {
-                maxVotes = entry.getValue();
-                candidate = entry.getKey();
-                tie = false;
-            } else if (entry.getValue() == maxVotes) {
-                tie = true;
-            }
-        }
+        // // Determine the candidate with the most votes
+        // String candidate = null;
+        // int maxVotes = 0;
+        // boolean tie = false;
 
-        // If there's a tie or no votes, use the leader's local value
-        if (tie) {
-            candidate = localValue;
-        }
+        // for (Map.Entry<String, Integer> entry : votes.entrySet()) {
+        //     if (entry.getValue() > maxVotes) {
+        //         maxVotes = entry.getValue();
+        //         candidate = entry.getKey();
+        //         tie = false;
+        //     } else if (entry.getValue() == maxVotes) {
+        //         tie = true;
+        //     }
+        // }
 
-        return candidate;
+        // // If there's a tie or no votes, use the leader's local value
+        // if (tie) {
+        //     candidate = localValue;
+        // }
+
+        return "Hello";
     }
 }

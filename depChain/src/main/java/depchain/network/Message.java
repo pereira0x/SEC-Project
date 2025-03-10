@@ -3,6 +3,7 @@ package depchain.network;
 import java.io.Serializable;
 
 import depchain.utils.ByteArrayWrapper;
+import depchain.consensus.State;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -18,18 +19,18 @@ public class Message implements Serializable {
     public final byte[] signature; // Signature over the message content (computed by sender).
     public int nonce; // nonce for the message (computed by sender).
     public ByteArrayWrapper sessionKey; // session key for the message (computed by sender).
-    public final ArrayList state;
+    public final State state;
 
     public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce) {
-        this(type, epoch, value, senderId, signature, nonce, null, new ArrayList<>());
+        this(type, epoch, value, senderId, signature, nonce, null, null);
     }
 
     public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce, ByteArrayWrapper sessionKey) {
-        this(type, epoch, value, senderId, signature, nonce, sessionKey, new ArrayList<>());
+        this(type, epoch, value, senderId, signature, nonce, sessionKey, null);
     }
     
     // For STATE messages
-    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce, ByteArrayWrapper sessionKey, ArrayList state) {
+    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce, ByteArrayWrapper sessionKey, State state) {
         this.type = type;
         this.epoch = epoch;
         this.value = value;
@@ -57,11 +58,11 @@ public class Message implements Serializable {
         if (sessionKey != null) {
             content += sessionKey.getData();
         }
-        if (state != null) {
-            for (Object obj : state) {
-                content += obj.toString();
-            }
-        }
+        // if (state != null) {
+        //     for (Object obj : state) {
+        //         content += obj.toString();
+        //     }
+        // }
         return content;
     }
 }
