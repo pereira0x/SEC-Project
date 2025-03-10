@@ -101,6 +101,13 @@ The test suite includes:
 - Simão Sanguinho - ist1102082
 - José Pereira - ist1103252
 
+## Report
+
+To build the report, run the following command:
+```sh
+cd report
+pdflatex report.tex
+```
 
 ## References
 [1] Introduction to Reliable and Secure Distributed Programming. 2nd Edition.
