@@ -26,7 +26,7 @@ public class ConsensusInstance {
     private volatile String localValue = null;
     private volatile int localTimestamp = 0; // For simplicity, use epoch as timestamp.
     private final float quorumSize; // e.g., quorum = floor((N + f) / 2).
-    private Map<Integer, Message> stateResponses = new HashMap<>();
+    private Map<Integer, State> stateResponses = new HashMap<>();
     private final State blockchain;
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
@@ -56,10 +56,9 @@ public class ConsensusInstance {
     private void broadcastRead() {
         Message readMsg = new Message(Message.Type.READ, epoch, localValue, myId, null, -1);
         // produce a STATE message just to add to the list
-        Message stateMsg = new Message(Message.Type.STATE, epoch, localValue, myId,
-                null, -1, null, blockchain);
+        
         // Start by appending the leader's own state.
-        stateResponses.put(leaderId, stateMsg);
+        stateResponses.put(leaderId, blockchain);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -123,18 +122,23 @@ public class ConsensusInstance {
         }
         switch (msg.type) {
             case READ:
+
+                //System.out.println("BLOCKCHAIN: " + blockchain);
                 // get the state of the blockchain of the process
                 // and for now return the msg value itself as the process choice
+                
                 Message stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId,
-                        null, -1, null, blockchain);
+                        null, -1, null , blockchain);
                 try {
+                    //System.out.println("Sending state message to " + msg.senderId + " with statte " + stateMsg.state);
                     perfectLink.send(msg.senderId, stateMsg);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 break;
             case STATE:
-                stateResponses.put(msg.senderId, msg);
+
+                stateResponses.put(msg.senderId, msg.state);
                 break;
             case WRITE:
                 // Upon WRITE, update our local state and send an ACCEPT.
@@ -168,8 +172,8 @@ public class ConsensusInstance {
         }
 
         // // Print the state of all processes.
-        for (Message m : stateResponses.values()) {
-            Logger.log(LogLevel.INFO, "State of process " + m.senderId + ": " + m.state);
+        for (State s : stateResponses.values()) {
+            Logger.log(LogLevel.INFO, "State of process " + s);
         }
 
         // for (Message m : stateResponses.values()) {
