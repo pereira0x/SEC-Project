@@ -9,7 +9,7 @@ public class State implements Serializable {
 
     // {(ts, val) , writeset}
     private static final long serialVersionUID = 1L;
-    public final TimestampValuePair mostRecentWrite;
+    public TimestampValuePair mostRecentWrite;
     public final ArrayList<TimestampValuePair> writeset;
 
     public State() {
@@ -18,7 +18,6 @@ public class State implements Serializable {
     }
 
     public State(TimestampValuePair mostRecentWrite, ArrayList<TimestampValuePair> writeset) {
-        System.out.println("State constructor calledSWUSAUGSIUGDIUSGDIUASGIUSAGUDSA");
         this.mostRecentWrite = mostRecentWrite;
         this.writeset = writeset;
     }
@@ -33,6 +32,10 @@ public class State implements Serializable {
 
     public void add(TimestampValuePair write) {
         writeset.add(write);
+    }
+
+    public void setMostRecentWrite(TimestampValuePair write) {
+        this.mostRecentWrite = write;
     }
 
     public ArrayList<String> getBlockchain() {

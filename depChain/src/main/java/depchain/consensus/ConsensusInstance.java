@@ -1,5 +1,6 @@
 package depchain.consensus;
 
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,12 +28,14 @@ public class ConsensusInstance {
     private volatile int localTimestamp = 0; // For simplicity, use epoch as timestamp.
     private final float quorumSize; // e.g., quorum = floor((N + f) / 2).
     private Map<Integer, State> stateResponses = new HashMap<>();
+    private final int f;
     private final State blockchain;
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
             int f, State blockchain) {
         this.myId = myId;
         this.leaderId = leaderId;
+        this.f = f;
         this.allProcessIds = new ArrayList<>(allProcessIds);
         this.perfectLink = perfectLink;
         this.epoch = epoch;
@@ -158,8 +161,8 @@ public class ConsensusInstance {
                 break;
             case WRITE:
                 // Upon WRITE, update our local state and send an ACCEPT.
-                localValue = msg.value;
-                localTimestamp = epoch;
+                /* localValue = msg.value;
+                localTimestamp = epoch; */
                 Message acceptMsg = new Message(Message.Type.ACCEPT, epoch, msg.value, myId, null, -1);
                 try {
                     perfectLink.send(leaderId, acceptMsg);
@@ -172,13 +175,46 @@ public class ConsensusInstance {
                 // Upon COLLECTED, update our local state and send an ACCEPT.
                 stateResponses = msg.statesMap;
                 Logger.log(LogLevel.ERROR, "Received COLLECTED message from " + msg.senderId + " with states " + stateResponses);
-                // TODO
                 // Look at all states and decide the value you want to write (in write messages )
+                // pick the value to write
+                String candidate = getValueFromCollected();
+                /* System.out.println("Candidate: " + candidate); */
+
                 break;
             default:
                 // Ignore other message types.
                 break;
         }
+    }
+
+    // decide the value to be written based on the states of all processes
+    public String getValueFromCollected() {
+        TimestampValuePair tmpVal = null;
+        for (State s : stateResponses.values()) {
+            TimestampValuePair mostRecentWrite = s.getMostRecentWrite();
+            if (tmpVal == null || mostRecentWrite.getTimestamp() > tmpVal.getTimestamp()) {
+                tmpVal = mostRecentWrite;
+            }
+        }
+
+        // check if the tmpVal appears in the writeset of more than f processes
+        int count = 0;
+        for (State s : stateResponses.values()) {
+            if (s.getWriteset().contains(tmpVal)) {
+                count++;
+            }
+        }
+
+        if (count > this.f) {
+            return tmpVal.getValue();
+        } else {
+            // return the most recent write in the writeset of the leader
+/*             System.out.println("Returning most recent write of leader");
+            System.out.println("->>>>>>>>>>> " + stateResponses.get(leaderId).getMostRecentWrite().getValue()); */
+            return stateResponses.get(leaderId).getMostRecentWrite().getValue();
+        }
+
+
     }
 
 
@@ -202,6 +238,9 @@ public class ConsensusInstance {
     public String decide(String value) {
 
         try { 
+
+            
+
             // Read Phase
             readPhase(value);
             // Wait for states
@@ -212,6 +251,12 @@ public class ConsensusInstance {
 
             Thread.sleep(3000);
 
+            // pick value to write
+            String candidate = getValueFromCollected();
+            /* System.out.println("Candidate: " + candidate); */
+
+
+
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
@@ -220,5 +265,9 @@ public class ConsensusInstance {
 
 
         return "Hello";
+    }
+
+    public void setBlockchainMostRecentWrite(TimestampValuePair write) {
+        blockchain.setMostRecentWrite(write);
     }
 }

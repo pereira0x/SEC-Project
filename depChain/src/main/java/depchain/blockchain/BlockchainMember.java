@@ -99,6 +99,7 @@ public class BlockchainMember {
                             int instanceId = epochNumber++;
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
                                     instanceId, f, blockchain);
+                            consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, msg.value));
                             new Thread(() -> {
                                 /* consensusInstance.readPhase(msg.value); */
                                 try {
