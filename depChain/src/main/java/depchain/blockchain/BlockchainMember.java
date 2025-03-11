@@ -23,7 +23,8 @@ public class BlockchainMember {
     private final List<Integer> allProcessIds;
     private PerfectLink perfectLink;
     private State blockchain; // In-memory blockchain.
-    private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>();
+    /* private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>(); */
+    private ConsensusInstance consensusInstance;
     private final int f; // Maximum number of Byzantine faults allowed.
     private final ExecutorService consensusExecutor = Executors.newSingleThreadExecutor();
     private int epochNumber = 0;
@@ -95,14 +96,13 @@ public class BlockchainMember {
                     if (msg.type == Message.Type.CLIENT_REQUEST) {
                         if (memberId == leaderId) {
                             int instanceId = epochNumber++;
-                            ConsensusInstance ci = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
+                            consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
                                     instanceId, f, blockchain);
-                            consensusInstances.put(instanceId, ci);
                             new Thread(() -> {
-                                ci.propose(msg.value);
+                                consensusInstance.readPhase(msg.value);
                                 try {
                                     Logger.log(LogLevel.DEBUG, "Waiting for decision...");
-                                    String decidedValue = ci.waitForDecision();
+                                    String decidedValue = consensusInstance.waitForStates();
                                     // String decidedValue = msg.value;
                                     Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
                                     TimestampValuePair write = new TimestampValuePair(epochNumber, decidedValue);
@@ -124,18 +124,17 @@ public class BlockchainMember {
                         }
                     } else {
                         // For consensus messages, dispatch to the corresponding consensus instance.
-                        ConsensusInstance ci = consensusInstances.get(msg.epoch);
-                        if (ci != null) {
-                            ci.processMessage(msg);
+                        if (consensusInstance != null) {
+                            consensusInstance.processMessage(msg);
                             if (msg.type == Message.Type.DECIDED) {
                                 // upcallDecided(msg.value);
                             }
                         } else {
                             // instantiate a new consensus instance
-                            ConsensusInstance newCi = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
+                            consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
                                     msg.epoch, f, blockchain);
-                            consensusInstances.put(msg.epoch, newCi);
-                            newCi.processMessage(msg);
+                           
+                            consensusInstance.processMessage(msg);
                         }
                     }
                 } catch (InterruptedException e) {
@@ -155,22 +154,6 @@ public class BlockchainMember {
     //     }
     // }
 
-    // Method for externally starting a consensus instance (if needed).
-    public Future<String> startConsensus(String clientRequest) {
-        int instanceId = epochNumber++;
-        ConsensusInstance ci = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink, instanceId, f, blockchain);
-        consensusInstances.put(instanceId, ci);
-        if (memberId == leaderId) {
-            ci.propose(clientRequest);
-        }
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return ci.waitForDecision();
-            } catch (Exception e) {
-                return null;
-            }
-        });
-    }
 
     public ArrayList<String> getBlockchain() {
         return blockchain.getBlockchain();

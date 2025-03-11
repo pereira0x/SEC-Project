@@ -41,7 +41,7 @@ public class ConsensusInstance {
     }
 
     // Called by the leader (or by a process that initiates consensus) to set the proposal.
-    public void propose(String v) {
+    public void readPhase(String v) {
         // Set our local value if not already set.
         if (localValue == null) {
             localValue = v;
@@ -157,13 +157,8 @@ public class ConsensusInstance {
         }
     }
 
-    // private void decide(String candidate) {
-    //     if (!decisionFuture.isDone()) {
-    //         decisionFuture.complete(candidate);
-    //     }
-    // }
 
-    public String waitForDecision() throws InterruptedException, ExecutionException {
+    public String waitForStates() throws InterruptedException, ExecutionException {
         // check if a quorum has already been reached
         while ((float) stateResponses.size() < quorumSize) {
             Thread.sleep(250);
@@ -175,6 +170,8 @@ public class ConsensusInstance {
         for (State s : stateResponses.values()) {
             Logger.log(LogLevel.INFO, "State of process " + s);
         }
+
+        // 
 
         // for (Message m : stateResponses.values()) {
         //     Logger.log(LogLevel.INFO, "State of process " + m.senderId + ": " + m.state + " (choice: " + m.value + ")");
