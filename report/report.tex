@@ -45,9 +45,9 @@ system. The project leverages the Byzantine Read/Write Epoch Consensus
 algorithm, with simplifying assumptions such as static system membership, a
 predefined leader process, and a Public Key Infrastructure (PKI). For message
 communication, the implementation will use authenticated perfect links, with the
-assumption that the  network  is  unreliable:  it  can  drop,  delay,
-duplicate,  or  corrupt messages, and communication channels are not secured.
-The implementation is structured in Java, utilizing the Java Crypto API for
+assumption that the  network  is  unreliable:  it  can  drop,  delay, duplicate,
+or  corrupt messages, and communication channels are not secured. The
+implementation is structured in Java, utilizing the Java Crypto API for
 cryptographic functions, and is designed to handle malicious behavior from a
 subset of blockchain members while ensuring safety and liveness under the
 assumption of a correct leader. The final submission for stage 1 includes a
@@ -76,12 +76,34 @@ potential areas for future improvement.
 %
 \section{Architecture}
 \subsection{Network Layer}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce non laoreet
-mauris. Aliquam vel sem neque. Sed sit amet risus in enim volutpat porttitor nec
-nec risus. Donec ultricies tortor at massa iaculis venenatis. Suspendisse
-aliquam justo dictum, faucibus magna consectetur, scelerisque erat. Integer quis
-convallis dui. Integer ante nulla, tincidunt quis dignissim et, condimentum non
-lorem.
+The network layer is responsible for managing the communication any two
+processes (members or clients) in the system. By replicating Authenticated
+Perfect Links, the network layer ensures that messages are guaranteed to be
+eventually delivered to the intended recipient, with it's integrity and
+authenticity preserved. There are three main components in the network layer: 
+
+- Message, which encapsulates the message content and metadata. It contains the
+type field to identify the message type (e.g., READ, STATE, ACK, etc.). It's
+also this component that will be signed by the sender and verified by the
+receiver. 
+
+- PerfectLink, which implements the core communication logics, including
+sending, receiving and managing sessions (explained next). To simulate the
+unreliable network, we use UDP sockets. 
+
+- Session, which represents a communication session between two processes. The
+session contains information like the destination process ID, address, session
+key, and counters for tracking sent and acknowledged messages. The session key
+is used for encrypting and signing messages (because using the public key for
+every message would be too expensive).
+\subsubsection{Session Establishment}
+
+Before any communication can occur, a session must be established between two
+processes. The session establishment process is as follows: A process initiates
+a session by sending a STARTSESSION message. Then, the recipient responds with a
+ACKSESSION message, containing an encrypted session key. Once the session is
+established, all subsequent messages are signed and verified using the session
+key to ensure authenticity and integrity.
 %
 \subsection{Client Layer}
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc ac erat nibh.
