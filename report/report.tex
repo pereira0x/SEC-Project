@@ -105,28 +105,18 @@ ACKSESSION message, containing an encrypted session key. Once the session is
 established, all subsequent messages are signed and verified using the session
 key to ensure authenticity and integrity.
 %
-\subsection{Client Layer}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc ac erat nibh.
-Morbi quis accumsan turpis. Etiam est augue, vehicula ut erat sit amet, molestie
-vehicula lacus. Quisque eu nunc nulla. In nisi ex, auctor quis nunc laoreet,
-rutrum dapibus nulla. Vestibulum eget arcu sed mi hendrerit porta. Donec risus
-est, imperdiet a sem vel, elementum malesuada nisl. Duis posuere mollis erat eu
-egestas. Donec facilisis ut neque nec bibendum. Integer et leo id enim egestas
-consequat in id eros. Vivamus eget quam sapien. Ut efficitur cursus risus,
-tincidunt dapibus magna tempus id. Integer a tincidunt ipsum, vel volutpat leo..
-%
-\subsection{Library Layer}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec facilisis et urna
-lobortis finibus. Nulla molestie lorem lacus, nec suscipit arcu mattis ac. Proin
-sed vehicula magna. Cras a iaculis velit, eu fermentum nisl. Pellentesque at
-magna in massa scelerisque suscipit sed ac tortor. Vivamus a bibendum leo, eget
-blandit felis. Donec vulputate ultrices dignissim. Donec vel elit a massa
-pellentesque euismod eget at velit. Aliquam eget est et urna auctor sodales.
-Aenean vulputate finibus libero ac pretium. Etiam lacinia ultrices odio, vitae
-bibendum metus accumsan sed. Etiam sit amet condimentum eros, pulvinar pharetra
-nisi. Phasellus ac purus a libero euismod ultrices. Duis feugiat, mi id
-facilisis blandit, magna magna commodo ante, ut porta lacus justo ut neque.
-Donec eget nisl feugiat, pretium libero eu, mollis dolor.
+\subsection{Client and Library Layer}
+The client layer and library layer work together to enable clients to interact
+with the distributed system, specifically to append messages to the blockchain.
+The client layer handles user interaction and initialization, while the library
+layer manages the communication logic with the system's leader process.
+\subsubsection{Normal Workflow}
+A user will issue the append <message> command via the client's CLI. The client
+layer will delegate the request to the library layer. Then, the library will
+construct a CLIENTREQUEST message and sends it to the leader process (known
+beforehand) using PerfectLink. Next, the library will wait for CLIENTREPLY from
+F+1 processes.
+
 %
 \subsection{Blockchain Layer}
 liquam facilisis ante lacus, at scelerisque libero iaculis non. Etiam ex velit,
