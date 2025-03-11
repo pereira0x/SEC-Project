@@ -6,6 +6,7 @@ import depchain.utils.ByteArrayWrapper;
 import depchain.consensus.State;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class Message implements Serializable {
     public enum Type {
@@ -20,17 +21,23 @@ public class Message implements Serializable {
     public int nonce; // nonce for the message (computed by sender).
     public ByteArrayWrapper sessionKey; // session key for the message (computed by sender).
     public final State state;
+    public final Map<Integer, State> statesMap;
 
     public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce) {
-        this(type, epoch, value, senderId, signature, nonce, null, null);
+        this(type, epoch, value, senderId, signature, nonce, null, null, null);
     }
 
     public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce, ByteArrayWrapper sessionKey) {
-        this(type, epoch, value, senderId, signature, nonce, sessionKey, null);
+        this(type, epoch, value, senderId, signature, nonce, sessionKey, null, null);
     }
     
     // For STATE messages
     public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce, ByteArrayWrapper sessionKey, State state) {
+        this(type, epoch, value, senderId, signature, nonce, sessionKey, state, null);
+    }
+
+    // for Collected messages
+    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce, ByteArrayWrapper sessionKey, State state, Map<Integer, State> statesMap) {
         this.type = type;
         this.epoch = epoch;
         this.value = value;
@@ -39,6 +46,7 @@ public class Message implements Serializable {
         this.nonce = nonce;
         this.sessionKey = sessionKey;
         this.state = state;
+        this.statesMap = statesMap;
     }
 
     public void setNonce(int nonce) {

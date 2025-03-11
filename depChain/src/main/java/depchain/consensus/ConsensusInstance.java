@@ -54,15 +54,31 @@ public class ConsensusInstance {
 
     // Leader sends READ messages to all.
     private void broadcastRead() {
-        Message readMsg = new Message(Message.Type.READ, epoch, localValue, myId, null, -1);
+        Message readMsg = new Message(Message.Type.READ, epoch, null, myId, null, -1);
         // produce a STATE message just to add to the list
         
         // Start by appending the leader's own state.
+        System.out.println("Leader's blockchain: " + blockchain);   
         stateResponses.put(leaderId, blockchain);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
                     perfectLink.send(pid, readMsg);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void broadcastCollected() {
+
+
+        Message collectedMsg = new Message(Message.Type.COLLECTED, epoch, null, myId, null, -1, null, null, stateResponses);
+        for (int pid : allProcessIds) {
+            if (pid != leaderId) {
+                try {
+                    perfectLink.send(pid, collectedMsg);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -151,6 +167,14 @@ public class ConsensusInstance {
                     e.printStackTrace();
                 }
                 break;
+
+            case COLLECTED:
+                // Upon COLLECTED, update our local state and send an ACCEPT.
+                stateResponses = msg.statesMap;
+                Logger.log(LogLevel.ERROR, "Received COLLECTED message from " + msg.senderId + " with states " + stateResponses);
+                // TODO
+                // Look at all states and decide the value you want to write (in write messages )
+                break;
             default:
                 // Ignore other message types.
                 break;
@@ -158,7 +182,7 @@ public class ConsensusInstance {
     }
 
 
-    public String waitForStates() throws InterruptedException, ExecutionException {
+    public Map<Integer, State> waitForStates() throws InterruptedException, ExecutionException {
         // check if a quorum has already been reached
         while ((float) stateResponses.size() < quorumSize) {
             Thread.sleep(250);
@@ -171,42 +195,29 @@ public class ConsensusInstance {
             Logger.log(LogLevel.INFO, "State of process " + s);
         }
 
-        // 
 
-        // for (Message m : stateResponses.values()) {
-        //     Logger.log(LogLevel.INFO, "State of process " + m.senderId + ": " + m.state + " (choice: " + m.value + ")");
-        // }
+        return stateResponses;
+    }
 
-        // // Determine candidate value using a dictionary
-        // // 1. Check the most voted answer
-        // // 2. If there is no such value, choose the leaders own local value
-        // Map<String, Integer> votes = new HashMap<>();
+    public String decide(String value) {
 
-        // for (Message m : stateResponses.values()) {
-        //     if (m.value != null && !m.value.isEmpty()) {
-        //         votes.put(m.value, votes.getOrDefault(m.value, 0) + 1);
-        //     }
-        // }
+        try { 
+            // Read Phase
+            readPhase(value);
+            // Wait for states
+            waitForStates();
 
-        // // Determine the candidate with the most votes
-        // String candidate = null;
-        // int maxVotes = 0;
-        // boolean tie = false;
+            // Broadcast collected
+            broadcastCollected();
 
-        // for (Map.Entry<String, Integer> entry : votes.entrySet()) {
-        //     if (entry.getValue() > maxVotes) {
-        //         maxVotes = entry.getValue();
-        //         candidate = entry.getKey();
-        //         tie = false;
-        //     } else if (entry.getValue() == maxVotes) {
-        //         tie = true;
-        //     }
-        // }
+            Thread.sleep(3000);
 
-        // // If there's a tie or no votes, use the leader's local value
-        // if (tie) {
-        //     candidate = localValue;
-        // }
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+
+
+
 
         return "Hello";
     }

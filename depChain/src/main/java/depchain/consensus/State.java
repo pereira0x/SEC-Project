@@ -18,6 +18,7 @@ public class State implements Serializable {
     }
 
     public State(TimestampValuePair mostRecentWrite, ArrayList<TimestampValuePair> writeset) {
+        System.out.println("State constructor calledSWUSAUGSIUGDIUSGDIUASGIUSAGUDSA");
         this.mostRecentWrite = mostRecentWrite;
         this.writeset = writeset;
     }

@@ -326,6 +326,13 @@ public class PerfectLink {
                 else if(msg.type == Message.Type.ACK_SESSION) {
                     signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, msg.sessionKey);
                 }
+                else if(msg.type == Message.Type.COLLECTED) {
+                    System.out.println("SENDING COLLECTED MESSAGE");
+                    System.out.println("STATES MAP: " + msg.statesMap);
+                    signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, msg.sessionKey, msg.state, msg.statesMap);
+
+                    System.out.println("SIGNED MESSAGE: " + signedMsg.statesMap);
+                }
                 else {
                     signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, null);
                 }

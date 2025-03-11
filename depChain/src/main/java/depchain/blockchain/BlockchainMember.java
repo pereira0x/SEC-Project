@@ -11,6 +11,7 @@ import depchain.network.PerfectLink;
 import depchain.network.Message.Type;
 import depchain.utils.Config;
 
+
 import java.net.InetSocketAddress;
 import io.github.cdimascio.dotenv.Dotenv;
 import depchain.utils.Logger;
@@ -99,10 +100,16 @@ public class BlockchainMember {
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
                                     instanceId, f, blockchain);
                             new Thread(() -> {
-                                consensusInstance.readPhase(msg.value);
+                                /* consensusInstance.readPhase(msg.value); */
                                 try {
                                     Logger.log(LogLevel.DEBUG, "Waiting for decision...");
-                                    String decidedValue = consensusInstance.waitForStates();
+
+                                    String decidedValue = consensusInstance.decide(msg.value);
+                                    
+                                    /* Map<Integer, State> states = consensusInstance.waitForStates();
+                                    consensusInstance.BroadcastCollected(states); */
+
+
                                     // String decidedValue = msg.value;
                                     Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
                                     TimestampValuePair write = new TimestampValuePair(epochNumber, decidedValue);
