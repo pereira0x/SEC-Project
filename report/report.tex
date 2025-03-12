@@ -185,25 +185,25 @@ members behave maliciously or fail to respond.
 
 %
 \section{Implementation details}
-\subsection{Detail XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
+\subsection{PKI and Cryptography}
+The system relies on a Public Key Infrastructure (PKI) to ensure the identity of
+members. Due to the perfomance limitations of public key cryptography, the
+system derives a shared simmetric key for each session, which is used to sign
+the messages. Since confidentiality is not a requirement, the system does not
+encrypt the messages.
 %
-\subsection{Detail XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
+\subsection{Byzantine leader}
+Due to the scope of the project, the system assumes a correct leader process
+(process 1) that initiates consensus instances and coordinates the consensus
+protocol. However, the system is designed to handle Byzantine behavior, and so,
+if the leader behaves maliciously and deviates from the protocol, the other
+members will detect the misbehavior and abort the consensus instance.
 %
-\subsection{Detail XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
-%
-\subsection{Detail XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
+\subsection{Members replies}
+Whenever a client issues a request, it will not block waiting for the reply,
+since the consensus protocol may take some time to reach an agreement. Instead,
+the client will asynchronously wait for the rely. As a client, it will wait for 
+F+1 replies, where F is the number of Byzantine faults the system can tolerate.
 %
 \section{Possible threats and corresponding protection mechanisms} To
 demonstrate the system's resilience against various Byzantine scenarios, the
@@ -283,5 +283,9 @@ Secure Distributed Programming. 2nd edn. Springer, 2011
 \bibitem{ref_url1}
 Java Crypto API,
 \url{https://docs.oracle.com/javase/8/docs/api/javax/crypto/package-summary.html}
+
+\bibitem{ref_url2}
+Theoretical Classes Slides, HDS2425
+\url{https://fenix.tecnico.ulisboa.pt/disciplinas/ SDTF236/2024-2025/2-semestre/theoretical-classes}
 \end{thebibliography}
 \end{document}
