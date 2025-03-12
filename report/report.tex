@@ -215,25 +215,25 @@ demonstrate the system's resilience against various Byzantine scenarios, the
 implementation was tested under multiple configurations, each representing a
 different type of attack. The following sections provide a detailed explanation
 of how each attack is executed and how the system effectively mitigates it.
-\subsection{Threat XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
+\subsection{Correct Configuration}
+In the correct configuration, all members behave honestly and follow the
+protocol.
 %
-\subsection{Threat XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
+\subsection{Ignore Messages}
+In this scenario, a faulty member ignores messages from the leader or other
+members, with the goal of disrupting the consensus process. The system is
+designed to handle this scenario by not needed to wait for all members to reply
+(only 2F+1 replies are needed).
 %
-\subsection{Threat XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
+\subsection{Byzantine State}
+In this scenario, a faulty member sends a STATE message containing an incorrect
+blockchain state, with the goal of misleading the leader. The system is designed
+to handle this scenario, <HOW>.
 %
-\subsection{Threat XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
+\subsection{Byzantine Decide}
+In this scenario, a faulty member sends a DECIDED message containing an
+incorrect value, with the goal of disrupting the consensus process. The system
+is designed to handle this scenario, <HOW>.
 %
 \section{Conclusion}
 The first stage of the DepChain project has been successfully completed,
