@@ -247,7 +247,7 @@ public class PerfectLink {
                         // Wait for session to be established before processing further messages
                         try {
                             while (sessions.get(msg.senderId) == null) {
-                                Logger.log(LogLevel.INFO, "Waiting for session with process " + msg.senderId + " to be established...");
+                                // Logger.log(LogLevel.INFO, "Waiting for session with process " + msg.senderId + " to be established...");
                                 Thread.sleep(500);
                             }
                         } catch (InterruptedException e) {
@@ -297,7 +297,7 @@ public class PerfectLink {
         try {
             if (msg.type != Message.Type.START_SESSION && msg.type != Message.Type.ACK_SESSION) {
                 while (!activeSessionMap.getOrDefault(destId, false)) {
-                    Logger.log(LogLevel.INFO, "Waiting for session with process " + destId + " to be established...");
+                    // Logger.log(LogLevel.INFO, "Waiting for session with process " + destId + " to be established...");
                     Thread.sleep(500);
                 }
             }
@@ -350,7 +350,7 @@ public class PerfectLink {
                     signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, msg.sessionKey, msg.state, msg.statesMap, msg.write);
                 }
                 else {
-                    signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, null);
+                    signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce);
                 }
             } else {
                 signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce);

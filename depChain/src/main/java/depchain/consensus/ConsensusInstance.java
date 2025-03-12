@@ -29,6 +29,7 @@ public class ConsensusInstance {
     private final float quorumSize; // e.g., quorum = floor((N + f) / 2).
     private Map<Integer, State> stateResponses = new HashMap<>();
     private Map<Integer, TimestampValuePair> writeResponses = new HashMap<>();
+    private List<String> acceptedValues = new ArrayList<>();
     private final int f;
     private final State blockchain;
 
@@ -104,13 +105,14 @@ public class ConsensusInstance {
         }
     }
 
-    // Leader broadcasts DECIDED message.
-    private void broadcastDecided(String candidate) {
-        Message decidedMsg = new Message(Message.Type.DECIDED, epoch, candidate, leaderId, null, -1);
+    // Leader broadcasts ACCEPT message.
+    private void broadcastAccept(String candidate) {
+        acceptedValues.add(candidate);
+        Message acceptMsg = new Message(Message.Type.ACCEPT, epoch, candidate, myId, null, -1);
         for (int pid : allProcessIds) {
-            if (pid != leaderId) {
+            if (pid != myId) {
                 try {
-                    perfectLink.send(pid, decidedMsg);
+                    perfectLink.send(pid, acceptMsg);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -155,9 +157,21 @@ public class ConsensusInstance {
                     // pick the value to write
                     TimestampValuePair candidate = getValueFromCollected();
                     // Broadcast write
+                    Thread.sleep(1000);
                     broadcastWrite(candidate);
+                    Thread.sleep(1000);
                     // Wait for writes
-                    waitForWrites();
+                    String valueToWrite = waitForWrites();
+                    Thread.sleep(1000);
+                    // Broadcast ACCEPT
+                    broadcastAccept(valueToWrite);
+                    Thread.sleep(1000);
+                    // Wait for accepts
+                    String valueToAppend = waitForAccepts();
+                    break;
+                case ACCEPT:
+                    // Upon ACCEPT, update our local state.
+                    acceptedValues.add(msg.value);
                     break;
                 default:
                     // Ignore other message types.
@@ -211,7 +225,7 @@ public class ConsensusInstance {
         }
     }
 
-    public void waitForWrites() throws InterruptedException, ExecutionException {
+    public String waitForWrites() throws InterruptedException, ExecutionException {
         // check if a quorum has already been reached
         while ((float) writeResponses.size() < quorumSize) {
             Thread.sleep(250);
@@ -225,6 +239,62 @@ public class ConsensusInstance {
         }
         //print all the writes received
         Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
+
+        Map <String, Integer> count = new HashMap<>();
+        for (TimestampValuePair s : writeResponses.values()) {
+            if (count.containsKey(s.getValue())) {
+                count.put(s.getValue(), count.get(s.getValue()) + 1);
+            } else {
+                count.put(s.getValue(), 1);
+            }
+        }
+
+        String valueToWrite = null;
+        int max = 0;
+        for (Map.Entry<String, Integer> entry : count.entrySet()) {
+            if (entry.getValue() > max) {
+                max = entry.getValue();
+                valueToWrite = entry.getKey();
+            }
+        }
+
+        Logger.log(LogLevel.INFO, "Value to write: " + valueToWrite);
+        return valueToWrite;
+    }
+
+    public String waitForAccepts() throws InterruptedException, ExecutionException {
+        // check if a quorum has already been reached
+        while ((float) acceptedValues.size() < quorumSize) {
+            Thread.sleep(250);
+            Logger.log(LogLevel.DEBUG, "Still waiting for quorum to be met for accept responses...");
+            Thread.sleep(250);
+        }
+
+        // // Print the state of all processes.
+        for (String s : acceptedValues) {
+            Logger.log(LogLevel.INFO, "Accept of process " + s);
+        }
+
+        Map <String, Integer> count = new HashMap<>();
+        for (String s : acceptedValues) {
+            if (count.containsKey(s)) {
+                count.put(s, count.get(s) + 1);
+            } else {
+                count.put(s, 1);
+            }
+        }
+
+        String valueToAppend = null;
+        int max = 0;
+        for (Map.Entry<String, Integer> entry : count.entrySet()) {
+            if (entry.getValue() > max) {
+                max = entry.getValue();
+                valueToAppend = entry.getKey();
+            }
+        }
+
+        Logger.log(LogLevel.INFO, "Value to append to blockchain " + valueToAppend);
+        return valueToAppend;
     }
 
     public String decide(String value) {
@@ -232,30 +302,35 @@ public class ConsensusInstance {
             // Read Phase
             readPhase(value);
             // Wait for states
-            Thread.sleep(1000);
             waitForStates();
-            Thread.sleep(1000);
 
             // Broadcast collected
             broadcastCollected();
 
-            Thread.sleep(1000);
+            Thread.sleep(2000);
 
             // pick value to write
             TimestampValuePair candidate = getValueFromCollected();
 
             // Broadcast write
             broadcastWrite(candidate);
-            Thread.sleep(1000);
+            Thread.sleep(2000);
             // Wait for writes
-            waitForWrites();
-            Thread.sleep(5000);
+            String valueToWrite = waitForWrites();
 
+            Thread.sleep(1000);
+            // Broadcast ACCEPT
+            broadcastAccept(valueToWrite);
+            Thread.sleep(1000);
+            // Wait for accepts
+            String valueToAppend = waitForAccepts();
+
+            return valueToAppend;
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
+            return null;
         }
 
-        return value;
     }
 
     public void setBlockchainMostRecentWrite(TimestampValuePair write) {
