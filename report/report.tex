@@ -205,46 +205,16 @@ since the consensus protocol may take some time to reach an agreement. Instead,
 the client will asynchronously wait for the rely. As a client, it will wait for 
 F+1 replies, where F is the number of Byzantine faults the system can tolerate.
 %
+\subsection{Client only communicates with the leader}
+To simplify the system, the client only communicates with the leader process.
+This design choice is based on the assumption that the leader is correct and
+will not deviate from the protocol.
+%
 \section{Possible threats and corresponding protection mechanisms} To
 demonstrate the system's resilience against various Byzantine scenarios, the
 implementation was tested under multiple configurations, each representing a
 different type of attack. The following sections provide a detailed explanation
 of how each attack is executed and how the system effectively mitigates it.
-\subsection{Threat XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
-%
-\subsection{Threat XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
-%
-\subsection{Threat XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
-%
-\subsection{Threat XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
-%
-\subsection{Threat XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
-%
-\subsection{Threat XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
-%
-\subsection{Threat XYZ}
-Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
-convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
-malesuada fames ac turpis egestas.
-%
 \subsection{Threat XYZ}
 Cras quis bibendum erat. Aliquam massa tortor, euismod a venenatis eget,
 convallis ut odio. Pellentesque habitant morbi tristique senectus et netus et
