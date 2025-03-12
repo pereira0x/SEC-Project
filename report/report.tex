@@ -119,18 +119,70 @@ F+1 processes.
 
 %
 \subsection{Blockchain Layer}
-liquam facilisis ante lacus, at scelerisque libero iaculis non. Etiam ex velit,
-iaculis blandit tristique ac, imperdiet a lectus. Etiam condimentum pharetra
-lectus non elementum. Cras quis bibendum erat. Aliquam massa tortor, euismod a
-venenatis eget, convallis ut odio. Pellentesque habitant morbi tristique
-senectus et netus et malesuada fames ac turpis egestas. Integer imperdiet urna
-ipsum, nec tempor libero tincidunt ut. Proin in sapien arcu.
+The blockchain layer represents a node in the permissioned (closed membership)
+blockchain network. Each member is responsible for participating in the
+consensus protocol, maintaining a local copy of the blockchain.The system is
+designed to ensure that all members agree on the state of the blockchain, even
+in the presence of faulty nodes, by leveraging a Byzantine fault-tolerant
+consensus protocol (Byzantine Read/Write Epoch Consensus). The blockchain member
+maintains an in-memory representation of the blockchain, implemented as a State
+object. This State stores a sequence of TimestampValuePair objects, where each
+pair consists of a timestamp and a value representing a block in the blockchain.
+The blockchain is updated whenever a consensus decision is reached, ensuring
+that all non-faulty members have a consistent view of the blockchain.
+
+A message handler loop continuously listens for incoming messages. If a
+CLIENTREQUEST is received and the member is the leader, it initiates a new
+consensus instance to process the request. For consensus-related messages, the
+member delegates the message to the current consensus instance for processing.
+
 %
 \subsection{Consensus Layer}
-Proin sed vehicula magna. Cras a iaculis velit, eu fermentum nisl. Pellentesque
-at magna in massa scelerisque suscipit sed ac tortor. Vivamus a bibendum leo,
-eget blandit felis. Donec vulputate ultrices dignissim. Donec vel elit a massa
-pellentesque euismod eget at velit.
+The consensus mechanism in this project is designed to ensure that all
+non-faulty members of the distributed system agree on the value to be appended
+to the blockchain, even in the presence of Byzantine faults. The consensus
+protocol is implemented in the ConsensusInstance class and involves multiple
+phases.
+\subsubsection{Consensus Instance}
+Each consensus instance is identified by an epoch number, which also serves as
+the consensus instance ID. The consensus instance is initiated by the leader
+(process 1) when it receives a CLIENTREQUEST from a client. The leader is
+responsible for coordinating the consensus process, while other members
+participate by responding to messages and contributing their local states.
+\subsubsection{Read Phase}
+The consensus process begins with the read phase, where the leader broadcasts a
+READ message to all members. Each member responds with a STATE message, which
+contains its local blockchain state, including the most recent write and the
+writeset (a list of all writes). The leader collects these STATE messages and
+uses them to determine the most recent value that has been agreed upon by a
+quorum of members.
+\subsubsection{Collected Phase}
+Once the leader has received STATE messages from a quorum of members, it
+broadcasts a COLLECTED message to all members. The COLLECTED message contains
+the collected states from all members, allowing each member to independently
+determine the value to be written. Members use the collected states to select
+the most recent value that appears in the writeset of more than f members (where
+f is the maximum number of Byzantine faults tolerated). If no such value exists,
+the leader's most recent write is selected as the candidate value.
+\subsubsection{Write Phase}
+The leader broadcasts a WRITE message containing the candidate value to all
+members. Upon receiving the WRITE message, each member updates its local state
+and sends an ACCEPT message back to the leader. The leader waits for ACCEPT
+messages from a quorum of members before proceeding to the decision phase.
+\subsubsection{Decision Phase}
+Once the leader has received ACCEPT messages from a quorum of members, it
+broadcasts a DECIDED message to all members. The DECIDED message contains the
+final value that has been agreed upon by the consensus instance. Upon receiving
+the DECIDED message, each member appends the agreed-upon value to its local
+blockchain and updates its state accordingly.
+\subsubsection{Fault Tolerance and Quorum}
+The consensus protocol is designed to tolerate up to f Byzantine faults, where f
+is the maximum number of faulty members allowed in the network. A quorum is
+defined as the minimum number of members required to reach agreement, calculated
+as floor((N + f) / 2), where N is the total number of members. The protocol
+ensures that all non-faulty members agree on the same value, even if some
+members behave maliciously or fail to respond.
+
 %
 \section{Implementation details}
 \subsection{Detail XYZ}
