@@ -13,7 +13,7 @@ public class State implements Serializable {
     public final ArrayList<TimestampValuePair> writeset;
 
     public State() {
-        this.mostRecentWrite = new TimestampValuePair(-1, "");
+        this.mostRecentWrite = new TimestampValuePair(0, "");
         this.writeset = new ArrayList<>();
     }
 

@@ -6,6 +6,7 @@ import javax.crypto.SecretKey;
 
 import depchain.utils.CryptoUtil;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 public class Session {
     private final int destId;
@@ -58,12 +59,12 @@ public class Session {
     @Override
     public String toString() {
         return "Session{" +
-                "destId=" + destId +
-                ", destAddr=" + destAddr +
-                ", sessionKey=" + sessionKey +
-                ", ackCounter=" + ackCounter +
-                ", sentCounter=" + sentCounter +
-                '}';
+            "destId=" + destId +
+            ", destAddr=" + destAddr +
+            ", sessionKey=" + Base64.getEncoder().encodeToString(sessionKey.getEncoded()) +
+            ", ackCounter=" + ackCounter +
+            ", sentCounter=" + sentCounter +
+            '}';
     }
                                                      
     

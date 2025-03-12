@@ -16,14 +16,23 @@ public class ClientServerCorrectCommunicationTest {
 
     @Test
     public void ClientServerCorrectCommunicationTest() {
-        BlockchainMember server1 = new BlockchainMember(1, 8001, 1, 1);
-        BlockchainMember server2 = new BlockchainMember(2, 8002, 1, 1);
-        BlockchainMember server3 = new BlockchainMember(3, 8003, 1, 1);
-        BlockchainMember server4 = new BlockchainMember(4, 8004, 1, 1);
-        DepChainClient client1 = new DepChainClient(5, 9001);
+        try {
+            BlockchainMember server1 = new BlockchainMember(1, 8001, 1, 1);
+            Thread.sleep(1500);
+            BlockchainMember server2 = new BlockchainMember(2, 8002, 1, 1);
+            Thread.sleep(1500);
+            BlockchainMember server3 = new BlockchainMember(3, 8003, 1, 1);
+            Thread.sleep(1500);
+            BlockchainMember server4 = new BlockchainMember(4, 8004, 1, 1);
+            Thread.sleep(1500);
+            DepChainClient client1 = new DepChainClient(5, 9001);
+            Thread.sleep(1500);
+            client1.append("Hello");
+            assertTrue(server1.getBlockchain().contains("Hello"));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-        client1.append("Hello");
-        assertTrue(server1.getBlockchain().contains("Hello"));
     }
 
 }

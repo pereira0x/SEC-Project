@@ -148,12 +148,13 @@ public class PerfectLink {
 
             // TODO: Deal with EOFException
             Message msg = (Message) ois.readObject();
-            
+
             Logger.log(LogLevel.DEBUG,
                     "Received message of type " + msg.type + " from " + msg.senderId + " with nonce " + msg.nonce);
 
             PublicKey senderKey = publicKeys.get(msg.senderId);
             Session session = sessions.get(msg.senderId);
+            
 
             // In a real implementation, you would verify the signature here
             if (senderKey != null) {
@@ -183,6 +184,7 @@ public class PerfectLink {
                             Session newSession = new Session(msg.senderId, processAddresses.get(msg.senderId),
                                     sessionKey);
                             sessions.put(msg.senderId, newSession);
+                            Logger.log(LogLevel.INFO, "MY ID " + myId + " Session established with process " + msg.senderId + " session: " + newSession.toString());
 
                             activeSessionMap.put(msg.senderId, true);
                             ScheduledFuture<?> task = resendTasks.remove(msg.nonce);
@@ -203,7 +205,7 @@ public class PerfectLink {
 
                             activeSessionMap.put(msg.senderId, true);
 
-                            Logger.log(LogLevel.INFO, "Session established with process " + msg.senderId);
+                            Logger.log(LogLevel.INFO, "MY ID " + myId + " Session established with process " + msg.senderId + " session: " + newSession.toString());
                         }
 
                         // encrypt session key with public key of sender
@@ -244,17 +246,12 @@ public class PerfectLink {
                         send(msg.senderId, ackMsg);
 
                         // Process the message if we haven't seen it before
-                        if (session != null && session.getAckCounter() == msg.nonce) {
+                        if (session != null && session.getAckCounter() <= msg.nonce) {
                             deliveredQueue.put(msg);
                             session.incrementAckCounter();
                         }
                         break;
                 }
-
-                // print sessions
-                // for(Session s : sessions.values()) {
-                //     Logger.log(LogLevel.DEBUG, s.toString());
-                // }
 
             } else {
                 Logger.log(LogLevel.ERROR, "Unknown sender: " + msg.senderId);
@@ -307,9 +304,7 @@ public class PerfectLink {
                 else {
                     SecretKey sessionKey = session.getSessionKey();
                     sig = CryptoUtil.getHMACHmacSHA256(msg.getSignableContent().getBytes(), sessionKey);
-
                 }
-
             } catch (Exception e) {
                 Logger.log(LogLevel.ERROR, "Failed to sign message: " + e.toString());
                 return;
@@ -327,11 +322,10 @@ public class PerfectLink {
                     signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, msg.sessionKey);
                 }
                 else if(msg.type == Message.Type.COLLECTED) {
-                    System.out.println("SENDING COLLECTED MESSAGE");
-                    System.out.println("STATES MAP: " + msg.statesMap);
                     signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, msg.sessionKey, msg.state, msg.statesMap);
-
-                    System.out.println("SIGNED MESSAGE: " + signedMsg.statesMap);
+                }
+                else if(msg.type == Message.Type.WRITE) {
+                    signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, msg.sessionKey, msg.state, msg.statesMap, msg.write);
                 }
                 else {
                     signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, null);
@@ -344,7 +338,13 @@ public class PerfectLink {
             try {
                 Logger.log(LogLevel.DEBUG, "Sending message to " + destId + " of type " + msg.type + " with nonce "
                         + msg.nonce);
-                sendMessage(address, signedMsg);
+                // if not ack, then send as true
+                if (msg.type != Message.Type.ACK && msg.type != Message.Type.ACK_SESSION && msg.type != Message.Type.START_SESSION) {
+                    sendMessage(address, signedMsg, true, destId);
+                }
+                else {
+                    sendMessage(address, signedMsg, false, destId);
+                }
 
                 // Don't schedule resends for ACK messages
                 if (msg.type != Message.Type.ACK && msg.type != Message.Type.ACK_SESSION) {
@@ -356,7 +356,7 @@ public class PerfectLink {
         });
     }
 
-    private void sendMessage(InetSocketAddress address, Message msg) throws IOException {
+    private void sendMessage(InetSocketAddress address, Message msg, boolean firstSend, int destId) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(bos))) {
             oos.writeObject(msg);
@@ -365,6 +365,12 @@ public class PerfectLink {
             DatagramPacket packet = new DatagramPacket(data, data.length, address);
 
             socket.send(packet);
+
+            if (firstSend) {
+                // get session
+                Session session = sessions.get(destId);
+                session.incrementSentCounter();
+            }
         }
     }
 
@@ -375,7 +381,7 @@ public class PerfectLink {
                 if (!activeSessionMap.getOrDefault(destId, false)) {
                     try {
                         Logger.log(LogLevel.DEBUG, "Resending session initiation to " + destId);
-                        sendMessage(processAddresses.get(destId), msg);
+                        sendMessage(processAddresses.get(destId), msg, false, destId);
                     } catch (Exception e) {
                         Logger.log(LogLevel.ERROR, "Failed to resend session message: " + e.toString());
                     }
@@ -402,7 +408,7 @@ public class PerfectLink {
                     if (msg.nonce >= session.getSentCounter()) {
                         Logger.log(LogLevel.DEBUG, "Resending message to " + destId + " of type " + msg.type + " with nonce "
                                 + msg.nonce);
-                        sendMessage(processAddresses.get(destId), msg);
+                        sendMessage(processAddresses.get(destId), msg, false, destId);
                     } else {
                         // Logger.log(LogLevel.DEBUG, "Message acknowledged, stopping resends for " + msg.nonce);
                         ScheduledFuture<?> task = sessionTasks.remove(msg.nonce);

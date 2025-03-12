@@ -94,14 +94,14 @@ public class BlockchainMember {
                                                          // queue
                     // If a CLIENT_REQUEST is received and this node is leader,
                     // then start a consensus instance for the client request.
-                    if (msg.type == Message.Type.CLIENT_REQUEST) {
-                        if (memberId == leaderId) {
-                            int instanceId = epochNumber++;
-                            consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                    instanceId, f, blockchain);
-                            consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, msg.value));
-                            new Thread(() -> {
-                                /* consensusInstance.readPhase(msg.value); */
+                    new Thread(() -> {
+                        if (msg.type == Message.Type.CLIENT_REQUEST) {
+                            if (memberId == leaderId) {
+                                int instanceId = epochNumber++;
+                                consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
+                                        instanceId, f, blockchain);
+                                consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, msg.value));
+                                    /* consensusInstance.readPhase(msg.value); */
                                 try {
                                     Logger.log(LogLevel.DEBUG, "Waiting for decision...");
 
@@ -128,23 +128,26 @@ public class BlockchainMember {
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
-                            }).start();
-                        }
-                    } else {
-                        // For consensus messages, dispatch to the corresponding consensus instance.
-                        if (consensusInstance != null) {
-                            consensusInstance.processMessage(msg);
-                            if (msg.type == Message.Type.DECIDED) {
-                                // upcallDecided(msg.value);
                             }
                         } else {
-                            // instantiate a new consensus instance
-                            consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                    msg.epoch, f, blockchain);
-                           
-                            consensusInstance.processMessage(msg);
+                            try {
+                                // For consensus messages, dispatch to the corresponding consensus instance.
+                                if (consensusInstance != null) {
+                                    consensusInstance.processMessage(msg);
+                                    if (msg.type == Message.Type.DECIDED) {
+                                        // upcallDecided(msg.value);
+                                    }
+                                } else {
+                                    // instantiate a new consensus instance
+                                    consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
+                                            msg.epoch, f, blockchain);
+                                            consensusInstance.processMessage(msg);
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
-                    }
+                    }).start();
                 } catch (InterruptedException e) {
                     break;
                 } catch (Exception e) {
