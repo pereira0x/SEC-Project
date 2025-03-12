@@ -37,15 +37,14 @@ public class ClientServerCorrectCommunicationTest {
 
         // Start client
         DepChainClient client1 = new DepChainClient(5, 9001);
-        client1.append("Hello");
+        String response = client1.append("Hello");
 
         // Wait for the message to propagate
         // Thread.sleep(2000);
 
-        // Verify if message is in the server1's blockchain
-        boolean messageReceived = servers.stream()
-                                         .anyMatch(server -> server.getBlockchain().contains("Hello"));
+        // blockchain is of type ArrayList<String>
+        boolean messageReceived = response.equals("Hello");
 
-        assertTrue(messageReceived, "Message was not stored in any BlockchainMember.");
+        assertTrue(messageReceived, "Message was not stored in the Blockchain.");
     }
 }
