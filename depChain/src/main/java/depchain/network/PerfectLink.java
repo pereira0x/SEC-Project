@@ -82,6 +82,13 @@ public class PerfectLink {
         if (myId >= 5) {
             Logger.log(LogLevel.INFO, "Process 5 starting session with process 1");
             startSession(1);
+
+            // wait session with leader to be established
+            // TOD CHANGE LEADER 1
+            while (!activeSessionMap.getOrDefault(1, false)) {
+                Logger.log(LogLevel.INFO, "Waiting for session with process 1 to be established...");
+                Thread.sleep(500);
+            }
         }
 
         else {
@@ -89,6 +96,21 @@ public class PerfectLink {
             for (int i = 1; i < myId; i++) {
                 Logger.log(LogLevel.INFO, "Process " + myId + " starting session with process " + i);
                 startSession(i);
+            }
+
+            // wait for all sessions to be established
+            // LEADER CHANGE THIS TODO
+            if(myId == 1) {
+                while (activeSessionMap.size() < processAddresses.size()) {
+                    Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
+                    Thread.sleep(500);
+                }
+            }
+            else {
+                while (activeSessionMap.size() < processAddresses.size() - 1) {
+                    Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
+                    Thread.sleep(500);
+                }
             }
         }
     }

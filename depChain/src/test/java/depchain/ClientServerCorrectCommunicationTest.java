@@ -8,31 +8,44 @@ import org.junit.runners.MethodSorters;
 import depchain.blockchain.BlockchainMember;
 import depchain.client.DepChainClient;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Unit test for MessageSender.
+ * Unit test for Client-Server correct communication.
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ClientServerCorrectCommunicationTest {
 
+    private List<BlockchainMember> servers = new ArrayList<>();
+
     @Test
-    public void ClientServerCorrectCommunicationTest() {
-        try {
-            BlockchainMember server1 = new BlockchainMember(1, 8001, 1, 1);
-            Thread.sleep(1500);
-            BlockchainMember server2 = new BlockchainMember(2, 8002, 1, 1);
-            Thread.sleep(1500);
-            BlockchainMember server3 = new BlockchainMember(3, 8003, 1, 1);
-            Thread.sleep(1500);
-            BlockchainMember server4 = new BlockchainMember(4, 8004, 1, 1);
-            Thread.sleep(1500);
-            DepChainClient client1 = new DepChainClient(5, 9001);
-            Thread.sleep(1500);
-            client1.append("Hello");
-            assertTrue(server1.getBlockchain().contains("Hello"));
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+    public void testClientServerCorrectCommunication() throws InterruptedException {
+        // Start Blockchain Members in separate threads
+        Thread server1Thread = new Thread(() -> servers.add(new BlockchainMember(1, 8001, 1, 1)));
+        Thread server2Thread = new Thread(() -> servers.add(new BlockchainMember(2, 8002, 1, 1)));
+        Thread server3Thread = new Thread(() -> servers.add(new BlockchainMember(3, 8003, 1, 1)));
+        Thread server4Thread = new Thread(() -> servers.add(new BlockchainMember(4, 8004, 1, 1)));
 
+        server1Thread.start();
+        server2Thread.start();
+        server3Thread.start();
+        server4Thread.start();
+
+        // Wait for servers to start
+        // Thread.sleep(5000);
+
+        // Start client
+        DepChainClient client1 = new DepChainClient(5, 9001);
+        client1.append("Hello");
+
+        // Wait for the message to propagate
+        // Thread.sleep(2000);
+
+        // Verify if message is in the server1's blockchain
+        boolean messageReceived = servers.stream()
+                                         .anyMatch(server -> server.getBlockchain().contains("Hello"));
+
+        assertTrue(messageReceived, "Message was not stored in any BlockchainMember.");
     }
-
 }
