@@ -116,7 +116,6 @@ public class BlockchainMember {
                                     TimestampValuePair write = new TimestampValuePair(epochNumber, decidedValue);
                                     blockchain.add(write);
                                     // Append the decided value to the blockchain.
-                                    // upcallDecided(decidedValue);
                                     // Send ACK to the client.
                                     InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                     if (clientAddr != null) {

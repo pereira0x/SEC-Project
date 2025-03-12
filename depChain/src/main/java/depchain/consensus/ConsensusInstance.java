@@ -168,6 +168,7 @@ public class ConsensusInstance {
                     Thread.sleep(1000);
                     // Wait for accepts
                     String valueToAppend = waitForAccepts();
+                    
                     break;
                 case ACCEPT:
                     // Upon ACCEPT, update our local state.
