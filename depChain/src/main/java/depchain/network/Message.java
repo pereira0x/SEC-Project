@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class Message implements Serializable {
     public enum Type {
-        READ, STATE, COLLECTED, WRITE, ACCEPT, DECIDED, CLIENT_REQUEST, CLIENT_REPLY, ACK, START_SESSION, ACK_SESSION
+        READ, STATE, COLLECTED, WRITE, ACCEPT, CLIENT_REQUEST, CLIENT_REPLY, ACK, START_SESSION, ACK_SESSION
     }
 
     public final Type type;

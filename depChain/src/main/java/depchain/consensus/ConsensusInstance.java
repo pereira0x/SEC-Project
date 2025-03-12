@@ -24,17 +24,16 @@ public class ConsensusInstance {
     private final List<Integer> allProcessIds;
     private final PerfectLink perfectLink;
     private final int epoch; // In our design, epoch doubles as the consensus instance ID.
-    private volatile String localValue = null;
-    private volatile int localTimestamp = 0; // For simplicity, use epoch as timestamp.
+    private String decidedValue = null;
     private final float quorumSize; // e.g., quorum = floor((N + f) / 2).
     private Map<Integer, State> stateResponses = new HashMap<>();
     private Map<Integer, TimestampValuePair> writeResponses = new HashMap<>();
     private List<String> acceptedValues = new ArrayList<>();
     private final int f;
-    private final State blockchain;
+    private final State state;
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
-            int f, State blockchain) {
+            int f) {
         this.myId = myId;
         this.leaderId = leaderId;
         this.f = f;
@@ -42,19 +41,7 @@ public class ConsensusInstance {
         this.perfectLink = perfectLink;
         this.epoch = epoch;
         this.quorumSize = ((float) ( allProcessIds.size() + f) / 2);
-        this.blockchain = blockchain;
-    }
-
-    // Called by the leader (or by a process that initiates consensus) to set the proposal.
-    public void readPhase(String v) {
-        // Set our local value if not already set.
-        if (localValue == null) {
-            localValue = v;
-            localTimestamp = epoch; // Simplification: using epoch as timestamp.
-        }
-        if (myId == leaderId) {
-            broadcastRead();
-        }
+        this.state = new State();
     }
 
     // Leader sends READ messages to all.
@@ -63,7 +50,7 @@ public class ConsensusInstance {
         // produce a STATE message just to add to the list
         
         // Start by appending the leader's own state.  
-        stateResponses.put(leaderId, blockchain);
+        stateResponses.put(leaderId, state);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -93,6 +80,9 @@ public class ConsensusInstance {
         Message writeMsg = new Message(Message.Type.WRITE, epoch, null, myId, null,
                 -1, null, null, null, candidate);
 
+        // append to the writeset of my state the candidate
+        state.addToWriteSet(candidate);
+
         writeResponses.put(myId, candidate);
         for (int pid : allProcessIds) {
             if (pid != myId) {
@@ -107,6 +97,9 @@ public class ConsensusInstance {
 
     // Leader broadcasts ACCEPT message.
     private void broadcastAccept(String candidate) {
+        // update my state most recent write
+        state.setMostRecentWrite(new TimestampValuePair(epoch, candidate));
+
         acceptedValues.add(candidate);
         Message acceptMsg = new Message(Message.Type.ACCEPT, epoch, candidate, myId, null, -1);
         for (int pid : allProcessIds) {
@@ -130,14 +123,9 @@ public class ConsensusInstance {
             switch (msg.type) {
                 case READ:
 
-                    //System.out.println("BLOCKCHAIN: " + blockchain);
-                    // get the state of the blockchain of the process
-                    // and for now return the msg value itself as the process choice
-                    
                     Message stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId,
-                            null, -1, null , blockchain);
+                            null, -1, null , state);
                     try {
-                        //System.out.println("Sending state message to " + msg.senderId + " with statte " + stateMsg.state);
                         perfectLink.send(msg.senderId, stateMsg);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -168,7 +156,8 @@ public class ConsensusInstance {
                     Thread.sleep(1000);
                     // Wait for accepts
                     String valueToAppend = waitForAccepts();
-                    
+
+                    this.decidedValue = valueToAppend;
                     break;
                 case ACCEPT:
                     // Upon ACCEPT, update our local state.
@@ -216,7 +205,7 @@ public class ConsensusInstance {
         // check if a quorum has already been reached
         while ((float) stateResponses.size() < quorumSize) {
             Thread.sleep(250);
-            Logger.log(LogLevel.DEBUG, "Still waiting for quorum to be met for write responses...");
+            Logger.log(LogLevel.DEBUG, "Still waiting for quorum to be met for state responses...");
             Thread.sleep(250);
         }
 
@@ -298,10 +287,10 @@ public class ConsensusInstance {
         return valueToAppend;
     }
 
-    public String decide(String value) {
+    public String decide() {
         try {        
             // Read Phase
-            readPhase(value);
+            broadcastRead();
             // Wait for states
             waitForStates();
 
@@ -331,10 +320,13 @@ public class ConsensusInstance {
             e.printStackTrace();
             return null;
         }
+    }
 
+    public String getDecidedValue() {
+        return decidedValue;
     }
 
     public void setBlockchainMostRecentWrite(TimestampValuePair write) {
-        blockchain.setMostRecentWrite(write);
+        state.setMostRecentWrite(write);
     }
 }

@@ -30,7 +30,7 @@ public class State implements Serializable {
         return writeset;
     }
 
-    public void add(TimestampValuePair write) {
+    public void addToWriteSet(TimestampValuePair write) {
         writeset.add(write);
     }
 

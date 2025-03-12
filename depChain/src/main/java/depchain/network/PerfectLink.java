@@ -45,16 +45,6 @@ public class PerfectLink {
     // Map to track session status with process IDs
     private final ConcurrentMap<Integer, Boolean> activeSessionMap = new ConcurrentHashMap<>();
 
-    // Map to track sent messages by nonce
-    // private final ConcurrentMap<Integer, Boolean> sentQueue = new
-    // ConcurrentHashMap<>();
-
-    /*
-     * // Map to track session initiation messages by nonce
-     * private final ConcurrentMap<int, Integer> initSessionQueue = new
-     * ConcurrentHashMap<>();
-     */
-
     // Global map for session initiation resends
     private final ConcurrentMap<Integer, ScheduledFuture<?>> resendTasks = new ConcurrentHashMap<>();
 

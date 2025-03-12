@@ -22,7 +22,6 @@ public class BlockchainMember {
     private final int leaderId; // Static leader ID.
     private final List<Integer> allProcessIds;
     private PerfectLink perfectLink;
-    private State state; // In-memory state.
     /* private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>(); */
     private ConsensusInstance consensusInstance;
     private final int f; // Maximum number of Byzantine faults allowed.
@@ -35,7 +34,6 @@ public class BlockchainMember {
         this.memberPort = memberPort;
         this.leaderId = leaderId;
         this.allProcessIds = Arrays.asList(1, 2, 3, 4);
-        this.state = new State();
         this.f = f;
 
         Dotenv dotenv = Dotenv.load();
@@ -98,24 +96,20 @@ public class BlockchainMember {
                         if (memberId == leaderId) {
                             int instanceId = epochNumber++;
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                    instanceId, f, state);
+                                    instanceId, f);
                             consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, msg.value));
                                 /* consensusInstance.readPhase(msg.value); */
                             try {
                                 Logger.log(LogLevel.DEBUG, "Waiting for decision...");
 
-                                String decidedValue = consensusInstance.decide(msg.value);
+                                String decidedValue = consensusInstance.decide();
                                 
-                                /* Map<Integer, State> states = consensusInstance.waitForStates();
-                                consensusInstance.BroadcastCollected(states); */
-
-
                                 // String decidedValue = msg.value;
                                 Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
-                                this.blockchain.add(decidedValue);
-                                TimestampValuePair write = new TimestampValuePair(epochNumber, decidedValue);
-                                state.add(write);
+                                
                                 // Append the decided value to the blockchain.
+                                this.blockchain.add(decidedValue);  
+
                                 // Send ACK to the client.
                                 InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                 if (clientAddr != null) {
@@ -133,14 +127,18 @@ public class BlockchainMember {
                             // For consensus messages, dispatch to the corresponding consensus instance.
                             if (consensusInstance != null) {
                                 consensusInstance.processMessage(msg);
-                                if (msg.type == Message.Type.DECIDED) {
-                                    // upcallDecided(msg.value);
-                                }
+
                             } else {
                                 // instantiate a new consensus instance
                                 consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                        msg.epoch, f, state);
+                                        msg.epoch, f);
                                         consensusInstance.processMessage(msg);
+                            }
+
+                            String decidedValue = consensusInstance.getDecidedValue();
+                            if (decidedValue != null) {
+                                // Append the decided value to the blockchain.
+                                this.blockchain.add(decidedValue);
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
