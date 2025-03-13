@@ -128,7 +128,7 @@ public class ConsensusInstance {
                                     currentStateCopy);
                             Logger.log(LogLevel.WARNING, "Byzantine state sent: " + currentStateCopy);
                             break;
-                        case "invalidSignature":
+                        case "impersonate":
                             // Send a state message impersonating another process - signature check should fail
                             int otherProcessId = myId == 3 ? 2 : 3;
                             stateMsg = new Message(Message.Type.STATE, epoch, msg.value, otherProcessId, null, -1, null, state);

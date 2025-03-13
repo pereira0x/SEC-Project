@@ -18,7 +18,7 @@
     "id": 3,
     "host": "localhost",
     "port": 8003,
-    "behavior": "invalidSignature"
+    "behavior": "impersonate"
   },
   {
     "type": "server",
