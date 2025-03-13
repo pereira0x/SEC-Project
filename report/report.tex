@@ -94,28 +94,24 @@ unreliable network, we use UDP sockets.
 - Session, which represents a communication session between two processes. The
 session contains information like the destination process ID, address, session
 key, and counters for tracking sent and acknowledged messages. The session key
-is used for encrypting and signing messages (because using the public key for
+is a symmetric key that is used for encrypting and signing messages (because using the public key for
 every message would be too expensive).
 \subsubsection{Session Establishment}
 
 Before any communication can occur, a session must be established between two
 processes. The session establishment process is as follows: A process initiates
 a session by sending a STARTSESSION message. Then, the recipient responds with a
-ACKSESSION message, containing an encrypted session key. Once the session is
+ACKSESSION message, containing an symmetric session key that is encrypted using the recipient's public key (thus ensuring confidentiality). Once the session is
 established, all subsequent messages are signed and verified using the session
 key to ensure authenticity and integrity.
 %
 \subsection{Client and Library Layer}
-The client layer and library layer work together to enable clients to interact
-with the distributed system, specifically to append messages to the blockchain.
-The client layer handles user interaction and initialization, while the library
-layer manages the communication logic with the system's leader process.
-\subsubsection{Normal Workflow}
-A user will issue the append <message> command via the client's CLI. The client
+The system's regular workflow would work as it follows: an user will issue the append <message> command via the client's CLI. The client
 layer will delegate the request to the library layer. Then, the library will
 construct a CLIENTREQUEST message and sends it to the leader process (known
 beforehand) using PerfectLink. Next, the library will wait for CLIENTREPLY from
-F+1 processes.
+1 processes. Since we assume a non-byzantine leader, the client does not need to 
+wait for F+1 replies.
 
 %
 \subsection{Blockchain Layer}
@@ -125,9 +121,9 @@ consensus protocol, maintaining a local copy of the blockchain.The system is
 designed to ensure that all members agree on the state of the blockchain, even
 in the presence of faulty nodes, by leveraging a Byzantine fault-tolerant
 consensus protocol (Byzantine Read/Write Epoch Consensus). The blockchain member
-maintains an in-memory representation of the blockchain, implemented as a State
-object. This State stores a sequence of TimestampValuePair objects, where each
-pair consists of a timestamp and a value representing a block in the blockchain.
+maintains an in-memory representation of the blockchain, implemented as a list of string objects.
+It also keeps a State object, which stores a sequence of TimestampValuePair objects, that represent the 
+history of that member on a particular instance of consensus.
 The blockchain is updated whenever a consensus decision is reached, ensuring
 that all non-faulty members have a consistent view of the blockchain.
 
@@ -144,8 +140,8 @@ to the blockchain, even in the presence of Byzantine faults. The consensus
 protocol is implemented in the ConsensusInstance class and involves multiple
 phases.
 \subsubsection{Consensus Instance}
-Each consensus instance is identified by an epoch number, which also serves as
-the consensus instance ID. The consensus instance is initiated by the leader
+Each consensus instancekeeps track of the current epoch number. 
+The consensus instance is initiated by the leader
 (process 1) when it receives a CLIENTREQUEST from a client. The leader is
 responsible for coordinating the consensus process, while other members
 participate by responding to messages and contributing their local states.
@@ -153,23 +149,25 @@ participate by responding to messages and contributing their local states.
 The consensus process begins with the read phase, where the leader broadcasts a
 READ message to all members. Each member responds with a STATE message, which
 contains its local blockchain state, including the most recent write and the
-writeset (a list of all writes). The leader collects these STATE messages and
-uses them to determine the most recent value that has been agreed upon by a
-quorum of members.
+writeset (a list of all writes), both related to the current epoch.
+
 \subsubsection{Collected Phase}
 Once the leader has received STATE messages from a quorum of members, it
 broadcasts a COLLECTED message to all members. The COLLECTED message contains
-the collected states from all members, allowing each member to independently
+the collected states from the quorum's members, allowing each member to independently
 determine the value to be written. Members use the collected states to select
 the most recent value that appears in the writeset of more than f members (where
 f is the maximum number of Byzantine faults tolerated). If no such value exists,
-the leader's most recent write is selected as the candidate value.
+the value is unbounded. In this case, the leader's most recent write is selected 
+as the candidate value.
 \subsubsection{Write Phase}
-The leader broadcasts a WRITE message containing the candidate value to all
-members. Upon receiving the WRITE message, each member updates its local state
-and sends an ACCEPT message back to the leader. The leader waits for ACCEPT
-messages from a quorum of members before proceeding to the decision phase.
-\subsubsection{Decision Phase}
+Every process (members and leader), after determining the value to be written,
+broadcasts a WRITE message to all members. Upon receiving a quorum of Write messages (2*F+1),
+the leader broadcasts an ACCEPT message to all members, containing the value <HOW TO OBTAIN THE VALUE>.
+
+
+\subsubsection{Accept Phase}
+-SIMAO STOPPED HERE
 Once the leader has received ACCEPT messages from a quorum of members, it
 broadcasts a DECIDED message to all members. The DECIDED message contains the
 final value that has been agreed upon by the consensus instance. Upon receiving
