@@ -12,7 +12,7 @@ import java.util.Map;
 
 import depchain.network.Message;
 import depchain.network.PerfectLink;
-
+import depchain.utils.Config;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 
@@ -118,6 +118,17 @@ public class ConsensusInstance {
                 case READ:
 
                     Message stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId, null, -1, null, state);
+                    switch (Config.processBehaviors.get(this.myId)) {
+                        case "byzantineState":
+                            // Send a state message with a random state.
+                            State currentStateCopy = state;
+                            currentStateCopy.setMostRecentWrite(new TimestampValuePair(1, "Byzantine"));
+                            currentStateCopy.addToWriteSet(new TimestampValuePair(1, "Byzantine"));
+                            stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId, null, -1, null,
+                                    currentStateCopy);
+                            Logger.log(LogLevel.WARNING, "Byzantine state sent: " + currentStateCopy);
+                            break;
+                    }
                     try {
                         perfectLink.send(msg.senderId, stateMsg);
                     } catch (Exception e) {

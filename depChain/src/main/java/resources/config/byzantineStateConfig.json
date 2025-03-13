@@ -1,0 +1,37 @@
+[
+    {
+        "type" : "server",
+        "id" : 1,
+        "host" : "localhost",
+        "port" : 8001,
+        "behavior" : "correct"
+    },
+    {
+        "type" : "server",
+        "id" : 2,
+        "host" : "localhost",
+        "port" : 8002,
+        "behavior" : "correct"
+    },
+    {
+        "type" : "server",
+        "id" : 3,
+        "host" : "localhost",
+        "port" : 8003,
+        "behavior" : "correct"
+    },
+    {
+        "type" : "server",
+        "id" : 4,
+        "host" : "localhost",
+        "port" : 8004,
+        "behavior" : "byzantineState"
+    },
+    {
+        "type" : "client",
+        "id" : 5,
+        "host" : "localhost",
+        "port" : 9001,
+        "behavior" : "correct"
+    }
+]
