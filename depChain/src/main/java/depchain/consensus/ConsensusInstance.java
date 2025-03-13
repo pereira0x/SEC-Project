@@ -135,6 +135,21 @@ public class ConsensusInstance {
                                     state);
                             Logger.log(LogLevel.WARNING, "Invalid signature sent: " + stateMsg);
                             break;
+                        case "spam":
+                            State currentStateCopySpam = state;
+                            currentStateCopySpam.setMostRecentWrite(new TimestampValuePair(1, "Spam"));
+                            currentStateCopySpam.addToWriteSet(new TimestampValuePair(1, "Spam"));
+                            stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId, null, -1, null,
+                                    currentStateCopySpam);
+                            Logger.log(LogLevel.WARNING, "Spam state sent, 100 times: " + currentStateCopySpam);
+                            for (int i = 0; i < 10; i++) {
+                                try {
+                                    perfectLink.send(msg.senderId, stateMsg);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            break;
                         default:
                             break;
                     }
@@ -161,6 +176,16 @@ public class ConsensusInstance {
                     TimestampValuePair candidate = getValueFromCollected();
 
                     // Broadcast write
+                    switch (Config.processBehaviors.get(this.myId)) {
+                        case "spam":
+                            for (int i = 0; i < 10; i++) {
+                                broadcastWrite(candidate);
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
                     broadcastWrite(candidate);
 
                     // Wait for writes
@@ -173,6 +198,16 @@ public class ConsensusInstance {
                     }
 
                     // Broadcast ACCEPT
+                    switch (Config.processBehaviors.get(this.myId)) {
+                        case "spam":
+                            for (int i = 0; i < 10; i++) {
+                                broadcastAccept(valueToWrite);
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
                     broadcastAccept(valueToWrite);
 
                     // Wait for accepts
@@ -193,7 +228,9 @@ public class ConsensusInstance {
                 default:
                     break;
             }
-        } catch (Exception e) {
+        } catch (
+
+        Exception e) {
             e.printStackTrace();
         }
     }
