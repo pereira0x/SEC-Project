@@ -101,13 +101,15 @@ public class DepChainClient {
     }
 
     // Now you can access clientLib in other methods
-    public void append(String message) {
+    public String append(String message) {
         Logger.log(LogLevel.INFO, "Client sending append request...");
         try {
             String response = clientLib.append(message);
             Logger.log(LogLevel.INFO, "Client received response: " + response);
+            return response;
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to append message: " + e.getMessage());
+            return null;
         }
     }
 }

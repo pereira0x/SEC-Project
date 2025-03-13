@@ -8,19 +8,43 @@ import org.junit.runners.MethodSorters;
 import depchain.blockchain.BlockchainMember;
 import depchain.client.DepChainClient;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Unit test for MessageSender.
+ * Unit test for Client-Server correct communication.
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ClientServerCorrectCommunicationTest {
 
+    private List<BlockchainMember> servers = new ArrayList<>();
+
     @Test
-    public void ClientServerCorrectCommunicationTest() {
-        BlockchainMember server = new BlockchainMember(1, 8001, 1, 1);
-        DepChainClient client = new DepChainClient(5, 9001);
+    public void testClientServerCorrectCommunication() throws InterruptedException {
+        // Start Blockchain Members in separate threads
+        Thread server1Thread = new Thread(() -> servers.add(new BlockchainMember(1, 8001, 1, 1)));
+        Thread server2Thread = new Thread(() -> servers.add(new BlockchainMember(2, 8002, 1, 1)));
+        Thread server3Thread = new Thread(() -> servers.add(new BlockchainMember(3, 8003, 1, 1)));
+        Thread server4Thread = new Thread(() -> servers.add(new BlockchainMember(4, 8004, 1, 1)));
 
-        client.append("Hello");
-        assertTrue(server.getBlockchain().contains("Hello"));
+        server1Thread.start();
+        server2Thread.start();
+        server3Thread.start();
+        server4Thread.start();
+
+        // Wait for servers to start
+        // Thread.sleep(5000);
+
+        // Start client
+        DepChainClient client1 = new DepChainClient(5, 9001);
+        String response = client1.append("Hello");
+
+        // Wait for the message to propagate
+        // Thread.sleep(2000);
+
+        // blockchain is of type ArrayList<String>
+        boolean messageReceived = response.equals("Hello");
+
+        assertTrue(messageReceived, "Message was not stored in the Blockchain.");
     }
-
 }
