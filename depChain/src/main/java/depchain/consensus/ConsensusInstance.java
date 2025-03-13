@@ -157,6 +157,12 @@ public class ConsensusInstance {
                     // Wait for accepts
                     String valueToAppend = waitForAccepts();
 
+                    // If the value to append is null, then abort
+                    if (valueToAppend == null) {
+                        this.aborted = true;
+                        break;
+                    }
+
                     this.decidedValue = valueToAppend;
                     break;
                 case ACCEPT:
@@ -308,8 +314,15 @@ public class ConsensusInstance {
 
             // Broadcast ACCEPT
             broadcastAccept(valueToWrite);
+
             // Wait for accepts
             String valueToAppend = waitForAccepts();
+
+            // If the value to append is null, then abort
+            if (valueToAppend == null) {
+                this.aborted = true;
+                return null;
+            }
 
             return valueToAppend;
         } catch (InterruptedException | ExecutionException e) {
