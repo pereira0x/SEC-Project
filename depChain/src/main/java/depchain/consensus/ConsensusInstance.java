@@ -131,7 +131,8 @@ public class ConsensusInstance {
                         case "impersonate":
                             // Send a state message impersonating another process - signature check should fail
                             int otherProcessId = myId == 3 ? 2 : 3;
-                            stateMsg = new Message(Message.Type.STATE, epoch, msg.value, otherProcessId, null, -1, null, state);
+                            stateMsg = new Message(Message.Type.STATE, epoch, msg.value, otherProcessId, null, -1, null,
+                                    state);
                             Logger.log(LogLevel.WARNING, "Invalid signature sent: " + stateMsg);
                             break;
                         default:
@@ -242,11 +243,12 @@ public class ConsensusInstance {
             }
         }
 
-        //print all the states received
+        // print all the states received
         Logger.log(LogLevel.INFO, "States received: " + stateResponses);
 
         return true;
     }
+
     public String waitForWrites() throws InterruptedException, ExecutionException {
         // Start a counter to keep track of the time
         long startTime = System.currentTimeMillis();
@@ -264,7 +266,7 @@ public class ConsensusInstance {
             }
         }
 
-        //print all the writes received
+        // print all the writes received
         Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
 
         // Now we proceed to decide the value to write
@@ -340,7 +342,7 @@ public class ConsensusInstance {
             broadcastRead();
             // Wait for states
             // Check if it was aborted
-            if(!waitForStates()) {
+            if (!waitForStates()) {
                 return null;
             }
 

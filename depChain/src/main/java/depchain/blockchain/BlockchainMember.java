@@ -124,8 +124,8 @@ public class BlockchainMember {
                                 InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                 if (clientAddr != null) {
                                     // TODO: EPOCH NUMBER MUST BE A NEW ONE
-                                    Message reply = new Message(Type.CLIENT_REPLY, msg.epoch, decidedValue,
-                                            memberId, null, msg.nonce);
+                                    Message reply = new Message(Type.CLIENT_REPLY, msg.epoch, decidedValue, memberId,
+                                            null, msg.nonce);
                                     perfectLink.send(msg.senderId, reply);
                                 }
                             } catch (Exception e) {
