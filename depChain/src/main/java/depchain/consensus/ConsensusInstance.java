@@ -128,6 +128,14 @@ public class ConsensusInstance {
                                     currentStateCopy);
                             Logger.log(LogLevel.WARNING, "Byzantine state sent: " + currentStateCopy);
                             break;
+                        case "invalidSignature":
+                            // Send a state message impersonating another process - signature check should fail
+                            int otherProcessId = myId == 3 ? 2 : 3;
+                            stateMsg = new Message(Message.Type.STATE, epoch, msg.value, otherProcessId, null, -1, null, state);
+                            Logger.log(LogLevel.WARNING, "Invalid signature sent: " + stateMsg);
+                            break;
+                        default:
+                            break;
                     }
                     try {
                         perfectLink.send(msg.senderId, stateMsg);
