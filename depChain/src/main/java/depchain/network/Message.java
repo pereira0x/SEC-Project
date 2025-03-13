@@ -29,22 +29,26 @@ public class Message implements Serializable {
         this(type, epoch, value, senderId, signature, nonce, null, null, null, null);
     }
 
-    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce, ByteArrayWrapper sessionKey) {
+    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce,
+            ByteArrayWrapper sessionKey) {
         this(type, epoch, value, senderId, signature, nonce, sessionKey, null, null, null);
     }
-    
+
     // For STATE messages
-    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce, ByteArrayWrapper sessionKey, State state) {
+    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce,
+            ByteArrayWrapper sessionKey, State state) {
         this(type, epoch, value, senderId, signature, nonce, sessionKey, state, null, null);
     }
 
     // for Collected messages
-    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce, ByteArrayWrapper sessionKey, State state, Map<Integer, State> statesMap) {
+    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce,
+            ByteArrayWrapper sessionKey, State state, Map<Integer, State> statesMap) {
         this(type, epoch, value, senderId, signature, nonce, sessionKey, state, statesMap, null);
     }
 
     // for WRITE messages
-    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce, ByteArrayWrapper sessionKey, State state, Map<Integer, State> statesMap, TimestampValuePair write) {
+    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce,
+            ByteArrayWrapper sessionKey, State state, Map<Integer, State> statesMap, TimestampValuePair write) {
         this.type = type;
         this.epoch = epoch;
         this.value = value;
@@ -75,9 +79,9 @@ public class Message implements Serializable {
             content += sessionKey.getData();
         }
         // if (state != null) {
-        //     for (Object obj : state) {
-        //         content += obj.toString();
-        //     }
+        // for (Object obj : state) {
+        // content += obj.toString();
+        // }
         // }
         return content;
     }

@@ -39,5 +39,4 @@ public class TimestampValuePair implements Serializable {
         return timestamp ^ value.hashCode();
     }
 
-
 }
