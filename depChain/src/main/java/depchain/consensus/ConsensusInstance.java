@@ -116,10 +116,10 @@ public class ConsensusInstance {
     // This method is invoked (by any process) when a message is delivered.
     public void processMessage(Message msg) {
         try {
-            if (msg.epoch != epoch){
-                Logger.log(LogLevel.DEBUG, "Received message for a different consensus instance...");
-                return;
-            }
+            // if (msg.epoch != epoch){
+            //     Logger.log(LogLevel.DEBUG, "Received message for a different consensus instance...");
+            //     return;
+            // }
             switch (msg.type) {
                 case READ:
 
@@ -140,20 +140,16 @@ public class ConsensusInstance {
                 case COLLECTED:
                     // Upon COLLECTED, update our local state and send an ACCEPT.
                     stateResponses = msg.statesMap;
-                    Logger.log(LogLevel.ERROR, "Received COLLECTED message from " + msg.senderId + " with states " + stateResponses);
+                    Logger.log(LogLevel.INFO, "Received COLLECTED message from " + msg.senderId + " with states " + stateResponses);
                     // Look at all states and decide the value you want to write (in write messages )
                     // pick the value to write
                     TimestampValuePair candidate = getValueFromCollected();
                     // Broadcast write
-                    Thread.sleep(1000);
                     broadcastWrite(candidate);
-                    Thread.sleep(1000);
                     // Wait for writes
                     String valueToWrite = waitForWrites();
-                    Thread.sleep(1000);
                     // Broadcast ACCEPT
                     broadcastAccept(valueToWrite);
-                    Thread.sleep(1000);
                     // Wait for accepts
                     String valueToAppend = waitForAccepts();
 
@@ -209,12 +205,9 @@ public class ConsensusInstance {
             Thread.sleep(250);
         }
 
-        // // Print the state of all processes.
-        for (State s : stateResponses.values()) {
-            Logger.log(LogLevel.INFO, "State of process " + s);
-        }
+        //print all the states received
+        Logger.log(LogLevel.INFO, "States received: " + stateResponses);
     }
-
     public String waitForWrites() throws InterruptedException, ExecutionException {
         // check if a quorum has already been reached
         while ((float) writeResponses.size() < quorumSize) {
@@ -223,10 +216,6 @@ public class ConsensusInstance {
             Thread.sleep(250);
         }
 
-        // // Print the state of all processes.
-        for (TimestampValuePair s : writeResponses.values()) {
-            Logger.log(LogLevel.INFO, "Write of process " + s);
-        }
         //print all the writes received
         Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
 
@@ -260,9 +249,9 @@ public class ConsensusInstance {
             Thread.sleep(250);
         }
 
-        // // Print the state of all processes.
+        // Print the state of all processes.
         for (String s : acceptedValues) {
-            Logger.log(LogLevel.INFO, "Accept of process " + s);
+            Logger.log(LogLevel.DEBUG, "Accept of process " + s);
         }
 
         Map <String, Integer> count = new HashMap<>();
@@ -297,6 +286,7 @@ public class ConsensusInstance {
             // Broadcast collected
             broadcastCollected();
 
+            // Wait for writes
             Thread.sleep(2000);
 
             // pick value to write
@@ -304,14 +294,11 @@ public class ConsensusInstance {
 
             // Broadcast write
             broadcastWrite(candidate);
-            Thread.sleep(2000);
             // Wait for writes
             String valueToWrite = waitForWrites();
 
-            Thread.sleep(1000);
             // Broadcast ACCEPT
             broadcastAccept(valueToWrite);
-            Thread.sleep(1000);
             // Wait for accepts
             String valueToAppend = waitForAccepts();
 
