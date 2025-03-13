@@ -20,6 +20,7 @@ public class BlockchainMember {
     private final int memberId;
     private final int memberPort;
     private final int leaderId; // Static leader ID.
+    private String behavior;
     private final List<Integer> allProcessIds;
     private PerfectLink perfectLink;
     /* private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>(); */
@@ -51,6 +52,8 @@ public class BlockchainMember {
             Logger.log(LogLevel.ERROR, "Failed to load configuration: " + e.getMessage());
             return;
         }
+        String behavior = Config.processBehaviors.get(memberId);
+        this.behavior = behavior != null ? behavior : "correct";
 
         PerfectLink pl;
         try {
