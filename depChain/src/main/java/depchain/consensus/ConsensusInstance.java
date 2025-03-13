@@ -42,7 +42,7 @@ public class ConsensusInstance {
         this.allProcessIds = new ArrayList<>(allProcessIds);
         this.perfectLink = perfectLink;
         this.epoch = epoch;
-        this.quorumSize = ((float) (allProcessIds.size() + f) / 2);
+        this.quorumSize = 2 * f + 1;
     }
 
     // Leader sends READ messages to all.
