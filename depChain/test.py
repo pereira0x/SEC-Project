@@ -3,6 +3,7 @@ import subprocess
 import os
 import time
 import shutil
+import platform
 
 # Define the base command for the server
 server_base_command = 'mvn exec:java -Dexec.mainClass="depchain.blockchain.BlockchainMember" -Dexec.args='
@@ -24,14 +25,29 @@ def check_tmux():
     if not shutil.which("tmux"):
         raise Exception("tmux is not installed. Please install tmux to use this script.")
 
+# Detect if running in WSL
+def is_wsl():
+    # Check if /proc/version contains Microsoft or WSL
+    if os.path.exists('/proc/version'):
+        with open('/proc/version', 'r') as f:
+            return 'microsoft' in f.read().lower() or 'wsl' in f.read().lower()
+    return False
+
 # Detect available terminal emulator
 def detect_terminal():
-    if shutil.which("alacritty"):
+    wsl_mode = is_wsl()
+    
+    if wsl_mode:
+        # In WSL, we'll use tmux directly without launching a separate terminal
+        return "wsl"
+    elif shutil.which("alacritty"):
         return "alacritty"
     elif shutil.which("gnome-terminal"):
         return "gnome-terminal"
     else:
-        raise Exception("No supported terminal emulator found (Alacritty or Gnome Terminal).")
+        # If no known terminal is found and not in WSL, use a fallback
+        print("No supported terminal emulator found. Using tmux in the current terminal.")
+        return "fallback"
 
 # Create a tmux session with all necessary panes
 def create_tmux_layout():
@@ -112,10 +128,17 @@ def open_terminal_with_tmux():
     # Enable mouse support in tmux
     subprocess.run(['tmux', 'set-option', '-g', 'mouse', 'on'])
     
-    if terminal == "alacritty":
+    if terminal == "wsl":
+        # In WSL, we can attach directly to the tmux session
+        print("WSL detected. Please run 'tmux attach-session -t depchain-session' in another terminal window.")
+        print("You can also view the session from this terminal after closing this control interface.")
+    elif terminal == "alacritty":
         subprocess.Popen(['alacritty', '-e', 'tmux', 'attach-session', '-t', session_name])
     elif terminal == "gnome-terminal":
         subprocess.Popen(['gnome-terminal', '--', 'tmux', 'attach-session', '-t', session_name])
+    else:  # fallback
+        print(f"A tmux session '{session_name}' has been created.")
+        print(f"To view it, open another terminal and run: tmux attach-session -t {session_name}")
 
 # Main execution
 check_tmux()
@@ -126,7 +149,7 @@ launch_processes()
 # Keep the original terminal open and provide options
 while True:
     user_input = input(
-        "Type 'restart' to interrupt and restart or 'kill' to terminate session and quit: "
+        "Type 'restart' to interrupt and restart, 'kill' to terminate session and quit, or 'attach' to view session in this terminal: "
     ).strip().lower()
     
     if user_input == 'restart':
@@ -136,5 +159,9 @@ while True:
     elif user_input == 'kill':
         kill_session()
         break
+    elif user_input == 'attach':
+        # Allow attaching to the session from the current terminal
+        os.system(f'tmux attach-session -t {session_name}')
+        print("Returned to control interface. Sessions are still running.")
     else:
-        print("Invalid input. Please type 'interrupt', 'restart', 'kill', or 'exit'.")
+        print("Invalid input. Please type 'restart', 'kill', or 'attach'.")
