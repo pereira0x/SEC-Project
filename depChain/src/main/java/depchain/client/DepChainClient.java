@@ -22,7 +22,6 @@ public class DepChainClient {
         this.clientId = clientId;
         this.clientPort = clientPort;
 
-
         Dotenv dotenv = Dotenv.load();
         String configFilePath = dotenv.get("CONFIG_FILE_PATH");
         String keysFolderPath = dotenv.get("KEYS_FOLDER_PATH");
@@ -50,7 +49,7 @@ public class DepChainClient {
             Logger.log(LogLevel.ERROR, "Failed to create PerfectLink: " + e.getMessage());
             return;
         }
-        
+
         this.clientLib = new ClientLibrary(pl, 1, leaderAddr, clientId);
     }
 
@@ -58,7 +57,7 @@ public class DepChainClient {
         if (args.length < 2) {
             Logger.log(LogLevel.ERROR, "Usage: DepChainClient <clientId> <clientPort>");
             return;
-            }
+        }
 
         int clientId = Integer.parseInt(args[0]);
         int clientPort = Integer.parseInt(args[1]);

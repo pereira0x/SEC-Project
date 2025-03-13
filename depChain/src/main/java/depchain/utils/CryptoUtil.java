@@ -100,7 +100,7 @@ public class CryptoUtil {
     public static SecretKey decryptSecretKey(byte[] encryptedSecretKey, PrivateKey privateKey) {
         try {
             // Create a cipher instance for the specified algorithm
-            
+
             Cipher cipher = Cipher.getInstance("RSA");
 
             cipher.init(Cipher.UNWRAP_MODE, privateKey);
@@ -108,7 +108,7 @@ public class CryptoUtil {
                 throw new IllegalArgumentException("The encrypted secret key cannot be null");
             }
             SecretKey secretKey = (SecretKey) cipher.unwrap(encryptedSecretKey, algorithm, Cipher.SECRET_KEY);
-            
+
             return secretKey;
 
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {

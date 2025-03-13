@@ -40,7 +40,7 @@ public class ConsensusInstance {
         this.allProcessIds = new ArrayList<>(allProcessIds);
         this.perfectLink = perfectLink;
         this.epoch = epoch;
-        this.quorumSize = ((float) ( allProcessIds.size() + f) / 2);
+        this.quorumSize = ((float) (allProcessIds.size() + f) / 2);
         this.state = new State();
     }
 
@@ -48,8 +48,8 @@ public class ConsensusInstance {
     private void broadcastRead() {
         Message readMsg = new Message(Message.Type.READ, epoch, null, myId, null, -1);
         // produce a STATE message just to add to the list
-        
-        // Start by appending the leader's own state.  
+
+        // Start by appending the leader's own state.
         stateResponses.put(leaderId, state);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
@@ -63,7 +63,8 @@ public class ConsensusInstance {
     }
 
     private void broadcastCollected() {
-        Message collectedMsg = new Message(Message.Type.COLLECTED, epoch, null, myId, null, -1, null, null, stateResponses);
+        Message collectedMsg = new Message(Message.Type.COLLECTED, epoch, null, myId, null, -1, null, null,
+                stateResponses);
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -77,8 +78,7 @@ public class ConsensusInstance {
 
     // Leader broadcasts WRITE message.
     private void broadcastWrite(TimestampValuePair candidate) {
-        Message writeMsg = new Message(Message.Type.WRITE, epoch, null, myId, null,
-                -1, null, null, null, candidate);
+        Message writeMsg = new Message(Message.Type.WRITE, epoch, null, myId, null, -1, null, null, null, candidate);
 
         // append to the writeset of my state the candidate
         state.addToWriteSet(candidate);
@@ -120,11 +120,11 @@ public class ConsensusInstance {
             //     Logger.log(LogLevel.DEBUG, "Received message for a different consensus instance...");
             //     return;
             // }
+
             switch (msg.type) {
                 case READ:
 
-                    Message stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId,
-                            null, -1, null , state);
+                    Message stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId, null, -1, null, state);
                     try {
                         perfectLink.send(msg.senderId, stateMsg);
                     } catch (Exception e) {
@@ -140,7 +140,9 @@ public class ConsensusInstance {
                 case COLLECTED:
                     // Upon COLLECTED, update our local state and send an ACCEPT.
                     stateResponses = msg.statesMap;
+
                     Logger.log(LogLevel.INFO, "Received COLLECTED message from " + msg.senderId + " with states " + stateResponses);
+
                     // Look at all states and decide the value you want to write (in write messages )
                     // pick the value to write
                     TimestampValuePair candidate = getValueFromCollected();
@@ -217,9 +219,10 @@ public class ConsensusInstance {
         }
 
         //print all the writes received
+
         Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
 
-        Map <String, Integer> count = new HashMap<>();
+        Map<String, Integer> count = new HashMap<>();
         for (TimestampValuePair s : writeResponses.values()) {
             if (count.containsKey(s.getValue())) {
                 count.put(s.getValue(), count.get(s.getValue()) + 1);
@@ -254,7 +257,7 @@ public class ConsensusInstance {
             Logger.log(LogLevel.DEBUG, "Accept of process " + s);
         }
 
-        Map <String, Integer> count = new HashMap<>();
+        Map<String, Integer> count = new HashMap<>();
         for (String s : acceptedValues) {
             if (count.containsKey(s)) {
                 count.put(s, count.get(s) + 1);
@@ -277,7 +280,7 @@ public class ConsensusInstance {
     }
 
     public String decide() {
-        try {        
+        try {
             // Read Phase
             broadcastRead();
             // Wait for states

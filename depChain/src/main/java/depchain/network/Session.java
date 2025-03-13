@@ -15,7 +15,6 @@ public class Session {
     private int ackCounter = 0;
     private int sentCounter = 0;
 
-
     public Session(int destId, InetSocketAddress destAddr, SecretKey sessionKey) {
         this.destId = destId;
         this.destAddr = destAddr;
@@ -47,7 +46,7 @@ public class Session {
     public void incrementAckCounter() {
         ackCounter++;
     }
-        
+
     public int getSentCounter() {
         return sentCounter;
     }
@@ -58,14 +57,9 @@ public class Session {
 
     @Override
     public String toString() {
-        return "Session{" +
-            "destId=" + destId +
-            ", destAddr=" + destAddr +
-            ", sessionKey=" + Base64.getEncoder().encodeToString(sessionKey.getEncoded()) +
-            ", ackCounter=" + ackCounter +
-            ", sentCounter=" + sentCounter +
-            '}';
+        return "Session{" + "destId=" + destId + ", destAddr=" + destAddr + ", sessionKey="
+                + Base64.getEncoder().encodeToString(sessionKey.getEncoded()) + ", ackCounter=" + ackCounter
+                + ", sentCounter=" + sentCounter + '}';
     }
-                                                     
-    
+
 }
