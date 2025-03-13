@@ -32,6 +32,7 @@ public class ConsensusInstance {
     private final int f;
     private final State state = new State();
     private boolean aborted = false;
+    private final long maxWaitTime = 3000; // 3 seconds
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
             int f) {
@@ -205,27 +206,46 @@ public class ConsensusInstance {
         }
     }
 
-    public void waitForStates() throws InterruptedException, ExecutionException {
+    public boolean waitForStates() throws InterruptedException, ExecutionException {
+        // Start a counter to keep track of the time
+        long startTime = System.currentTimeMillis();
         // check if a quorum has already been reached
         while ((float) stateResponses.size() < quorumSize) {
             Thread.sleep(250);
             Logger.log(LogLevel.DEBUG, "Still waiting for quorum of state responses...");
             Thread.sleep(250);
+
+            // Check if the time has exceeded the maximum wait time
+            if (System.currentTimeMillis() - startTime > this.maxWaitTime) {
+                Logger.log(LogLevel.ERROR, "Max wait time exceeded");
+                this.aborted = true;
+                return false;
+            }
         }
 
-        // print all the states received
+        //print all the states received
         Logger.log(LogLevel.INFO, "States received: " + stateResponses);
-    }
 
+        return true;
+    }
     public String waitForWrites() throws InterruptedException, ExecutionException {
+        // Start a counter to keep track of the time
+        long startTime = System.currentTimeMillis();
         // check if a quorum has already been reached
         while ((float) writeResponses.size() < quorumSize) {
             Thread.sleep(250);
             Logger.log(LogLevel.DEBUG, "Still waiting for quorum of write responses...");
             Thread.sleep(250);
+
+            // Check if the time has exceeded the maximum wait time
+            if (System.currentTimeMillis() - startTime > this.maxWaitTime) {
+                Logger.log(LogLevel.ERROR, "Max wait time exceeded");
+                this.aborted = true;
+                return null;
+            }
         }
 
-        // print all the writes received
+        //print all the writes received
         Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
 
         // Now we proceed to decide the value to write
@@ -252,11 +272,20 @@ public class ConsensusInstance {
     }
 
     public String waitForAccepts() throws InterruptedException, ExecutionException {
+        // Start a counter to keep track of the time
+        long startTime = System.currentTimeMillis();
         // check if a quorum has already been reached
         while ((float) acceptedValues.size() < quorumSize) {
             Thread.sleep(250);
             Logger.log(LogLevel.DEBUG, "Still waiting for quorum to be met for accept responses...");
             Thread.sleep(250);
+
+            // Check if the time has exceeded the maximum wait time
+            if (System.currentTimeMillis() - startTime > this.maxWaitTime) {
+                Logger.log(LogLevel.ERROR, "Max wait time exceeded");
+                this.aborted = true;
+                return null;
+            }
         }
 
         // Print the state of all processes.
@@ -291,7 +320,10 @@ public class ConsensusInstance {
             // Read Phase
             broadcastRead();
             // Wait for states
-            waitForStates();
+            // Check if it was aborted
+            if(!waitForStates()) {
+                return null;
+            }
 
             // Broadcast collected
             broadcastCollected();
