@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-
 import subprocess
 import os
-import signal
 import time
 import shutil
 
 # Define the base command for the server
 server_base_command = 'mvn exec:java -Dexec.mainClass="depchain.blockchain.BlockchainMember" -Dexec.args='
-
 # Define the base command for the client
 client_command = 'mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="5 9001"'
-
 # Define the server arguments
 server_args = [
     '"1 8001"',
@@ -20,8 +16,13 @@ server_args = [
     '"4 8004"'
 ]
 
-# Store the process IDs of the spawned terminals
-pids = []
+# Session name for the main tmux session
+session_name = "depchain-session"
+
+# Check if tmux is installed
+def check_tmux():
+    if not shutil.which("tmux"):
+        raise Exception("tmux is not installed. Please install tmux to use this script.")
 
 # Detect available terminal emulator
 def detect_terminal():
@@ -32,60 +33,108 @@ def detect_terminal():
     else:
         raise Exception("No supported terminal emulator found (Alacritty or Gnome Terminal).")
 
-# Function to open a new terminal with a given command
-def open_terminal(command):
-    terminal = detect_terminal()
-    if terminal == "alacritty":
-        process = subprocess.Popen(['alacritty', '-e', 'bash', '-c', command])
-    elif terminal == "gnome-terminal":
-        process = subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', command])
-    pids.append(process.pid)
-    return process.pid
+# Create a tmux session with all necessary panes
+def create_tmux_layout():
+    # Check if the session already exists and kill it
+    result = subprocess.run(['tmux', 'has-session', '-t', session_name], 
+                           stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    
+    if result.returncode == 0:
+        # Kill the existing session to start fresh
+        subprocess.run(['tmux', 'kill-session', '-t', session_name])
+    
+    # Create a new session with the first pane
+    subprocess.run(['tmux', 'new-session', '-d', '-s', session_name, '-n', 'depchain'])
+    
+    # Set up a more reliable layout
+    # First create a 2x2 grid for servers
+    subprocess.run(['tmux', 'split-window', '-h', '-t', f'{session_name}:0.0'])
+    subprocess.run(['tmux', 'split-window', '-v', '-t', f'{session_name}:0.0'])
+    subprocess.run(['tmux', 'split-window', '-v', '-t', f'{session_name}:0.1'])
+    # Now add the client pane at the bottom
+    subprocess.run(['tmux', 'split-window', '-v', '-t', f'{session_name}:0.2'])    
+    
+    # Make the client pane span the full width
+    subprocess.run(['tmux', 'select-layout', '-t', session_name, 'tiled'])
 
-# Function to launch all servers and the client
+# Function to launch all processes in the panes
 def launch_processes():
-    global pids
-    pids = []  # Reset the PIDs list
-    print("Launching servers and client...")
-    for args in server_args:
+    print("Launching servers and client in tmux panes...")
+    
+    # Launch server processes in the first 4 panes
+    for i, args in enumerate(server_args):
         server_command = f'{server_base_command}{args}'
-        open_terminal(server_command)
-    open_terminal(client_command)
-    print("All terminals have been launched.")
+        target = f'{session_name}:0.{i}'
+        
+        # Label and run command in the pane
+        subprocess.run(['tmux', 'send-keys', '-t', target, 'clear', 'Enter'])
+        subprocess.run(['tmux', 'send-keys', '-t', target, f'echo "Server {i+1} (Port: 800{i+1})"', 'Enter'])
+        subprocess.run(['tmux', 'send-keys', '-t', target, server_command, 'Enter'])
+    
+    # Launch client process in the last pane (the one at the bottom)
+    client_target = f'{session_name}:0.4'  # This should be the 5th pane we created
+    subprocess.run(['tmux', 'send-keys', '-t', client_target, 'clear', 'Enter'])
+    subprocess.run(['tmux', 'send-keys', '-t', client_target, 'echo "Client (Port: 9001)"', 'Enter'])
+    subprocess.run(['tmux', 'send-keys', '-t', client_target, client_command, 'Enter'])
+    
+    print("All processes have been launched in tmux panes.")
 
-# Function to kill all spawned terminals
-def kill_all_terminals():
-    for pid in pids:
-        try:
-            # Kill the entire process group
-            os.killpg(os.getpgid(pid), signal.SIGTERM)
-            print(f"Terminated process group with PID: {pid}")
-        except ProcessLookupError:
-            print(f"Process with PID {pid} no longer exists.")
-    pids.clear()  # Clear the PIDs list after killing processes
+# Function to interrupt all running processes
+def interrupt_processes():
+    print("Interrupting all running processes...")
+    
+    # Send Ctrl+C to all panes
+    for i in range(5):  # 4 servers + 1 client = 5 panes
+        target = f'{session_name}:0.{i}'
+        subprocess.run(['tmux', 'send-keys', '-t', target, 'C-c', 'C-c'])
+    
+    # Give processes time to terminate
+    time.sleep(1)
+    
+    print("All processes have been interrupted.")
 
-# Detect and print the terminal being used
-terminal = detect_terminal()
-print(f"Using {terminal} as the terminal emulator.")
+# Function to kill the tmux session
+def kill_session():
+    print("Terminating tmux session...")
+    
+    result = subprocess.run(['tmux', 'has-session', '-t', session_name],
+                           stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    
+    if result.returncode == 0:
+        subprocess.run(['tmux', 'kill-session', '-t', session_name])
+    
+    print("Tmux session has been terminated.")
 
-# Launch processes initially
+# Open the terminal with the tmux session
+def open_terminal_with_tmux():
+    terminal = detect_terminal()
+
+    # Enable mouse support in tmux
+    subprocess.run(['tmux', 'set-option', '-g', 'mouse', 'on'])
+    
+    if terminal == "alacritty":
+        subprocess.Popen(['alacritty', '-e', 'tmux', 'attach-session', '-t', session_name])
+    elif terminal == "gnome-terminal":
+        subprocess.Popen(['gnome-terminal', '--', 'tmux', 'attach-session', '-t', session_name])
+
+# Main execution
+check_tmux()
+create_tmux_layout()
+open_terminal_with_tmux()
 launch_processes()
 
 # Keep the original terminal open and provide options
 while True:
     user_input = input(
-        "Type 'kill' to terminate all spawned terminals, 'restart' to kill and restart, or 'exit' to quit: "
+        "Type 'restart' to interrupt and restart or 'kill' to terminate session and quit: "
     ).strip().lower()
-
-    if user_input == 'kill':
-        kill_all_terminals()
-        print("All spawned terminals have been terminated.")
-    elif user_input == 'restart':
-        kill_all_terminals()
-        time.sleep(1)  # Give some time for processes to terminate
+    
+    if user_input == 'restart':
+        interrupt_processes()
+        time.sleep(1)  # Give time for processes to terminate
         launch_processes()
-    elif user_input == 'exit':
-        print("Exiting without killing terminals.")
+    elif user_input == 'kill':
+        kill_session()
         break
     else:
-        print("Invalid input. Please type 'kill', 'restart', or 'exit'.")
+        print("Invalid input. Please type 'interrupt', 'restart', 'kill', or 'exit'.")
