@@ -51,6 +51,10 @@ public class PerfectLink {
     // Map to store resend tasks
     private final ConcurrentMap<Integer, ConcurrentMap<Integer, ScheduledFuture<?>>> sessionResendTasks = new ConcurrentHashMap<>();
 
+    private final Object lock = new Object();
+
+
+
     private final ExecutorService listenerWorkerPool;
     private final ScheduledExecutorService senderWorkerPool;
     private final BlockingQueue<Message> deliveredQueue = new LinkedBlockingQueue<>();
@@ -134,14 +138,24 @@ public class PerfectLink {
     }
 
     private void startListener() {
-        byte[] buffer = new byte[8192];
         while (!socket.isClosed()) {
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             try {
+                // Create a new buffer for each packet
+                byte[] buffer = new byte[8192];
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                
                 socket.receive(packet);
-                // Logger.log(LogLevel.DEBUG, "Received packet from " +
-                // packet.getSocketAddress());
-                listenerWorkerPool.submit(() -> processMessage(packet));
+                
+                // Create a copy of the packet data before submitting to worker pool
+                final byte[] packetData = new byte[packet.getLength()];
+                System.arraycopy(packet.getData(), packet.getOffset(), packetData, 0, packet.getLength());
+                final InetSocketAddress senderAddress = (InetSocketAddress) packet.getSocketAddress();
+                
+                listenerWorkerPool.submit(() -> {
+                    DatagramPacket workerPacket = new DatagramPacket(
+                        packetData, packetData.length, senderAddress);
+                    processMessage(workerPacket);
+                });
             } catch (SocketException e) {
                 if (socket.isClosed())
                     break;
@@ -374,8 +388,7 @@ public class PerfectLink {
             oos.flush();
             byte[] data = bos.toByteArray();
             DatagramPacket packet = new DatagramPacket(data, data.length, address);
-
-            socket.send(packet);
+                socket.send(packet);
 
             if (firstSend) {
                 // get session

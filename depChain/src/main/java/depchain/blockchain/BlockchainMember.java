@@ -25,7 +25,6 @@ public class BlockchainMember {
     /* private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>(); */
     private ConsensusInstance consensusInstance;
     private final int f; // Maximum number of Byzantine faults allowed.
-    private final ExecutorService consensusExecutor = Executors.newSingleThreadExecutor();
     private int epochNumber = 0;
     private ArrayList<String> blockchain = new ArrayList<>();
 
@@ -138,6 +137,7 @@ public class BlockchainMember {
                             if (decidedValue != null) {
                                 // Append the decided value to the blockchain.
                                 this.blockchain.add(decidedValue);
+                                consensusInstance = null;
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
