@@ -25,7 +25,7 @@ public class ConsensusInstance {
     private final PerfectLink perfectLink;
     private final int epoch; // In our design, epoch doubles as the consensus instance ID.
     private String decidedValue = null;
-    private final float quorumSize; // e.g., quorum = floor((N + f) / 2).
+    private final float quorumSize;
     private Map<Integer, State> stateResponses = new HashMap<>();
     private Map<Integer, TimestampValuePair> writeResponses = new HashMap<>();
     private List<String> acceptedValues = new ArrayList<>();
@@ -42,7 +42,7 @@ public class ConsensusInstance {
         this.allProcessIds = new ArrayList<>(allProcessIds);
         this.perfectLink = perfectLink;
         this.epoch = epoch;
-        this.quorumSize = 2 * f + 1;
+        this.quorumSize = (float) 2*f + 1;
     }
 
     // Leader sends READ messages to all.
@@ -344,11 +344,6 @@ public class ConsensusInstance {
                 this.aborted = true;
                 return null;
             }
-        }
-
-        // Print the state of all processes.
-        for (String s : acceptedValues) {
-            Logger.log(LogLevel.DEBUG, "Accept of process " + s);
         }
 
         Map<String, Integer> count = new HashMap<>();
