@@ -213,9 +213,10 @@ public class ConsensusInstance {
             Thread.sleep(250);
         }
 
-        //print all the states received
+        // print all the states received
         Logger.log(LogLevel.INFO, "States received: " + stateResponses);
     }
+
     public String waitForWrites() throws InterruptedException, ExecutionException {
         // check if a quorum has already been reached
         while ((float) writeResponses.size() < quorumSize) {
@@ -224,7 +225,7 @@ public class ConsensusInstance {
             Thread.sleep(250);
         }
 
-        //print all the writes received
+        // print all the writes received
         Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
 
         // Now we proceed to decide the value to write

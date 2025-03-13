@@ -92,6 +92,14 @@ public class BlockchainMember {
                                                      // queue
                 // If a CLIENT_REQUEST is received and this node is leader,
                 // then start a consensus instance for the client request.
+                switch (this.behavior) {
+                    case "ignoreMessages":
+                        // Byzantine behavior: ignore all messages.
+                        Logger.log(LogLevel.WARNING, "Byzantine behavior: dropping message.");
+                        continue;
+                    default:
+                        break;
+                }
                 new Thread(() -> {
                     if (msg.type == Message.Type.CLIENT_REQUEST) {
                         if (memberId == leaderId) {
@@ -116,8 +124,8 @@ public class BlockchainMember {
                                     InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
                                     if (clientAddr != null) {
                                         // TODO: EPOCH NUMBER MUST BE A NEW ONE
-                                        Message reply = new Message(Type.CLIENT_REPLY, msg.epoch, decidedValue, memberId,
-                                                null, msg.nonce);
+                                        Message reply = new Message(Type.CLIENT_REPLY, msg.epoch, decidedValue,
+                                                memberId, null, msg.nonce);
                                         perfectLink.send(msg.senderId, reply);
                                     }
                                 }
