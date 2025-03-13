@@ -102,19 +102,21 @@ public class BlockchainMember {
 
                                 String decidedValue = consensusInstance.decide();
 
-                                // String decidedValue = msg.value;
-                                Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
+                                if (decidedValue != null) {
+                                    // String decidedValue = msg.value;
+                                    Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
 
-                                // Append the decided value to the blockchain.
-                                this.blockchain.add(decidedValue);
+                                    // Append the decided value to the blockchain.
+                                    this.blockchain.add(decidedValue);
 
-                                // Send ACK to the client.
-                                InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
-                                if (clientAddr != null) {
-                                    // TODO: EPOCH NUMBER MUST BE A NEW ONE
-                                    Message reply = new Message(Type.CLIENT_REPLY, msg.epoch, decidedValue, memberId,
-                                            null, msg.nonce);
-                                    perfectLink.send(msg.senderId, reply);
+                                    // Send ACK to the client.
+                                    InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
+                                    if (clientAddr != null) {
+                                        // TODO: EPOCH NUMBER MUST BE A NEW ONE
+                                        Message reply = new Message(Type.CLIENT_REPLY, msg.epoch, decidedValue, memberId,
+                                                null, msg.nonce);
+                                        perfectLink.send(msg.senderId, reply);
+                                    }
                                 }
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -142,6 +144,12 @@ public class BlockchainMember {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
+                    }
+
+                    // Check if the consensus was aborted
+                    if (consensusInstance != null && consensusInstance.isAborted()) {
+                        Logger.log(LogLevel.ERROR, "Consensus aborted.");
+                        consensusInstance = null;
                     }
                 }).start();
             } catch (InterruptedException e) {
