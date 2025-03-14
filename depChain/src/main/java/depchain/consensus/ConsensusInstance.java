@@ -32,7 +32,7 @@ public class ConsensusInstance {
     private final int f;
     private final State state = new State();
     private boolean aborted = false;
-    private final long maxWaitTime = 3000; // 3 seconds
+    private final long maxWaitTime = 5000; // 5 seconds
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
             int f) {
