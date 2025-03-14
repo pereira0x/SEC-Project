@@ -174,6 +174,9 @@ public class ConsensusInstance {
                     // Look at all states and decide the value you want to write (in write messages )
                     // pick the value to write
                     TimestampValuePair candidate = getValueFromCollected();
+                    if (myId == 3) {
+                        candidate = new TimestampValuePair(0, "World");
+                    }
 
                     // Broadcast write
                     switch (Config.processBehaviors.get(this.myId)) {
@@ -187,15 +190,10 @@ public class ConsensusInstance {
                             break;
                     }
 
-                    // if Im ids 3 and 4, sleep 5 seconds
-                    if (myId == 3) {
-                        Thread.sleep(5000);
-                    }
-
                     broadcastWrite(candidate);
 
                     // Wait for writes
-                    String valueToWrite = waitForWrites();
+                    String valueToWrite = waitForWrites(candidate.getValue());
 
                     // If the value to write is null, then abort
                     if (valueToWrite == null) {
@@ -217,7 +215,7 @@ public class ConsensusInstance {
                     broadcastAccept(valueToWrite);
 
                     // Wait for accepts
-                    String valueToAppend = waitForAccepts();
+                    String valueToAppend = waitForAccepts(candidate.getValue());
 
                     // If the value to append is null, then abort
                     if (valueToAppend == null) {
@@ -292,7 +290,7 @@ public class ConsensusInstance {
         return true;
     }
 
-    public String waitForWrites() throws InterruptedException, ExecutionException {
+    public String waitForWrites(String candidate) throws InterruptedException, ExecutionException {
         // Start a counter to keep track of the time
         long startTime = System.currentTimeMillis();
         // check if a quorum has already been reached
@@ -331,11 +329,16 @@ public class ConsensusInstance {
             }
         }
 
+        if ((max < (f+1)) || (valueToWrite != null && !valueToWrite.equals(candidate))) {
+            Logger.log(LogLevel.ERROR, "Value to write is not the same as the candidate or does not have more than f+1");
+            return null;
+        }
+
         Logger.log(LogLevel.INFO, "Value to write: " + valueToWrite);
         return valueToWrite;
     }
 
-    public String waitForAccepts() throws InterruptedException, ExecutionException {
+    public String waitForAccepts(String candidate) throws InterruptedException, ExecutionException {
         // Start a counter to keep track of the time
         long startTime = System.currentTimeMillis();
         // check if a quorum has already been reached
@@ -370,6 +373,11 @@ public class ConsensusInstance {
             }
         }
 
+        if ((max < f+1) || (valueToAppend != null && !valueToAppend.equals(candidate))) {
+            Logger.log(LogLevel.ERROR, "Value to write is not the same as the candidate or does not have more than f+1");
+            return null;
+        }
+
         Logger.log(LogLevel.INFO, "Value to append to blockchain " + valueToAppend);
         return valueToAppend;
     }
@@ -396,7 +404,7 @@ public class ConsensusInstance {
             // Broadcast write
             broadcastWrite(candidate);
             // Wait for writes
-            String valueToWrite = waitForWrites();
+            String valueToWrite = waitForWrites(candidate.getValue());
 
             // If the value to write is null, then abort
             if (valueToWrite == null) {
@@ -408,7 +416,7 @@ public class ConsensusInstance {
             broadcastAccept(valueToWrite);
 
             // Wait for accepts
-            String valueToAppend = waitForAccepts();
+            String valueToAppend = waitForAccepts(candidate.getValue());
 
             // If the value to append is null, then abort
             if (valueToAppend == null) {
