@@ -32,15 +32,10 @@ public class ClientServerCorrectCommunicationTest {
         server3Thread.start();
         server4Thread.start();
 
-        // Wait for servers to start
-        // Thread.sleep(5000);
-
         // Start client
         DepChainClient client1 = new DepChainClient(5, 9001);
         String response = client1.append("Hello");
 
-        // Wait for the message to propagate
-        // Thread.sleep(2000);
 
         // blockchain is of type ArrayList<String>
         boolean messageReceived = response.equals("Hello");

@@ -142,7 +142,7 @@ public class ConsensusInstance {
                             stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId, null, -1, null,
                                     currentStateCopySpam);
                             Logger.log(LogLevel.WARNING, "Spam state sent, 100 times: " + currentStateCopySpam);
-                            for (int i = 0; i < 10; i++) {
+                            for (int i = 0; i < 100; i++) {
                                 try {
                                     perfectLink.send(msg.senderId, stateMsg);
                                 } catch (Exception e) {
@@ -246,7 +246,7 @@ public class ConsensusInstance {
             }
         }
 
-        // check if the tmpVal appears in the writeset of more than f processes
+        // check if the tmpVal appears in the write set of more than f processes
         int count = 0;
         for (State s : stateResponses.values()) {
             if (s.getWriteset().contains(tmpVal)) {

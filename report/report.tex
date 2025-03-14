@@ -162,13 +162,13 @@ as the candidate value.
 \subsubsection{Write Phase}
 Every process (members and leader), broadcasts a WRITE message to all members containing the
 previously determined value. It then waits for a quorum of WRITE messages where there must
-be at least f+1 messages with the same value it proposed. If this condition isn't met, then the process
+be at least f+1 messages with the same value it proposed. If this condition is not met, then the process
 aborts the consensus instance. Otherwise, it moves on to the next phase.
 
 \subsubsection{Accept Phase}
 Every process then broadcasts an ACCEPT message to all members containing the value that was
 previously agreed upon. It then waits for a quorum of ACCEPT messages back
-containing the same value at least f+1 times. If this condition isn't met, then the process
+containing the same value at least f+1 times. If this condition is not met, then the process
 aborts the consensus instance. Otherwise, it epoch-decides the value and writes it to the blockchain.
 
 \subsubsection{Fault Tolerance and Quorum}
@@ -176,8 +176,8 @@ The consensus protocol is designed to tolerate up to f Byzantine faults, where f
 is the maximum number of faulty members allowed in the network. A quorum is
 defined as the minimum number of members required to reach agreement, calculated
 as 2f+1. The protocol
-ensures that all non-faulty members agree on the same value, even if some
-members behave maliciously or fail to respond.
+ensures that all non-faulty members agree on the same value, even if f
+members behave maliciously, fail to respond or crash.
 
 %
 \section{Implementation details}
@@ -198,8 +198,8 @@ members should detect the misbehavior and abort the consensus instance.
 \subsection{Client communication}
 To simplify the system, the client only communicates with the leader process.
 %
-\section{Possible threats and corresponding protection mechanisms} To
-demonstrate the system's resilience against various Byzantine scenarios, the
+\section{Possible threats and corresponding protection mechanisms}
+To demonstrate the system's resilience against various Byzantine scenarios, the
 implementation was tested under multiple configurations, each representing a
 different type of attack. The following sections provide a detailed explanation
 of how each attack is executed and how the system effectively mitigates it.
@@ -212,8 +212,9 @@ designed to handle this scenario by not needing to wait for all members to reply
 %
 \subsection{Byzantine State}
 In this scenario, a faulty member sends a STATE message containing an incorrect
-blockchain state, with the goal of misleading the leader. The system is designed
-to handle this scenario, <HOW>.
+blockchain state, with the goal of affecting the members' choice of a value to write.
+Since the system uses a quorum of states to determine the value to write, the
+faulty state will be ignored, and the correct value will be chosen by all members.
 %
 \subsection{Impersonate Member}
 In this scenario, a faulty member impersonates another member by sending a STATE
