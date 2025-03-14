@@ -68,14 +68,13 @@ book [1] (Algorithms 5.17 and 5.18). The report outlines the system
 architecture, which includes the network, client, client library, blockchain, and
 consensus layers. It also describes how the system addresses various Byzantine
 attack scenarios, ensuring safety and liveness under the assumption of a correct
-leader. Finally, the report concludes with key findings, lessons learned, and
-potential areas for future improvement.
+leader.
 %
 \section{Architecture}
 \subsection{Network Layer}
 The network layer is responsible for managing the communication between any two
-processes (members or clients) in the system. By replicating Authenticated
-Perfect Links, the network layer ensures that messages are guaranteed to be
+processes (members or clients) in the system. By replicating authenticated
+perfect links, the network layer ensures that messages are guaranteed to be
 eventually delivered to the intended recipient, with it's integrity and
 authenticity preserved. There are three main components in the network layer: 
 %
@@ -90,8 +89,8 @@ unreliable network, we use UDP sockets.
 - Session, which represents a communication session between two processes. The
 session contains information like the destination process ID, address, session
 key, and counters for tracking sent and acknowledged messages. The session key
-is a symmetric key that is used for signing messages (because using the public key for
-every message would be too expensive).
+is a symmetric key that is used for signing messages (because using the private key for
+signing every message would be too expensive).
 %
 \subsubsection{Session Establishment}
 
@@ -196,7 +195,9 @@ if the leader behaves maliciously and deviates from the protocol, the other
 members should detect the misbehavior and abort the consensus instance.
 %
 \subsection{Client communication}
-To simplify the system, the client only communicates with the leader process.
+To simplify the system, the client only communicates with the leader process. This
+simplification is justified by the assumption that the leader is correct and
+will not deviate from the protocol.
 %
 \section{Possible threats and corresponding protection mechanisms}
 To demonstrate the system's resilience against various Byzantine scenarios, the
