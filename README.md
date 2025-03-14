@@ -118,6 +118,10 @@ Then you can interact with the blockchain as a client:
 - Simão Sanguinho - ist1102082
 - José Pereira - ist1103252
 
+Group 12 - 2024/2025
+
+Project developed for the Highly Dependable Systems course at Instituto Superior Técnico, University of Lisbon.
+
 ## Report
 
 To build the report, run the following command:
