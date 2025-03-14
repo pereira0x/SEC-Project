@@ -50,10 +50,7 @@ or  corrupt messages, and communication channels are not secured. The
 implementation is structured in Java, utilizing the Java Crypto API for
 cryptographic functions, and is designed to handle malicious behavior from a
 subset of blockchain members while ensuring safety and liveness under the
-assumption of a correct leader. The final submission for stage 1 includes a
-self-contained zip archive with the source code, demo tests, and a concise
-report detailing the design, threats, and dependability guarantees of the
-system.
+assumption of a correct leader.
 %
 \keywords{Blockchain \and Byzantine Fault Tolerance \and Consensus Algorithm \and Dependability \and Java Implementation}
 \end{abstract}
@@ -68,7 +65,7 @@ duplication, and corruption, without relying on secure communication channels.
 To achieve consensus in such adversarial conditions, the project uses the
 Byzantine Read / Write Epoch Consensus algorithm, as described in the course
 book [1] (Algorithms 5.17 and 5.18). The report outlines the system
-architecture, which includes the network, client, library, blockchain, and
+architecture, which includes the network, client, client library, blockchain, and
 consensus layers. It also describes how the system addresses various Byzantine
 attack scenarios, ensuring safety and liveness under the assumption of a correct
 leader. Finally, the report concludes with key findings, lessons learned, and
@@ -76,59 +73,58 @@ potential areas for future improvement.
 %
 \section{Architecture}
 \subsection{Network Layer}
-The network layer is responsible for managing the communication any two
+The network layer is responsible for managing the communication between any two
 processes (members or clients) in the system. By replicating Authenticated
 Perfect Links, the network layer ensures that messages are guaranteed to be
 eventually delivered to the intended recipient, with it's integrity and
 authenticity preserved. There are three main components in the network layer: 
-
+%
 - Message, which encapsulates the message content and metadata. It contains the
-type field to identify the message type (e.g., READ, STATE, ACK, etc.). It's
-also this component that will be signed by the sender and verified by the
-receiver. 
-
+type field to identify the message type (e.g., READ, STATE, ACK, etc.). A MAC will
+be used to ensure the message's aforementioned security properties.
+%
 - PerfectLink, which implements the core communication logics, including
 sending, receiving and managing sessions (explained next). To simulate the
 unreliable network, we use UDP sockets. 
-
+%
 - Session, which represents a communication session between two processes. The
 session contains information like the destination process ID, address, session
 key, and counters for tracking sent and acknowledged messages. The session key
-is a symmetric key that is used for encrypting and signing messages (because using the public key for
+is a symmetric key that is used for signing messages (because using the public key for
 every message would be too expensive).
+%
 \subsubsection{Session Establishment}
 
 Before any communication can occur, a session must be established between two
 processes. The session establishment process is as follows: A process initiates
-a session by sending a STARTSESSION message. Then, the recipient responds with a
-ACKSESSION message, containing an symmetric session key that is encrypted using the recipient's public key (thus ensuring confidentiality). Once the session is
+a session by sending a START\_SESSION message. Then, the recipient responds with an
+ACK\_SESSION message, containing a symmetric session key that is encrypted using the recipient's public key (thus ensuring confidentiality). Once the session is
 established, all subsequent messages are signed and verified using the session
 key to ensure authenticity and integrity.
 %
 \subsection{Client and Library Layer}
-The system's regular workflow would work as it follows: an user will issue the append <message> command via the client's CLI. The client
+The system's regular workflow would work as follows: a user will issue the append <message> command via the client's CLI. The client
 layer will delegate the request to the library layer. Then, the library will
-construct a CLIENTREQUEST message and sends it to the leader process (known
-beforehand) using PerfectLink. Next, the library will wait for CLIENTREPLY from
-1 processes. Since we assume a non-byzantine leader, the client does not need to 
-wait for F+1 replies.
+construct a CLIENT\_REQUEST message and send it to the leader process (known
+beforehand) using PerfectLink. Next, the library will wait for a CLIENT\_REPLY.
+Since we assume a non-byzantine leader, the client does not need to 
+wait for a quorum of replies.
 
 %
 \subsection{Blockchain Layer}
 The blockchain layer represents a node in the permissioned (closed membership)
 blockchain network. Each member is responsible for participating in the
-consensus protocol, maintaining a local copy of the blockchain.The system is
+consensus protocol, maintaining a local copy of the blockchain as a list of strings. The system is
 designed to ensure that all members agree on the state of the blockchain, even
 in the presence of faulty nodes, by leveraging a Byzantine fault-tolerant
-consensus protocol (Byzantine Read/Write Epoch Consensus). The blockchain member
-maintains an in-memory representation of the blockchain, implemented as a list of string objects.
+consensus protocol (Byzantine Read/Write Epoch Consensus).
 It also keeps a State object, which stores a sequence of TimestampValuePair objects, that represent the 
 history of that member on a particular instance of consensus.
 The blockchain is updated whenever a consensus decision is reached, ensuring
 that all non-faulty members have a consistent view of the blockchain.
 
 A message handler loop continuously listens for incoming messages. If a
-CLIENTREQUEST is received and the member is the leader, it initiates a new
+CLIENT\_REQUEST is received by the leader, it initiates a new
 consensus instance to process the request. For consensus-related messages, the
 member delegates the message to the current consensus instance for processing.
 
@@ -139,17 +135,19 @@ non-faulty members of the distributed system agree on the value to be appended
 to the blockchain, even in the presence of Byzantine faults. The consensus
 protocol is implemented in the ConsensusInstance class and involves multiple
 phases.
+
 \subsubsection{Consensus Instance}
-Each consensus instancekeeps track of the current epoch number. 
+Each consensus instance keeps track of the current epoch number. 
 The consensus instance is initiated by the leader
-(process 1) when it receives a CLIENTREQUEST from a client. The leader is
+(process 1) when it receives a CLIENT\_REQUEST from a client. The leader is
 responsible for coordinating the consensus process, while other members
 participate by responding to messages and contributing their local states.
+
 \subsubsection{Read Phase}
 The consensus process begins with the read phase, where the leader broadcasts a
 READ message to all members. Each member responds with a STATE message, which
-contains its local blockchain state, including the most recent write and the
-writeset (a list of all writes), both related to the current epoch.
+contains its local epoch state, including the most recent write and the
+writeset (a list of all writes).
 
 \subsubsection{Collected Phase}
 Once the leader has received STATE messages from a quorum of members, it
@@ -160,24 +158,24 @@ the most recent value that appears in the writeset of more than f members (where
 f is the maximum number of Byzantine faults tolerated). If no such value exists,
 the value is unbounded. In this case, the leader's most recent write is selected 
 as the candidate value.
-\subsubsection{Write Phase}
-Every process (members and leader), after determining the value to be written,
-broadcasts a WRITE message to all members. Upon receiving a quorum of Write messages (2*F+1),
-the leader broadcasts an ACCEPT message to all members, containing the value <HOW TO OBTAIN THE VALUE>.
 
+\subsubsection{Write Phase}
+Every process (members and leader), broadcasts a WRITE message to all members containing the
+previously determined value. It then waits for a quorum of WRITE messages where there must
+be at least f+1 messages with the same value it proposed. If this condition isn't met, then the process
+aborts the consensus instance. Otherwise, it moves on to the next phase.
 
 \subsubsection{Accept Phase}
--SIMAO STOPPED HERE
-Once the leader has received ACCEPT messages from a quorum of members, it
-broadcasts a DECIDED message to all members. The DECIDED message contains the
-final value that has been agreed upon by the consensus instance. Upon receiving
-the DECIDED message, each member appends the agreed-upon value to its local
-blockchain and updates its state accordingly.
+Every process then broadcasts an ACCEPT message to all members containing the value that was
+previously agreed upon. It then waits for a quorum of ACCEPT messages back
+containing the same value at least f+1 times. If this condition isn't met, then the process
+aborts the consensus instance. Otherwise, it epoch-decides the value and writes it to the blockchain.
+
 \subsubsection{Fault Tolerance and Quorum}
 The consensus protocol is designed to tolerate up to f Byzantine faults, where f
 is the maximum number of faulty members allowed in the network. A quorum is
 defined as the minimum number of members required to reach agreement, calculated
-as floor((N + f) / 2), where N is the total number of members. The protocol
+as 2f+1. The protocol
 ensures that all non-faulty members agree on the same value, even if some
 members behave maliciously or fail to respond.
 
@@ -185,8 +183,8 @@ members behave maliciously or fail to respond.
 \section{Implementation details}
 \subsection{PKI and Cryptography}
 The system relies on a Public Key Infrastructure (PKI) to ensure the identity of
-members. Due to the perfomance limitations of public key cryptography, the
-system derives a shared simmetric key for each session, which is used to sign
+members. Due to the performance limitations of public key cryptography, the
+system derives a shared symmetric key for each session, which is used to sign
 the messages. Since confidentiality is not a requirement, the system does not
 encrypt the messages.
 %
@@ -195,43 +193,40 @@ Due to the scope of the project, the system assumes a correct leader process
 (process 1) that initiates consensus instances and coordinates the consensus
 protocol. However, the system is designed to handle Byzantine behavior, and so,
 if the leader behaves maliciously and deviates from the protocol, the other
-members will detect the misbehavior and abort the consensus instance.
+members should detect the misbehavior and abort the consensus instance.
 %
-\subsection{Members replies}
-Whenever a client issues a request, it will not block waiting for the reply,
-since the consensus protocol may take some time to reach an agreement. Instead,
-the client will asynchronously wait for the rely. As a client, it will wait for 
-F+1 replies, where F is the number of Byzantine faults the system can tolerate.
-%
-\subsection{Client only communicates with the leader}
+\subsection{Client communication}
 To simplify the system, the client only communicates with the leader process.
-This design choice is based on the assumption that the leader is correct and
-will not deviate from the protocol.
 %
 \section{Possible threats and corresponding protection mechanisms} To
 demonstrate the system's resilience against various Byzantine scenarios, the
 implementation was tested under multiple configurations, each representing a
 different type of attack. The following sections provide a detailed explanation
 of how each attack is executed and how the system effectively mitigates it.
-\subsection{Correct Configuration}
-In the correct configuration, all members behave honestly and follow the
-protocol.
 %
 \subsection{Ignore Messages}
 In this scenario, a faulty member ignores messages from the leader or other
 members, with the goal of disrupting the consensus process. The system is
-designed to handle this scenario by not needed to wait for all members to reply
-(only 2F+1 replies are needed).
+designed to handle this scenario by not needing to wait for all members to reply
+(only 2f+1 replies are required).
 %
 \subsection{Byzantine State}
 In this scenario, a faulty member sends a STATE message containing an incorrect
 blockchain state, with the goal of misleading the leader. The system is designed
 to handle this scenario, <HOW>.
 %
-\subsection{Byzantine Decide}
-In this scenario, a faulty member sends a DECIDED message containing an
-incorrect value, with the goal of disrupting the consensus process. The system
-is designed to handle this scenario, <HOW>.
+\subsection{Impersonate Member}
+In this scenario, a faulty member impersonates another member by sending a STATE
+message to the leader posing as the legitimate member. The system is designed to
+handle this scenario by using the session key to sign messages, ensuring that
+only the legitimate member can send messages on their behalf.
+%
+\subsection{Spam Messages}
+In this scenario, a faulty member sends a large number of STATE messages to the
+leader, with the goal of overwhelming the leader and disrupting the consensus
+process. The system is designed to handle this scenario by storing the states
+received in a map and when more than one state is received from the same member,
+the system just overwrites its entry with the new state.
 %
 \section{Conclusion}
 The first stage of the DepChain project has been successfully completed,
