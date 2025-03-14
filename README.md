@@ -86,6 +86,23 @@ The test suite includes:
 - Network reliability tests.
 - Byzantine behavior simulations.
 
+### Usage
+You can run each behavior test individually by changing the `CONFIG_FILE_PATH` environment variable in the `.env` file for the desired configuration file located in the `src/main/java/resources/config/` directory.
+
+Afterwards, run the test script:
+```sh
+python3 test.py
+```
+
+NOTE: you might need to first install `tmux`:
+```sh
+sudo apt install tmux -y
+```
+
+Then you can interact with the blockchain as a client:
+
+![Client](./images/test_tmux.png)
+
 ## Design Considerations
 - **Safety & Liveness**: The system ensures safety under all conditions and guarantees liveness only if the leader remains correct.
 - **Client-Consensus Integration**: The client submits requests that are transformed into consensus proposals.

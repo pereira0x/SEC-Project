@@ -174,9 +174,6 @@ public class ConsensusInstance {
                     // Look at all states and decide the value you want to write (in write messages )
                     // pick the value to write
                     TimestampValuePair candidate = getValueFromCollected();
-                    if (myId == 3) {
-                        candidate = new TimestampValuePair(0, "World");
-                    }
 
                     // Broadcast write
                     switch (Config.processBehaviors.get(this.myId)) {
