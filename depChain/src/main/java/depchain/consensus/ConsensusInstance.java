@@ -186,6 +186,12 @@ public class ConsensusInstance {
                         default:
                             break;
                     }
+
+                    // if Im ids 3 and 4, sleep 5 seconds
+                    if (myId == 3) {
+                        Thread.sleep(5000);
+                    }
+
                     broadcastWrite(candidate);
 
                     // Wait for writes

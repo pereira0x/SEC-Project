@@ -145,11 +145,13 @@ public class BlockchainMember {
                                 consensusInstance.processMessage(msg);
                             }
 
-                            String decidedValue = consensusInstance.getDecidedValue();
-                            if (decidedValue != null) {
-                                // Append the decided value to the blockchain.
-                                this.blockchain.add(decidedValue);
-                                consensusInstance = null;
+                            if (consensusInstance != null){
+                                String decidedValue = consensusInstance.getDecidedValue();
+                                if (decidedValue != null) {
+                                    // Append the decided value to the blockchain.
+                                    this.blockchain.add(decidedValue);
+                                    consensusInstance = null;
+                                }
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
