@@ -14,51 +14,70 @@ public class Message implements Serializable {
         READ, STATE, COLLECTED, WRITE, ACCEPT, CLIENT_REQUEST, CLIENT_REPLY, ACK, START_SESSION, ACK_SESSION
     }
 
-    public final Type type;
-    public final int epoch; // For our design, epoch doubles as the consensus instance ID.
-    public String value; // The value (e.g., the string to append).
-    public final int senderId; // The sender's ID (for clients, use a distinct range).
-    public final byte[] signature; // Signature over the message content (computed by sender).
-    public int nonce; // nonce for the message (computed by sender).
-    public ByteArrayWrapper sessionKey; // session key for the message (computed by sender).
-    public final State state;
-    public final Map<Integer, State> statesMap;
-    public final TimestampValuePair write;
+    private final Type type;
+    private final int epoch; // For our design, epoch doubles as the consensus instance ID.
+    private String value; // The value (e.g., the string to append).
+    private final int senderId; // The sender's ID (for clients, use a distinct range).
+    private final byte[] signature; // Signature over the message content (computed by sender).
+    private int nonce; // nonce for the message (computed by sender).
+    
+    // Optional fields
+    private ByteArrayWrapper sessionKey; // session key for the message (computed by sender).
+    private final State state;
+    private final Map<Integer, State> statesMap;
+    private final TimestampValuePair write; 
 
-    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce) {
-        this(type, epoch, value, senderId, signature, nonce, null, null, null, null);
+    private Message(MessageBuilder builder) {
+        this.type = builder.type;
+        this.epoch = builder.epoch;
+        this.value = builder.value;
+        this.senderId = builder.senderId;
+        this.signature = builder.signature;
+        this.state = builder.state;
+        this.statesMap = builder.statesMap;
+        this.write = builder.write;
+        this.sessionKey = builder.sessionKey;
+        this.nonce = builder.nonce;
     }
 
-    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce,
-            ByteArrayWrapper sessionKey) {
-        this(type, epoch, value, senderId, signature, nonce, sessionKey, null, null, null);
+    public Type getType() {
+        return type;
     }
 
-    // For STATE messages
-    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce,
-            ByteArrayWrapper sessionKey, State state) {
-        this(type, epoch, value, senderId, signature, nonce, sessionKey, state, null, null);
+    public int getEpoch() {
+        return epoch;
     }
 
-    // for Collected messages
-    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce,
-            ByteArrayWrapper sessionKey, State state, Map<Integer, State> statesMap) {
-        this(type, epoch, value, senderId, signature, nonce, sessionKey, state, statesMap, null);
+    public String getValue() {
+        return value;
     }
 
-    // for WRITE messages
-    public Message(Type type, int epoch, String value, int senderId, byte[] signature, int nonce,
-            ByteArrayWrapper sessionKey, State state, Map<Integer, State> statesMap, TimestampValuePair write) {
-        this.type = type;
-        this.epoch = epoch;
-        this.value = value;
-        this.senderId = senderId;
-        this.signature = signature;
-        this.nonce = nonce;
-        this.sessionKey = sessionKey;
-        this.state = state;
-        this.statesMap = statesMap;
-        this.write = write;
+    public int getSenderId() {
+        return senderId;
+    }
+
+    public byte[] getSignature() {
+        return signature;
+    }
+
+    public State getState() {
+        return state;
+    }
+
+    public Map<Integer, State> getStatesMap() {
+        return statesMap;
+    }
+
+    public TimestampValuePair getWrite() {
+        return write;
+    }
+
+    public ByteArrayWrapper getSessionKey() {
+        return sessionKey;
+    }
+
+    public int getNonce() {
+        return nonce;
     }
 
     public void setNonce(int nonce) {
@@ -68,7 +87,6 @@ public class Message implements Serializable {
     // Returns a string representation of the content to be signed.
     public String getSignableContent() {
 
-        // only put non null values
         String content = "";
         content += type.toString();
         content += epoch;
@@ -78,11 +96,64 @@ public class Message implements Serializable {
         if (sessionKey != null) {
             content += sessionKey.getData();
         }
-        // if (state != null) {
-        // for (Object obj : state) {
-        // content += obj.toString();
-        // }
-        // }
+
         return content;
     }
+
+    public static class MessageBuilder {
+        private final Type type;
+        private final int epoch;
+        private final String value;
+        private final int senderId;
+        private byte[] signature;
+        private ByteArrayWrapper sessionKey;
+        private State state;
+        private Map<Integer, State> statesMap;
+        private TimestampValuePair write;
+        private int nonce;
+
+        public MessageBuilder(Type type, int epoch, String value, int senderId) {
+            this.type = type;
+            this.epoch = epoch;
+            this.value = value;
+            this.senderId = senderId;
+            this.signature = null;
+            this.sessionKey = null;
+        }
+
+       public MessageBuilder setNonce(int nonce) {
+            this.nonce = nonce;
+            return this;
+        }
+
+        public MessageBuilder setSessionKey(ByteArrayWrapper sessionKey) {
+            this.sessionKey = sessionKey;
+            return this;
+        }
+
+        public MessageBuilder setState(State state) {
+            this.state = state;
+            return this;
+        }
+
+        public MessageBuilder setStatesMap(Map<Integer, State> statesMap) {
+            this.statesMap = statesMap;
+            return this;
+        }
+
+        public MessageBuilder setWrite(TimestampValuePair write) {
+            this.write = write;
+            return this;
+        }
+
+        public MessageBuilder setSignature(byte[] signature) {
+            this.signature = signature;
+            return this;
+        }
+
+        public Message build() {
+            return new Message(this);
+        }
+    }
+
 }

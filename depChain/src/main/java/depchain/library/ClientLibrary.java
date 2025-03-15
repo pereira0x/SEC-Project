@@ -22,14 +22,17 @@ public class ClientLibrary {
     // Append a string to the blockchain.
     public String append(String request) throws Exception {
         // Create a CLIENT_REQUEST message. (Assume the client sets its own ID.)
-        Message reqMsg = new Message(Message.Type.CLIENT_REQUEST, 0, request, clientId, null, nonce);
+        /* Message reqMsg = new Message(Message.Type.CLIENT_REQUEST, 0, request, clientId, null, nonce); */
+        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, request, clientId)
+            .setNonce(nonce)
+            .build();
         perfectLink.send(leaderId, reqMsg);
         // Wait for a CLIENT_REPLY OR ACK
         while (true) {
             Message reply = perfectLink.deliver();
-            if (reply.type == Message.Type.CLIENT_REPLY) {
+            if (reply.getType() == Message.Type.CLIENT_REPLY) {
                 nonce++;
-                return reply.value;
+                return reply.getValue();
             }
         }
     }
