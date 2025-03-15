@@ -124,8 +124,6 @@ public class BlockchainMember {
                                 InetSocketAddress clientAddr = Config.clientAddresses.get(msg.getSenderId());
                                 if (clientAddr != null) {
                                     // TODO: EPOCH NUMBER MUST BE A NEW ONE
-                                    /* Message reply = new Message(Type.CLIENT_REPLY, msg.getEpoch(), decidedValue, memberId,
-                                            null, msg.getNonce()); */
                                     Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(), decidedValue, memberId)
                                             .setNonce(msg.getNonce())
                                             .build();

@@ -63,11 +63,6 @@ public class ConsensusInstance {
     }
 
     private void broadcastCollected() {
-        /*
-         * Message collectedMsg = new Message(Message.Type.COLLECTED, epoch, null, myId,
-         * null, -1, null, null,
-         * stateResponses);
-         */
         Message collectedMsg = new Message.MessageBuilder(Message.Type.COLLECTED, epoch, null, myId)
                 .setNonce(-1).setStatesMap(stateResponses).build();
         for (int pid : allProcessIds) {
@@ -82,7 +77,6 @@ public class ConsensusInstance {
     }
 
     private void broadcastWrite(TimestampValuePair candidate) {
-        /* Message writeMsg = new Message(Message.Type.WRITE, epoch, null, myId, null, -1, null, null, null, candidate); */
         Message writeMsg = new Message.MessageBuilder(Message.Type.WRITE, epoch, null, myId).setNonce(-1).setWrite(candidate).build();
 
         // append to the writeset of my state the candidate
@@ -105,7 +99,6 @@ public class ConsensusInstance {
         state.setMostRecentWrite(new TimestampValuePair(epoch, candidate));
 
         acceptedValues.add(candidate);
-        /* Message acceptMsg = new Message(Message.Type.ACCEPT, epoch, candidate, myId, null, -1); */
         Message acceptMsg = new Message.MessageBuilder(Message.Type.ACCEPT, epoch, candidate, myId).setNonce(-1).build();
         for (int pid : allProcessIds) {
             if (pid != myId) {
@@ -121,11 +114,9 @@ public class ConsensusInstance {
     // This method is invoked (by any process) when a message is delivered.
     public void processMessage(Message msg) {
         try {
-            System.out.println("Processing message: " + msg.getType() + " from " + msg.getSenderId());   
             switch (msg.getType()) {
                 case READ:
 
-                    /* Message stateMsg = new Message(Message.Type.STATE, epoch, msg.getValue(), myId, null, -1, null, state); */
                     Message stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId)
                     .setNonce(-1).setState(state)
                             .build();
@@ -135,8 +126,6 @@ public class ConsensusInstance {
                             State currentStateCopy = state;
                             currentStateCopy.setMostRecentWrite(new TimestampValuePair(1, "Byzantine"));
                             currentStateCopy.addToWriteSet(new TimestampValuePair(1, "Byzantine"));
-                            /* stateMsg = new Message(Message.Type.STATE, epoch, msg.getValue(), myId, null, -1, null,
-                                    currentStateCopy); */
                             stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId)
                             .setNonce(-1).setState(currentStateCopy)
                                     .build();
@@ -146,8 +135,6 @@ public class ConsensusInstance {
                             // Send a state message impersonating another process - signature check should
                             // fail
                             int otherProcessId = myId == 3 ? 2 : 3;
-                            /* stateMsg = new Message(Message.Type.STATE, epoch, msg.getValue(), otherProcessId, null, -1, null,
-                                    state); */
                             stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), otherProcessId)
                             .setNonce(-1).setState(state)
                                     .build();
@@ -157,8 +144,6 @@ public class ConsensusInstance {
                             State currentStateCopySpam = state;
                             currentStateCopySpam.setMostRecentWrite(new TimestampValuePair(1, "Spam"));
                             currentStateCopySpam.addToWriteSet(new TimestampValuePair(1, "Spam"));
-                            /* stateMsg = new Message(Message.Type.STATE, epoch, msg.getValue(), myId, null, -1, null,
-                                    currentStateCopySpam); */
 
                             stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId)
                             .setNonce(-1).setState(currentStateCopySpam)
