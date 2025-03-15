@@ -124,9 +124,8 @@ public class BlockchainMember {
                                 InetSocketAddress clientAddr = Config.clientAddresses.get(msg.getSenderId());
                                 if (clientAddr != null) {
                                     // TODO: EPOCH NUMBER MUST BE A NEW ONE
-                                    Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(), decidedValue, memberId)
-                                            .setNonce(msg.getNonce())
-                                            .build();
+                                    Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
+                                            decidedValue, memberId).setNonce(msg.getNonce()).build();
                                     perfectLink.send(msg.getSenderId(), reply);
                                 }
                             } catch (Exception e) {
@@ -146,7 +145,7 @@ public class BlockchainMember {
                                 consensusInstance.processMessage(msg);
                             }
 
-                            if (consensusInstance != null){
+                            if (consensusInstance != null) {
                                 String decidedValue = consensusInstance.getDecidedValue();
                                 if (decidedValue != null) {
                                     // Append the decided value to the blockchain.

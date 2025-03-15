@@ -20,12 +20,12 @@ public class Message implements Serializable {
     private final int senderId; // The sender's ID (for clients, use a distinct range).
     private final byte[] signature; // Signature over the message content (computed by sender).
     private int nonce; // nonce for the message (computed by sender).
-    
+
     // Optional fields
     private ByteArrayWrapper sessionKey; // session key for the message (computed by sender).
     private final State state;
     private final Map<Integer, State> statesMap;
-    private final TimestampValuePair write; 
+    private final TimestampValuePair write;
 
     private Message(MessageBuilder builder) {
         this.type = builder.type;
@@ -119,9 +119,10 @@ public class Message implements Serializable {
             this.senderId = senderId;
             this.signature = null;
             this.sessionKey = null;
+            this.nonce = -1;
         }
 
-       public MessageBuilder setNonce(int nonce) {
+        public MessageBuilder setNonce(int nonce) {
             this.nonce = nonce;
             return this;
         }

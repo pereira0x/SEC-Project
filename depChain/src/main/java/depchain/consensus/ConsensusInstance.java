@@ -47,7 +47,7 @@ public class ConsensusInstance {
 
     // Leader sends READ messages to all.
     private void broadcastRead() {
-        Message readMsg = new Message.MessageBuilder(Message.Type.READ, epoch, null, myId).setNonce(-1).build();
+        Message readMsg = new Message.MessageBuilder(Message.Type.READ, epoch, null, myId).build();
 
         // Start by appending the leader's own state.
         stateResponses.put(leaderId, state);
@@ -64,7 +64,7 @@ public class ConsensusInstance {
 
     private void broadcastCollected() {
         Message collectedMsg = new Message.MessageBuilder(Message.Type.COLLECTED, epoch, null, myId)
-                .setNonce(-1).setStatesMap(stateResponses).build();
+                .setStatesMap(stateResponses).build();
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -77,7 +77,8 @@ public class ConsensusInstance {
     }
 
     private void broadcastWrite(TimestampValuePair candidate) {
-        Message writeMsg = new Message.MessageBuilder(Message.Type.WRITE, epoch, null, myId).setNonce(-1).setWrite(candidate).build();
+        Message writeMsg = new Message.MessageBuilder(Message.Type.WRITE, epoch, null, myId).setWrite(candidate)
+                .build();
 
         // append to the writeset of my state the candidate
         state.addToWriteSet(candidate);
@@ -99,7 +100,7 @@ public class ConsensusInstance {
         state.setMostRecentWrite(new TimestampValuePair(epoch, candidate));
 
         acceptedValues.add(candidate);
-        Message acceptMsg = new Message.MessageBuilder(Message.Type.ACCEPT, epoch, candidate, myId).setNonce(-1).build();
+        Message acceptMsg = new Message.MessageBuilder(Message.Type.ACCEPT, epoch, candidate, myId).build();
         for (int pid : allProcessIds) {
             if (pid != myId) {
                 try {
@@ -118,8 +119,7 @@ public class ConsensusInstance {
                 case READ:
 
                     Message stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId)
-                    .setNonce(-1).setState(state)
-                            .build();
+                            .setState(state).build();
                     switch (Config.processBehaviors.get(this.myId)) {
                         case "byzantineState":
                             // Send a state message with a random state.
@@ -127,17 +127,15 @@ public class ConsensusInstance {
                             currentStateCopy.setMostRecentWrite(new TimestampValuePair(1, "Byzantine"));
                             currentStateCopy.addToWriteSet(new TimestampValuePair(1, "Byzantine"));
                             stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId)
-                            .setNonce(-1).setState(currentStateCopy)
-                                    .build();
+                                    .setState(currentStateCopy).build();
                             Logger.log(LogLevel.WARNING, "Byzantine state sent: " + currentStateCopy);
                             break;
                         case "impersonate":
                             // Send a state message impersonating another process - signature check should
                             // fail
                             int otherProcessId = myId == 3 ? 2 : 3;
-                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), otherProcessId)
-                            .setNonce(-1).setState(state)
-                                    .build();
+                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(),
+                                    otherProcessId).setState(state).build();
                             Logger.log(LogLevel.WARNING, "Invalid signature sent: " + stateMsg);
                             break;
                         case "spam":
@@ -146,8 +144,7 @@ public class ConsensusInstance {
                             currentStateCopySpam.addToWriteSet(new TimestampValuePair(1, "Spam"));
 
                             stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId)
-                            .setNonce(-1).setState(currentStateCopySpam)
-                                    .build();
+                                    .setState(currentStateCopySpam).build();
                             Logger.log(LogLevel.WARNING, "Spam state sent, 100 times: " + currentStateCopySpam);
                             for (int i = 0; i < 100; i++) {
                                 try {

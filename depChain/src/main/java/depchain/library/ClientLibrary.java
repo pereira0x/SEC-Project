@@ -22,9 +22,8 @@ public class ClientLibrary {
     // Append a string to the blockchain.
     public String append(String request) throws Exception {
         // Create a CLIENT_REQUEST message. (Assume the client sets its own ID.)
-        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, request, clientId)
-            .setNonce(nonce)
-            .build();
+        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, request, clientId).setNonce(nonce)
+                .build();
         perfectLink.send(leaderId, reqMsg);
         // Wait for a CLIENT_REPLY OR ACK
         while (true) {
