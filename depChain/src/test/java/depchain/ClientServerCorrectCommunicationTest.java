@@ -36,7 +36,6 @@ public class ClientServerCorrectCommunicationTest {
         DepChainClient client1 = new DepChainClient(5, 9001);
         String response = client1.append("Hello");
 
-
         // blockchain is of type ArrayList<String>
         boolean messageReceived = response.equals("Hello");
 

@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import javax.crypto.SecretKey;
 
 import depchain.utils.ByteArrayWrapper;
-import java.util.List;
 import depchain.utils.Config;
 import depchain.utils.CryptoUtil;
 import depchain.utils.Logger;
@@ -123,7 +122,7 @@ public class PerfectLink {
         }
 
         int nonce = CryptoUtil.generateNonce();
-        Message msg = new Message(Message.Type.START_SESSION, -1, null, myId, null, nonce);
+        Message msg = new Message.MessageBuilder(Message.Type.START_SESSION, -1, null, myId).setNonce(nonce).build();
 
         try {
             activeSessionMap.put(destId, false); // Mark session as initiating
@@ -171,24 +170,24 @@ public class PerfectLink {
             // TODO: Deal with EOFException
             Message msg = (Message) ois.readObject();
 
-            Logger.log(LogLevel.DEBUG,
-                    "Received message of type " + msg.type + " from " + msg.senderId + " with nonce " + msg.nonce);
+            Logger.log(LogLevel.DEBUG, "Received message of type " + msg.getType() + " from " + msg.getSenderId()
+                    + " with nonce " + msg.getNonce());
 
-            PublicKey senderKey = publicKeys.get(msg.senderId);
-            Session session = sessions.get(msg.senderId);
+            PublicKey senderKey = publicKeys.get(msg.getSenderId());
+            Session session = sessions.get(msg.getSenderId());
 
             // In a real implementation, you would verify the signature here
             if (senderKey != null) {
-                switch (msg.type) {
+                switch (msg.getType()) {
 
                     case ACK:
                         // Regular ACK for another message type
-                        if (session != null && session.getSentCounter() == msg.nonce) {
+                        if (session != null && session.getSentCounter() == msg.getNonce()) {
                             session.incrementSentCounter();
 
                             // Cancel the resend task
                             ScheduledFuture<?> task = sessionResendTasks
-                                    .getOrDefault(msg.senderId, new ConcurrentHashMap<>()).remove(msg.nonce);
+                                    .getOrDefault(msg.getSenderId(), new ConcurrentHashMap<>()).remove(msg.getNonce());
 
                             if (task != null) {
                                 task.cancel(false);
@@ -197,57 +196,58 @@ public class PerfectLink {
                         break;
 
                     case ACK_SESSION:
-                        if (activeSessionMap.containsKey(msg.senderId) && !activeSessionMap.get(msg.senderId)) {
+                        if (activeSessionMap.containsKey(msg.getSenderId())
+                                && !activeSessionMap.get(msg.getSenderId())) {
 
                             // decrypt session key with private key
-                            SecretKey sessionKey = CryptoUtil.decryptSecretKey(msg.sessionKey.getData(), myPrivateKey);
-                            Session newSession = new Session(msg.senderId, processAddresses.get(msg.senderId),
+                            SecretKey sessionKey = CryptoUtil.decryptSecretKey(msg.getSessionKey().getData(),
+                                    myPrivateKey);
+                            Session newSession = new Session(msg.getSenderId(), processAddresses.get(msg.getSenderId()),
                                     sessionKey);
-                            sessions.put(msg.senderId, newSession);
+                            sessions.put(msg.getSenderId(), newSession);
                             Logger.log(LogLevel.INFO, "MY ID " + myId + " Session established with process "
-                                    + msg.senderId + " session: " + newSession.toString());
+                                    + msg.getSenderId() + " session: " + newSession.toString());
 
-                            activeSessionMap.put(msg.senderId, true);
-                            ScheduledFuture<?> task = resendTasks.remove(msg.nonce);
+                            activeSessionMap.put(msg.getSenderId(), true);
+                            ScheduledFuture<?> task = resendTasks.remove(msg.getNonce());
                             if (task != null)
                                 task.cancel(false);
                         }
                         break;
 
                     case START_SESSION:
-                        InetSocketAddress address = processAddresses.getOrDefault(msg.senderId,
-                                Config.clientAddresses.get(msg.senderId));
+                        InetSocketAddress address = processAddresses.getOrDefault(msg.getSenderId(),
+                                Config.clientAddresses.get(msg.getSenderId()));
 
                         // Create a new session with the requester if we don't have one already
-                        if (!activeSessionMap.containsKey(msg.senderId) || !activeSessionMap.get(msg.senderId)) {
+                        if (!activeSessionMap.containsKey(msg.getSenderId())
+                                || !activeSessionMap.get(msg.getSenderId())) {
 
-                            Session newSession = new Session(msg.senderId, address);
-                            sessions.put(msg.senderId, newSession);
+                            Session newSession = new Session(msg.getSenderId(), address);
+                            sessions.put(msg.getSenderId(), newSession);
 
-                            activeSessionMap.put(msg.senderId, true);
+                            activeSessionMap.put(msg.getSenderId(), true);
 
                             Logger.log(LogLevel.INFO, "MY ID " + myId + " Session established with process "
-                                    + msg.senderId + " session: " + newSession.toString());
+                                    + msg.getSenderId() + " session: " + newSession.toString());
                         }
 
                         // encrypt session key with public key of sender
                         byte[] encryptedSessionKey = CryptoUtil
-                                .encryptSecretKey(sessions.get(msg.senderId).getSessionKey(), senderKey);
+                                .encryptSecretKey(sessions.get(msg.getSenderId()).getSessionKey(), senderKey);
                         ByteArrayWrapper encryptedSessionKeyWrapper = new ByteArrayWrapper(encryptedSessionKey);
 
-                        // send ACK
-                        Message ackMsgSession = new Message(Message.Type.ACK_SESSION, -1, "", myId, null, msg.nonce,
-                                encryptedSessionKeyWrapper);
-                        send(msg.senderId, ackMsgSession);
+                        // send ACK_SESSION
+                        Message ackMsgSession = new Message.MessageBuilder(Message.Type.ACK_SESSION, -1, "", myId)
+                                .setNonce(msg.getNonce()).setSessionKey(encryptedSessionKeyWrapper).build();
+                        send(msg.getSenderId(), ackMsgSession);
 
                         break;
 
                     default:
                         // Wait for session to be established before processing further messages
                         try {
-                            while (sessions.get(msg.senderId) == null) {
-                                // Logger.log(LogLevel.INFO, "Waiting for session with process " + msg.senderId + " to
-                                // be established...");
+                            while (sessions.get(msg.getSenderId()) == null) {
                                 Thread.sleep(500);
                             }
                         } catch (InterruptedException e) {
@@ -256,19 +256,20 @@ public class PerfectLink {
 
                         // Check authenticity of the message
                         // TODO: sometimes this fails and I suspect it's due to concurrent access <- assess this
-                        if (!CryptoUtil.checkHMACHmacSHA256(msg.getSignableContent().getBytes(), msg.signature,
-                                sessions.get(msg.senderId).getSessionKey())) {
+                        if (!CryptoUtil.checkHMACHmacSHA256(msg.getSignableContent().getBytes(), msg.getSignature(),
+                                sessions.get(msg.getSenderId()).getSessionKey())) {
                             Logger.log(LogLevel.ERROR,
-                                    "Signature verification failed for message from " + msg.senderId);
+                                    "Signature verification failed for message from " + msg.getSenderId());
                             return;
                         }
 
                         // Send ACK to sender
-                        Message ackMsg = new Message(Message.Type.ACK, msg.epoch, msg.value, myId, null, msg.nonce);
-                        send(msg.senderId, ackMsg);
+                        Message ackMsg = new Message.MessageBuilder(Message.Type.ACK, msg.getEpoch(), msg.getValue(),
+                                myId).setNonce(msg.getNonce()).build();
+                        send(msg.getSenderId(), ackMsg);
 
                         // Process the message if we haven't seen it before
-                        if (session != null && session.getAckCounter() <= msg.nonce) {
+                        if (session != null && session.getAckCounter() <= msg.getNonce()) {
                             deliveredQueue.put(msg);
                             session.incrementAckCounter();
                         }
@@ -276,7 +277,7 @@ public class PerfectLink {
                 }
 
             } else {
-                Logger.log(LogLevel.ERROR, "Unknown sender: " + msg.senderId);
+                Logger.log(LogLevel.ERROR, "Unknown sender: " + msg.getSenderId());
             }
         } catch (EOFException eof) { // TODO: Deal with EOFException
             // Logger.log(LogLevel.ERROR, "EOF reached");
@@ -295,10 +296,8 @@ public class PerfectLink {
 
         // Wait for session to be established before sending messages
         try {
-            if (msg.type != Message.Type.START_SESSION && msg.type != Message.Type.ACK_SESSION) {
+            if (msg.getType() != Message.Type.START_SESSION && msg.getType() != Message.Type.ACK_SESSION) {
                 while (!activeSessionMap.getOrDefault(destId, false)) {
-                    // Logger.log(LogLevel.INFO, "Waiting for session with process " + destId + " to be
-                    // established...");
                     Thread.sleep(500);
                 }
             }
@@ -314,13 +313,13 @@ public class PerfectLink {
             Session session = sessions.get(destId);
 
             // Check if the nonce was set accordingly
-            if (msg.nonce == -1) {
-                msg.nonce = session.getSentCounter();
+            if (msg.getNonce() == -1) {
+                msg.setNonce(session.getSentCounter());
             }
 
             try {
                 // START SESSION messages (and ACKs) are signed differently
-                if (msg.type == Message.Type.START_SESSION || msg.type == Message.Type.ACK_SESSION) {
+                if (msg.getType() == Message.Type.START_SESSION || msg.getType() == Message.Type.ACK_SESSION) {
                     // DO NOTHING
                 }
                 // Other messages are signed with the session key
@@ -337,39 +336,48 @@ public class PerfectLink {
             Session s = sessions.get(destId);
             SecretKey sessionKey = s.getSessionKey();
             if (sessionKey != null) {
-                if (msg.type == Message.Type.STATE) {
-                    signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce, null,
-                            msg.state);
+                if (msg.getType() == Message.Type.STATE) {
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getValue(),
+                            msg.getSenderId()).setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
+                                    .build();
 
-                } else if (msg.type == Message.Type.ACK_SESSION) {
-                    signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce,
-                            msg.sessionKey);
-                } else if (msg.type == Message.Type.COLLECTED) {
-                    signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce,
-                            msg.sessionKey, msg.state, msg.statesMap);
-                } else if (msg.type == Message.Type.WRITE) {
-                    signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce,
-                            msg.sessionKey, msg.state, msg.statesMap, msg.write);
+                } else if (msg.getType() == Message.Type.ACK_SESSION) {
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getValue(),
+                            msg.getSenderId()).setSignature(sig).setNonce(msg.getNonce())
+                                    .setSessionKey(msg.getSessionKey()).build();
+
+                } else if (msg.getType() == Message.Type.COLLECTED) {
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getValue(),
+                            msg.getSenderId()).setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
+                                    .setStatesMap(msg.getStatesMap()).build();
+
+                } else if (msg.getType() == Message.Type.WRITE) {
+
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getValue(),
+                            msg.getSenderId()).setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
+                                    .setStatesMap(msg.getStatesMap()).setWrite(msg.getWrite()).build();
                 } else {
-                    signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce);
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getValue(),
+                            msg.getSenderId()).setSignature(sig).setNonce(msg.getNonce()).build();
                 }
             } else {
-                signedMsg = new Message(msg.type, msg.epoch, msg.value, msg.senderId, sig, msg.nonce);
+                signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getValue(), msg.getSenderId())
+                        .setSignature(sig).setNonce(msg.getNonce()).build();
             }
 
             try {
                 Logger.log(LogLevel.DEBUG,
-                        "Sending message to " + destId + " of type " + msg.type + " with nonce " + msg.nonce);
+                        "Sending message to " + destId + " of type " + msg.getType() + " with nonce " + msg.getNonce());
                 // if not ack, then send as true
-                if (msg.type != Message.Type.ACK && msg.type != Message.Type.ACK_SESSION
-                        && msg.type != Message.Type.START_SESSION) {
+                if (msg.getType() != Message.Type.ACK && msg.getType() != Message.Type.ACK_SESSION
+                        && msg.getType() != Message.Type.START_SESSION) {
                     sendMessage(address, signedMsg, true, destId);
                 } else {
                     sendMessage(address, signedMsg, false, destId);
                 }
 
-                // Don't schedule resends for ACK messages
-                if (msg.type != Message.Type.ACK && msg.type != Message.Type.ACK_SESSION) {
+                // Do not schedule resends for ACK messages
+                if (msg.getType() != Message.Type.ACK && msg.getType() != Message.Type.ACK_SESSION) {
                     scheduleResend(destId, signedMsg);
                 }
             } catch (Exception e) {
@@ -396,7 +404,7 @@ public class PerfectLink {
     }
 
     private void scheduleResend(int destId, Message msg) {
-        if (msg.type == Message.Type.START_SESSION) {
+        if (msg.getType() == Message.Type.START_SESSION) {
             // Use global resendTasks for session initiation
             ScheduledFuture<?> future = senderWorkerPool.scheduleAtFixedRate(() -> {
                 if (!activeSessionMap.getOrDefault(destId, false)) {
@@ -426,13 +434,12 @@ public class PerfectLink {
                     return;
 
                 try {
-                    if (msg.nonce >= session.getSentCounter()) {
-                        Logger.log(LogLevel.DEBUG,
-                                "Resending message to " + destId + " of type " + msg.type + " with nonce " + msg.nonce);
+                    if (msg.getNonce() >= session.getSentCounter()) {
+                        Logger.log(LogLevel.DEBUG, "Resending message to " + destId + " of type " + msg.getType()
+                                + " with nonce " + msg.getNonce());
                         sendMessage(processAddresses.get(destId), msg, false, destId);
                     } else {
-                        // Logger.log(LogLevel.DEBUG, "Message acknowledged, stopping resends for " + msg.nonce);
-                        ScheduledFuture<?> task = sessionTasks.remove(msg.nonce);
+                        ScheduledFuture<?> task = sessionTasks.remove(msg.getNonce());
                         if (task != null)
                             task.cancel(false);
                     }
@@ -441,7 +448,7 @@ public class PerfectLink {
                 }
             }, 4L, 2L, TimeUnit.SECONDS);
 
-            sessionTasks.put(msg.nonce, future);
+            sessionTasks.put(msg.getNonce(), future);
         }
     }
 

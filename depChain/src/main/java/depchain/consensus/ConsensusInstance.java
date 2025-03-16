@@ -42,12 +42,12 @@ public class ConsensusInstance {
         this.allProcessIds = new ArrayList<>(allProcessIds);
         this.perfectLink = perfectLink;
         this.epoch = epoch;
-        this.quorumSize = (float) 2*f + 1;
+        this.quorumSize = (float) 2 * f + 1;
     }
 
     // Leader sends READ messages to all.
     private void broadcastRead() {
-        Message readMsg = new Message(Message.Type.READ, epoch, null, myId, null, -1);
+        Message readMsg = new Message.MessageBuilder(Message.Type.READ, epoch, null, myId).build();
 
         // Start by appending the leader's own state.
         stateResponses.put(leaderId, state);
@@ -63,8 +63,8 @@ public class ConsensusInstance {
     }
 
     private void broadcastCollected() {
-        Message collectedMsg = new Message(Message.Type.COLLECTED, epoch, null, myId, null, -1, null, null,
-                stateResponses);
+        Message collectedMsg = new Message.MessageBuilder(Message.Type.COLLECTED, epoch, null, myId)
+                .setStatesMap(stateResponses).build();
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
                 try {
@@ -77,7 +77,8 @@ public class ConsensusInstance {
     }
 
     private void broadcastWrite(TimestampValuePair candidate) {
-        Message writeMsg = new Message(Message.Type.WRITE, epoch, null, myId, null, -1, null, null, null, candidate);
+        Message writeMsg = new Message.MessageBuilder(Message.Type.WRITE, epoch, null, myId).setWrite(candidate)
+                .build();
 
         // append to the writeset of my state the candidate
         state.addToWriteSet(candidate);
@@ -99,7 +100,7 @@ public class ConsensusInstance {
         state.setMostRecentWrite(new TimestampValuePair(epoch, candidate));
 
         acceptedValues.add(candidate);
-        Message acceptMsg = new Message(Message.Type.ACCEPT, epoch, candidate, myId, null, -1);
+        Message acceptMsg = new Message.MessageBuilder(Message.Type.ACCEPT, epoch, candidate, myId).build();
         for (int pid : allProcessIds) {
             if (pid != myId) {
                 try {
@@ -114,37 +115,40 @@ public class ConsensusInstance {
     // This method is invoked (by any process) when a message is delivered.
     public void processMessage(Message msg) {
         try {
-            switch (msg.type) {
+            switch (msg.getType()) {
                 case READ:
 
-                    Message stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId, null, -1, null, state);
+                    Message stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId)
+                            .setState(state).build();
                     switch (Config.processBehaviors.get(this.myId)) {
                         case "byzantineState":
                             // Send a state message with a random state.
                             State currentStateCopy = state;
                             currentStateCopy.setMostRecentWrite(new TimestampValuePair(1, "Byzantine"));
                             currentStateCopy.addToWriteSet(new TimestampValuePair(1, "Byzantine"));
-                            stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId, null, -1, null,
-                                    currentStateCopy);
+                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId)
+                                    .setState(currentStateCopy).build();
                             Logger.log(LogLevel.WARNING, "Byzantine state sent: " + currentStateCopy);
                             break;
                         case "impersonate":
-                            // Send a state message impersonating another process - signature check should fail
+                            // Send a state message impersonating another process - signature check should
+                            // fail
                             int otherProcessId = myId == 3 ? 2 : 3;
-                            stateMsg = new Message(Message.Type.STATE, epoch, msg.value, otherProcessId, null, -1, null,
-                                    state);
+                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(),
+                                    otherProcessId).setState(state).build();
                             Logger.log(LogLevel.WARNING, "Invalid signature sent: " + stateMsg);
                             break;
                         case "spam":
                             State currentStateCopySpam = state;
                             currentStateCopySpam.setMostRecentWrite(new TimestampValuePair(1, "Spam"));
                             currentStateCopySpam.addToWriteSet(new TimestampValuePair(1, "Spam"));
-                            stateMsg = new Message(Message.Type.STATE, epoch, msg.value, myId, null, -1, null,
-                                    currentStateCopySpam);
+
+                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId)
+                                    .setState(currentStateCopySpam).build();
                             Logger.log(LogLevel.WARNING, "Spam state sent, 100 times: " + currentStateCopySpam);
                             for (int i = 0; i < 100; i++) {
                                 try {
-                                    perfectLink.send(msg.senderId, stateMsg);
+                                    perfectLink.send(msg.getSenderId(), stateMsg);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
@@ -154,24 +158,25 @@ public class ConsensusInstance {
                             break;
                     }
                     try {
-                        perfectLink.send(msg.senderId, stateMsg);
+                        perfectLink.send(msg.getSenderId(), stateMsg);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                     break;
                 case STATE:
-                    stateResponses.put(msg.senderId, msg.state);
+                    stateResponses.put(msg.getSenderId(), msg.getState());
                     break;
                 case WRITE:
-                    writeResponses.put(msg.senderId, msg.write);
+                    writeResponses.put(msg.getSenderId(), msg.getWrite());
                     break;
                 case COLLECTED:
                     // Upon COLLECTED, update our local state and send an ACCEPT.
-                    stateResponses = msg.statesMap;
+                    stateResponses = msg.getStatesMap();
 
                     Logger.log(LogLevel.INFO, "Received COLLECTED: " + stateResponses);
 
-                    // Look at all states and decide the value you want to write (in write messages )
+                    // Look at all states and decide the value you want to write (in write messages
+                    // )
                     // pick the value to write
                     TimestampValuePair candidate = getValueFromCollected();
 
@@ -224,7 +229,7 @@ public class ConsensusInstance {
                     break;
                 case ACCEPT:
                     // Upon ACCEPT, update our local state.
-                    acceptedValues.add(msg.value);
+                    acceptedValues.add(msg.getValue());
                     break;
                 default:
                     break;
@@ -326,8 +331,9 @@ public class ConsensusInstance {
             }
         }
 
-        if ((max < (f+1)) || (valueToWrite != null && !valueToWrite.equals(candidate))) {
-            Logger.log(LogLevel.ERROR, "Value to write is not the same as the candidate or does not have more than f+1");
+        if ((max < (f + 1)) || (valueToWrite != null && !valueToWrite.equals(candidate))) {
+            Logger.log(LogLevel.ERROR,
+                    "Value to write is not the same as the candidate or does not have more than f+1");
             return null;
         }
 
@@ -370,8 +376,9 @@ public class ConsensusInstance {
             }
         }
 
-        if ((max < f+1) || (valueToAppend != null && !valueToAppend.equals(candidate))) {
-            Logger.log(LogLevel.ERROR, "Value to write is not the same as the candidate or does not have more than f+1");
+        if ((max < f + 1) || (valueToAppend != null && !valueToAppend.equals(candidate))) {
+            Logger.log(LogLevel.ERROR,
+                    "Value to write is not the same as the candidate or does not have more than f+1");
             return null;
         }
 

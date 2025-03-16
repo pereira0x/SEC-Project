@@ -101,12 +101,12 @@ public class BlockchainMember {
                         break;
                 }
                 new Thread(() -> {
-                    if (msg.type == Message.Type.CLIENT_REQUEST) {
+                    if (msg.getType() == Message.Type.CLIENT_REQUEST) {
                         if (memberId == leaderId) {
                             int instanceId = epochNumber++;
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
                                     instanceId, f);
-                            consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, msg.value));
+                            consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, msg.getValue()));
                             /* consensusInstance.readPhase(msg.value); */
                             try {
                                 Logger.log(LogLevel.DEBUG, "Waiting for decision...");
@@ -121,12 +121,12 @@ public class BlockchainMember {
                                     this.blockchain.add(decidedValue);
 
                                 // Send ACK to the client.
-                                InetSocketAddress clientAddr = Config.clientAddresses.get(msg.senderId);
+                                InetSocketAddress clientAddr = Config.clientAddresses.get(msg.getSenderId());
                                 if (clientAddr != null) {
                                     // TODO: EPOCH NUMBER MUST BE A NEW ONE
-                                    Message reply = new Message(Type.CLIENT_REPLY, msg.epoch, decidedValue, memberId,
-                                            null, msg.nonce);
-                                    perfectLink.send(msg.senderId, reply);
+                                    Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
+                                            decidedValue, memberId).setNonce(msg.getNonce()).build();
+                                    perfectLink.send(msg.getSenderId(), reply);
                                 }
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -141,11 +141,11 @@ public class BlockchainMember {
                             } else {
                                 // instantiate a new consensus instance
                                 consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds,
-                                        perfectLink, msg.epoch, f);
+                                        perfectLink, msg.getEpoch(), f);
                                 consensusInstance.processMessage(msg);
                             }
 
-                            if (consensusInstance != null){
+                            if (consensusInstance != null) {
                                 String decidedValue = consensusInstance.getDecidedValue();
                                 if (decidedValue != null) {
                                     // Append the decided value to the blockchain.
