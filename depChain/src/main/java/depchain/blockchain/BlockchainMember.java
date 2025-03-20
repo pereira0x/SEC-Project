@@ -22,6 +22,7 @@ public class BlockchainMember {
     private final int leaderId; // Static leader ID.
     private String behavior;
     private final List<Integer> allProcessIds;
+    private int clientId;
     private PerfectLink perfectLink;
     /* private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>(); */
     private ConsensusInstance consensusInstance;
@@ -34,6 +35,7 @@ public class BlockchainMember {
         this.memberPort = memberPort;
         this.leaderId = leaderId;
         this.allProcessIds = Arrays.asList(1, 2, 3, 4);
+        this.clientId = 5;
         this.f = f;
 
         Dotenv dotenv = Dotenv.load();
@@ -120,7 +122,7 @@ public class BlockchainMember {
                                 if (decidedValue != null)
                                     this.blockchain.add(decidedValue);
 
-                                // Send ACK to the client.
+                                // Send CLIENT_REPLY to the client.
                                 InetSocketAddress clientAddr = Config.clientAddresses.get(msg.getSenderId());
                                 if (clientAddr != null) {
                                     // TODO: EPOCH NUMBER MUST BE A NEW ONE
@@ -151,6 +153,16 @@ public class BlockchainMember {
                                     // Append the decided value to the blockchain.
                                     this.blockchain.add(decidedValue);
                                     consensusInstance = null;
+
+                                    // Send CLIENT_REPLY to the client.
+                                    InetSocketAddress clientAddr = Config.clientAddresses.get(clientId);
+                                    if (clientAddr != null) {
+                                        // TODO: EPOCH NUMBER MUST BE A NEW ONE
+                                        // TODO: IMPLEMENT CLIENT IDS PROPERLY
+                                        Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
+                                                decidedValue, memberId).setNonce(msg.getNonce()).build();
+                                        perfectLink.send(clientId, reply);
+                                    }   
                                 }
                             }
                         } catch (Exception e) {
