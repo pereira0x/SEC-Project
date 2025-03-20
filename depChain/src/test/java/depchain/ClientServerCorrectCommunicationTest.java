@@ -39,6 +39,11 @@ public class ClientServerCorrectCommunicationTest {
         // blockchain is of type ArrayList<String>
         boolean messageReceived = response.equals("Hello");
 
+        // Check if all nodes have committed the value
+        for (BlockchainMember server : servers) {
+            messageReceived = messageReceived && server.getBlockchain().contains("Hello");
+        }
+
         assertTrue(messageReceived, "Message was not stored in the Blockchain.");
     }
 }
