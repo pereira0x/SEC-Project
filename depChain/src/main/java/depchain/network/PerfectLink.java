@@ -76,7 +76,8 @@ public class PerfectLink {
         }
 
         // wait for all sessions to be established
-        while (activeSessionMap.size() < processAddresses.size()) {
+        while (activeSessionMap.size() < processAddresses.size() ||
+                activeSessionMap.values().stream().anyMatch(value -> value == false)) {
             Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
             Thread.sleep(500);
         }
@@ -222,15 +223,6 @@ public class PerfectLink {
                         break;
 
                     default:
-                        // Wait for session to be established before processing further messages
-                        try {
-                            while (sessions.get(msg.getSenderId()) == null) {
-                                Thread.sleep(500);
-                            }
-                        } catch (InterruptedException e) {
-                            Logger.log(LogLevel.ERROR, "Interrupted while waiting for session: " + e.toString());
-                        }
-
                         // Check authenticity of the message
                         // TODO: sometimes this fails and I suspect it's due to concurrent access <- assess this
                         if (!CryptoUtil.checkHMACHmacSHA256(msg.getSignableContent().getBytes(), msg.getSignature(),
@@ -269,17 +261,6 @@ public class PerfectLink {
 
         if (address == null) {
             throw new Exception("Unknown destination: " + destId);
-        }
-
-        // Wait for session to be established before sending messages
-        try {
-            if (msg.getType() != Message.Type.START_SESSION && msg.getType() != Message.Type.ACK_SESSION) {
-                while (!activeSessionMap.getOrDefault(destId, false)) {
-                    Thread.sleep(500);
-                }
-            }
-        } catch (InterruptedException e) {
-            Logger.log(LogLevel.ERROR, "Interrupted while waiting for session: " + e.toString());
         }
 
         senderWorkerPool.submit(() -> {
