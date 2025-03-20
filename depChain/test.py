@@ -6,9 +6,9 @@ import shutil
 import platform
 
 # Define the base command for the server
-server_base_command = 'mvn exec:java -Dexec.mainClass="depchain.blockchain.BlockchainMember" -Dexec.args='
+server_base_command = 'mvn clean compile exec:java -Dexec.mainClass="depchain.blockchain.BlockchainMember" -Dexec.args='
 # Define the base command for the client
-client_command = 'mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="5 9001"'
+client_command = 'mvn clean compile exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="5 9001"'
 # Define the server arguments
 server_args = [
     '"1 8001"',
