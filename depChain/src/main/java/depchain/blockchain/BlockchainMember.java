@@ -133,6 +133,7 @@ public class BlockchainMember {
                         try {
                             // Append the decided value to the blockchain.
                             this.blockchain.add(decidedValue);
+                            Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain);
                             consensusInstance = null;
 
                             // Send CLIENT_REPLY to the client.
