@@ -96,6 +96,12 @@ def launch_processes():
             capture_output=True, 
             text=True
         )
+
+
+        if "ERROR" in result.stdout:
+            print("Build failed. Exiting...")
+            exit(1)
+
         # Check for a signal that installation is complete
         # For example, if your install prints "Installation complete" when done:
         return "BUILD SUCCESS" not in result.stdout
@@ -115,7 +121,6 @@ def launch_processes():
         subprocess.run(['tmux', 'send-keys', '-t', target, server_command, 'Enter'])
     
     # Launch client process in the last pane
-    subprocess.run(['tmux', 'send-keys', '-t', client_target, 'clear', 'Enter'])
     subprocess.run(['tmux', 'send-keys', '-t', client_target, 'echo "Client (Port: 9001)"', 'Enter'])
     subprocess.run(['tmux', 'send-keys', '-t', client_target, client_command, 'Enter'])
     
