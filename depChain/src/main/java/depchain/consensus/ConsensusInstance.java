@@ -295,11 +295,32 @@ public class ConsensusInstance {
     public String waitForWrites(String candidate) throws InterruptedException, ExecutionException {
         // Start a counter to keep track of the time
         long startTime = System.currentTimeMillis();
+        String valueToWrite = null;
+
         // check if a quorum has already been reached
-        while ((float) writeResponses.size() < quorumSize) {
-            Thread.sleep(250);
-            Logger.log(LogLevel.DEBUG, "Still waiting for quorum of write responses...");
-            Thread.sleep(250);
+        do {
+            Thread.sleep(500);
+
+            // Now we proceed to decide the value to write
+            Map<String, Integer> count = new HashMap<>();
+            for (TimestampValuePair s : writeResponses.values()) {
+                if (count.containsKey(s.getValue())) {
+                    count.put(s.getValue(), count.get(s.getValue()) + 1);
+                } else {
+                    count.put(s.getValue(), 1);
+                }
+            }
+
+            int max = 0;
+            for (Map.Entry<String, Integer> entry : count.entrySet()) {
+                if (entry.getValue() > max) {
+                    max = entry.getValue();
+                    valueToWrite = entry.getKey();
+                }
+            }
+
+            if ((max >= (2*f + 1)) && valueToWrite.equals(candidate))
+                break;
 
             // Check if the time has exceeded the maximum wait time
             if (System.currentTimeMillis() - startTime > this.maxWaitTime) {
@@ -307,35 +328,13 @@ public class ConsensusInstance {
                 this.aborted = true;
                 return null;
             }
-        }
 
-        // print all the writes received
+            valueToWrite = null;
+            Logger.log(LogLevel.DEBUG, "Still waiting for write responses...");
+        } while (writeResponses.size() < 3f+1);
+
+        // Print all the writes received
         Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
-
-        // Now we proceed to decide the value to write
-        Map<String, Integer> count = new HashMap<>();
-        for (TimestampValuePair s : writeResponses.values()) {
-            if (count.containsKey(s.getValue())) {
-                count.put(s.getValue(), count.get(s.getValue()) + 1);
-            } else {
-                count.put(s.getValue(), 1);
-            }
-        }
-
-        String valueToWrite = null;
-        int max = 0;
-        for (Map.Entry<String, Integer> entry : count.entrySet()) {
-            if (entry.getValue() > max) {
-                max = entry.getValue();
-                valueToWrite = entry.getKey();
-            }
-        }
-
-        if ((max < (f + 1)) || (valueToWrite != null && !valueToWrite.equals(candidate))) {
-            Logger.log(LogLevel.ERROR,
-                    "Value to write is not the same as the candidate or does not have more than f+1");
-            return null;
-        }
 
         Logger.log(LogLevel.INFO, "Value to write: " + valueToWrite);
         return valueToWrite;
