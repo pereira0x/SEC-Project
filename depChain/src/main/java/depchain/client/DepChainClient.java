@@ -16,11 +16,13 @@ public class DepChainClient {
     private ClientLibrary clientLib;
     private int clientPort;
     private int clientId;
+    private final int f;
 
     // constructor
-    public DepChainClient(int clientId, int clientPort) {
+    public DepChainClient(int clientId, int clientPort, int f) {
         this.clientId = clientId;
         this.clientPort = clientPort;
+        this.f = f;
 
         Dotenv dotenv = Dotenv.load();
         String configFilePath = dotenv.get("CONFIG_FILE_PATH");
@@ -50,7 +52,7 @@ public class DepChainClient {
             return;
         }
 
-        this.clientLib = new ClientLibrary(pl, 1, leaderAddr, clientId);
+        this.clientLib = new ClientLibrary(pl, 1, leaderAddr, clientId, f);
     }
 
     public static void main(String[] args) throws Exception {
@@ -62,7 +64,7 @@ public class DepChainClient {
         int clientId = Integer.parseInt(args[0]);
         int clientPort = Integer.parseInt(args[1]);
 
-        DepChainClient client = new DepChainClient(clientId, clientPort);
+        DepChainClient client = new DepChainClient(clientId, clientPort, 1);
 
         final Scanner scanner = new Scanner(System.in);
 
@@ -104,7 +106,7 @@ public class DepChainClient {
         Logger.log(LogLevel.INFO, "Client sending append request...");
         try {
             String response = clientLib.append(message);
-            Logger.log(LogLevel.INFO, "Client received response: " + response);
+            Logger.log(LogLevel.INFO, "Client received response from f+1: " + response);
             return response;
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to append message: " + e.getMessage());

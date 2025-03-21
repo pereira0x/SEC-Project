@@ -22,11 +22,8 @@ import depchain.utils.Logger.LogLevel;
 
 public class Config {
 
-    // Mapping from blockchain member IDs to their network addresses (servers).
+    // Mapping from blockchain member IDs to their network addresses (servers and clients).
     public static ConcurrentHashMap<Integer, InetSocketAddress> processAddresses = new ConcurrentHashMap<>();
-
-    // Mapping from client IDs to their network addresses.
-    public static ConcurrentHashMap<Integer, InetSocketAddress> clientAddresses = new ConcurrentHashMap<>();
 
     // Mapping from process (or client) IDs to their public keys.
     public static ConcurrentHashMap<Integer, PublicKey> publicKeys = new ConcurrentHashMap<>();
@@ -61,11 +58,7 @@ public class Config {
 
             InetSocketAddress address = new InetSocketAddress(host, port);
 
-            if (type.equalsIgnoreCase("server")) {
-                processAddresses.put(id, address);
-            } else if (type.equalsIgnoreCase("client")) {
-                clientAddresses.put(id, address);
-            }
+            processAddresses.put(id, address);
         }
     }
 

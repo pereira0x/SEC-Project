@@ -33,7 +33,7 @@ public class ClientServerCorrectCommunicationTest {
         server4Thread.start();
 
         // Start client
-        DepChainClient client1 = new DepChainClient(5, 9001);
+        DepChainClient client1 = new DepChainClient(5, 9001, 1);
         String response = client1.append("Hello");
 
         // blockchain is of type ArrayList<String>

@@ -69,39 +69,17 @@ public class PerfectLink {
         // Start listener
         new Thread(this::startListener, "PerfectLink-Listener").start();
 
-        // Clients only connect to Leader (which is 1)
-        if (myId >= 5) {
-            Logger.log(LogLevel.INFO, "Process 5 starting session with process 1");
-            startSession(1);
-
-            // wait session with leader to be established
-            // TOD CHANGE LEADER 1
-            while (!activeSessionMap.getOrDefault(1, false)) {
-                Logger.log(LogLevel.INFO, "Waiting for session with process 1 to be established...");
-                Thread.sleep(500);
-            }
+        // Server initiate sessions with other server of lower ID
+        for (int i = 1; i < myId; i++) {
+            Logger.log(LogLevel.INFO, "Process " + myId + " starting session with process " + i);
+            startSession(i);
         }
 
-        else {
-            // Server initiate sessions with other server of lower ID
-            for (int i = 1; i < myId; i++) {
-                Logger.log(LogLevel.INFO, "Process " + myId + " starting session with process " + i);
-                startSession(i);
-            }
-
-            // wait for all sessions to be established
-            // LEADER CHANGE THIS TODO
-            if (myId == 1) {
-                while (activeSessionMap.size() < processAddresses.size()) {
-                    Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
-                    Thread.sleep(500);
-                }
-            } else {
-                while (activeSessionMap.size() < processAddresses.size() - 1) {
-                    Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
-                    Thread.sleep(500);
-                }
-            }
+        // wait for all sessions to be established
+        while (activeSessionMap.size() < processAddresses.size() - 1 ||
+                activeSessionMap.values().stream().anyMatch(value -> value == false)) {
+            Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
+            Thread.sleep(500);
         }
     }
 
@@ -110,7 +88,7 @@ public class PerfectLink {
     }
 
     public void startSession(int destId) {
-        InetSocketAddress address = processAddresses.getOrDefault(destId, Config.clientAddresses.get(destId));
+        InetSocketAddress address = processAddresses.getOrDefault(destId, Config.processAddresses.get(destId));
         if (address == null) {
             Logger.log(LogLevel.ERROR, "Unknown destination: " + destId);
             return;
@@ -217,7 +195,7 @@ public class PerfectLink {
 
                     case START_SESSION:
                         InetSocketAddress address = processAddresses.getOrDefault(msg.getSenderId(),
-                                Config.clientAddresses.get(msg.getSenderId()));
+                                Config.processAddresses.get(msg.getSenderId()));
 
                         // Create a new session with the requester if we don't have one already
                         if (!activeSessionMap.containsKey(msg.getSenderId())
@@ -245,15 +223,6 @@ public class PerfectLink {
                         break;
 
                     default:
-                        // Wait for session to be established before processing further messages
-                        try {
-                            while (sessions.get(msg.getSenderId()) == null) {
-                                Thread.sleep(500);
-                            }
-                        } catch (InterruptedException e) {
-                            Logger.log(LogLevel.ERROR, "Interrupted while waiting for session: " + e.toString());
-                        }
-
                         // Check authenticity of the message
                         // TODO: sometimes this fails and I suspect it's due to concurrent access <- assess this
                         if (!CryptoUtil.checkHMACHmacSHA256(msg.getSignableContent().getBytes(), msg.getSignature(),
@@ -288,21 +257,10 @@ public class PerfectLink {
     }
 
     public void send(int destId, Message msg) throws Exception {
-        InetSocketAddress address = processAddresses.getOrDefault(destId, Config.clientAddresses.get(destId));
+        InetSocketAddress address = processAddresses.getOrDefault(destId, Config.processAddresses.get(destId));
 
         if (address == null) {
             throw new Exception("Unknown destination: " + destId);
-        }
-
-        // Wait for session to be established before sending messages
-        try {
-            if (msg.getType() != Message.Type.START_SESSION && msg.getType() != Message.Type.ACK_SESSION) {
-                while (!activeSessionMap.getOrDefault(destId, false)) {
-                    Thread.sleep(500);
-                }
-            }
-        } catch (InterruptedException e) {
-            Logger.log(LogLevel.ERROR, "Interrupted while waiting for session: " + e.toString());
         }
 
         senderWorkerPool.submit(() -> {
@@ -454,6 +412,10 @@ public class PerfectLink {
 
     public Message deliver() throws InterruptedException {
         return deliveredQueue.take();
+    }
+
+    public void clearQueue() {
+        deliveredQueue.clear();
     }
 
     public void close() {

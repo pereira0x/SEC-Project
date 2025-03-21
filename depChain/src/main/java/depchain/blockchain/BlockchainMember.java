@@ -22,6 +22,7 @@ public class BlockchainMember {
     private final int leaderId; // Static leader ID.
     private String behavior;
     private final List<Integer> allProcessIds;
+    private int clientId;
     private PerfectLink perfectLink;
     /* private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>(); */
     private ConsensusInstance consensusInstance;
@@ -34,6 +35,7 @@ public class BlockchainMember {
         this.memberPort = memberPort;
         this.leaderId = leaderId;
         this.allProcessIds = Arrays.asList(1, 2, 3, 4);
+        this.clientId = 5;
         this.f = f;
 
         Dotenv dotenv = Dotenv.load();
@@ -101,58 +103,47 @@ public class BlockchainMember {
                         break;
                 }
                 new Thread(() -> {
+                    String decidedValue = null;
                     if (msg.getType() == Message.Type.CLIENT_REQUEST) {
                         if (memberId == leaderId) {
                             int instanceId = epochNumber++;
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
                                     instanceId, f);
                             consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, msg.getValue()));
-                            /* consensusInstance.readPhase(msg.value); */
-                            try {
-                                Logger.log(LogLevel.DEBUG, "Waiting for decision...");
+                            Logger.log(LogLevel.DEBUG, "Waiting for decision...");
 
-                                String decidedValue = consensusInstance.decide();
+                            decidedValue = consensusInstance.decide();
 
-                                // String decidedValue = msg.value;
-                                Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
-
-                                // Append the decided value to the blockchain.
-                                if (decidedValue != null)
-                                    this.blockchain.add(decidedValue);
-
-                                // Send ACK to the client.
-                                InetSocketAddress clientAddr = Config.clientAddresses.get(msg.getSenderId());
-                                if (clientAddr != null) {
-                                    // TODO: EPOCH NUMBER MUST BE A NEW ONE
-                                    Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
-                                            decidedValue, memberId).setNonce(msg.getNonce()).build();
-                                    perfectLink.send(msg.getSenderId(), reply);
-                                }
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
+                            Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
                         }
                     } else {
+                        // For consensus messages, dispatch to the corresponding consensus instance.
+                        if (consensusInstance == null) {
+                            // instantiate a new consensus instance
+                            consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds,
+                                    perfectLink, msg.getEpoch(), f);
+                        }
+
+                        consensusInstance.processMessage(msg);
+                        
+                        decidedValue = consensusInstance.getDecidedValue();
+                    }
+
+                    if (decidedValue != null) {
                         try {
-                            // For consensus messages, dispatch to the corresponding consensus instance.
-                            if (consensusInstance != null) {
-                                consensusInstance.processMessage(msg);
+                            // Append the decided value to the blockchain.
+                            this.blockchain.add(decidedValue);
+                            consensusInstance = null;
 
-                            } else {
-                                // instantiate a new consensus instance
-                                consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds,
-                                        perfectLink, msg.getEpoch(), f);
-                                consensusInstance.processMessage(msg);
-                            }
-
-                            if (consensusInstance != null) {
-                                String decidedValue = consensusInstance.getDecidedValue();
-                                if (decidedValue != null) {
-                                    // Append the decided value to the blockchain.
-                                    this.blockchain.add(decidedValue);
-                                    consensusInstance = null;
-                                }
-                            }
+                            // Send CLIENT_REPLY to the client.
+                            InetSocketAddress clientAddr = Config.processAddresses.get(clientId);
+                            if (clientAddr != null) {
+                                // TODO: EPOCH NUMBER MUST BE A NEW ONE
+                                // TODO: IMPLEMENT CLIENT IDS PROPERLY
+                                Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
+                                        decidedValue, memberId).build();
+                                perfectLink.send(clientId, reply);
+                            }   
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
