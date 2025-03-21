@@ -110,36 +110,23 @@ public class BlockchainMember {
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
                                     instanceId, f);
                             consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, msg.getValue()));
-                            /* consensusInstance.readPhase(msg.value); */
-                            try {
-                                Logger.log(LogLevel.DEBUG, "Waiting for decision...");
+                            Logger.log(LogLevel.DEBUG, "Waiting for decision...");
 
-                                decidedValue = consensusInstance.decide();
+                            decidedValue = consensusInstance.decide();
 
-                                // String decidedValue = msg.value;
-                                Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
-
-                                // Append the decided value to the blockchain.
-                                if (decidedValue != null)
-                                    this.blockchain.add(decidedValue);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
+                            Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
                         }
                     } else {
                         // For consensus messages, dispatch to the corresponding consensus instance.
-                        if (consensusInstance != null) {
-                            consensusInstance.processMessage(msg);
-                        } else {
+                        if (consensusInstance == null) {
                             // instantiate a new consensus instance
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds,
                                     perfectLink, msg.getEpoch(), f);
-                            consensusInstance.processMessage(msg);
                         }
 
-                        if (consensusInstance != null) {
-                            decidedValue = consensusInstance.getDecidedValue();
-                        }
+                        consensusInstance.processMessage(msg);
+                        
+                        decidedValue = consensusInstance.getDecidedValue();
                     }
 
                     if (decidedValue != null) {

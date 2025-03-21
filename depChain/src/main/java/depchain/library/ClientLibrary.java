@@ -17,7 +17,7 @@ public class ClientLibrary {
     private int nonce = 0;
     private final int f;
     private final long timeout = 6000;
-    private int sentMessages = 0;
+    private int confirmedAppends = 0;
 
     public ClientLibrary(PerfectLink perfectLink, int leaderId, InetSocketAddress leaderAddress, int clientId, int f) {
         this.perfectLink = perfectLink;
@@ -30,7 +30,7 @@ public class ClientLibrary {
     // Append a string to the blockchain.
     public String append(String request) throws Exception {
         // Create a CLIENT_REQUEST message. (Assume the client sets its own ID.)
-        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, sentMessages, request, clientId).setNonce(nonce)
+        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, confirmedAppends, request, clientId).setNonce(nonce)
                 .build();
         perfectLink.send(leaderId, reqMsg);
 
@@ -40,6 +40,9 @@ public class ClientLibrary {
         // initialize list of replies 
         List<String> replies = new ArrayList<>();
 
+
+        //clear queue of old messages (old replies)
+        perfectLink.clearQueue();
         // Wait for f+1 equal CLIENT_REPLY messages.
         while (System.currentTimeMillis() - startTime < timeout) {
             Message reply = perfectLink.deliver();
@@ -55,7 +58,7 @@ public class ClientLibrary {
                             count++;
                     if (count >= f + 1)
                         nonce++;
-                        sentMessages++;
+                        confirmedAppends++;
                         return request;
                 }
             }

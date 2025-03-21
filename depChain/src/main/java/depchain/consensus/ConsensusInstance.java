@@ -428,6 +428,8 @@ public class ConsensusInstance {
                 return null;
             }
 
+            this.decidedValue = valueToAppend;
+
             return valueToAppend;
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();

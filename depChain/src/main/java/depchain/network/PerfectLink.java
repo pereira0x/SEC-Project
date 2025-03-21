@@ -414,6 +414,10 @@ public class PerfectLink {
         return deliveredQueue.take();
     }
 
+    public void clearQueue() {
+        deliveredQueue.clear();
+    }
+
     public void close() {
         for (ScheduledFuture<?> task : resendTasks.values()) {
             if (task != null)
