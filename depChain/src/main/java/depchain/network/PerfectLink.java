@@ -76,7 +76,7 @@ public class PerfectLink {
         }
 
         // wait for all sessions to be established
-        while (activeSessionMap.size() < processAddresses.size() ||
+        while (activeSessionMap.size() < processAddresses.size() - 1 ||
                 activeSessionMap.values().stream().anyMatch(value -> value == false)) {
             Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
             Thread.sleep(500);
@@ -88,7 +88,7 @@ public class PerfectLink {
     }
 
     public void startSession(int destId) {
-        InetSocketAddress address = processAddresses.getOrDefault(destId, Config.clientAddresses.get(destId));
+        InetSocketAddress address = processAddresses.getOrDefault(destId, Config.processAddresses.get(destId));
         if (address == null) {
             Logger.log(LogLevel.ERROR, "Unknown destination: " + destId);
             return;
@@ -195,7 +195,7 @@ public class PerfectLink {
 
                     case START_SESSION:
                         InetSocketAddress address = processAddresses.getOrDefault(msg.getSenderId(),
-                                Config.clientAddresses.get(msg.getSenderId()));
+                                Config.processAddresses.get(msg.getSenderId()));
 
                         // Create a new session with the requester if we don't have one already
                         if (!activeSessionMap.containsKey(msg.getSenderId())
@@ -257,7 +257,7 @@ public class PerfectLink {
     }
 
     public void send(int destId, Message msg) throws Exception {
-        InetSocketAddress address = processAddresses.getOrDefault(destId, Config.clientAddresses.get(destId));
+        InetSocketAddress address = processAddresses.getOrDefault(destId, Config.processAddresses.get(destId));
 
         if (address == null) {
             throw new Exception("Unknown destination: " + destId);
