@@ -298,7 +298,7 @@ public class ConsensusInstance {
         String valueToWrite = null;
 
         // check if a quorum has already been reached
-        while (true) {
+        do {
             Thread.sleep(500);
 
             // Now we proceed to decide the value to write
@@ -331,7 +331,7 @@ public class ConsensusInstance {
 
             valueToWrite = null;
             Logger.log(LogLevel.DEBUG, "Still waiting for write responses...");
-        }
+        } while (writeResponses.size() < 3f+1);
 
         // Print all the writes received
         Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
