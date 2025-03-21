@@ -77,6 +77,12 @@ public class ConsensusInstance {
     }
 
     private void broadcastWrite(TimestampValuePair candidate) {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         Message writeMsg = new Message.MessageBuilder(Message.Type.WRITE, epoch, null, myId).setWrite(candidate)
                 .build();
 
@@ -397,9 +403,6 @@ public class ConsensusInstance {
 
             // Broadcast collected
             broadcastCollected();
-
-            // Wait for writes
-            Thread.sleep(2000);
 
             // pick value to write
             TimestampValuePair candidate = getValueFromCollected();
