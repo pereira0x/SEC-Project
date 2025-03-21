@@ -331,7 +331,7 @@ public class ConsensusInstance {
 
             valueToWrite = null;
             Logger.log(LogLevel.DEBUG, "Still waiting for write responses...");
-        } while (writeResponses.size() < 3f+1);
+        } while (writeResponses.size() < 3*f+1);
 
         // Print all the writes received
         Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
