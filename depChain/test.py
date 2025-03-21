@@ -7,7 +7,7 @@ import platform
 
 # Define the install command
 # after the installation, wait for user input to continue
-install_command = 'mvn clean install"'
+install_command = 'mvn clean install'
 # Define the base command for the server
 server_base_command = 'mvn exec:java -Dexec.mainClass="depchain.blockchain.BlockchainMember" -Dexec.args='
 # Define the base command for the client
