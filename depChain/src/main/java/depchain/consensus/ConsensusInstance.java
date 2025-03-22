@@ -33,9 +33,10 @@ public class ConsensusInstance {
     private final State state = new State();
     private boolean aborted = false;
     private final long maxWaitTime = 5000; // 5 seconds
+    private String clientRequest;
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
-            int f) {
+            int f, String clientRequest) {
         this.myId = myId;
         this.leaderId = leaderId;
         this.f = f;
@@ -43,6 +44,7 @@ public class ConsensusInstance {
         this.perfectLink = perfectLink;
         this.epoch = epoch;
         this.quorumSize = (float) 2 * f + 1;
+        this.clientRequest = clientRequest;
     }
 
     // Leader sends READ messages to all.
@@ -265,14 +267,12 @@ public class ConsensusInstance {
             }
         }
 
-        if (count > this.f) {
-            Logger.log(LogLevel.INFO, "Decided value: " + tmpVal);
-            return tmpVal;
-        } else {
-            // return the most recent write in the writeset of the leader
-            Logger.log(LogLevel.INFO, "Decided value: " + stateResponses.get(leaderId).getMostRecentWrite());
-            return stateResponses.get(leaderId).getMostRecentWrite();
+        if (count <= this.f) {
+            tmpVal = stateResponses.get(leaderId).getMostRecentWrite();
         }
+
+        Logger.log(LogLevel.INFO, "Decided value: " + tmpVal);
+        return tmpVal;
     }
 
     public boolean waitForStates() throws InterruptedException, ExecutionException {
@@ -349,11 +349,32 @@ public class ConsensusInstance {
     public String waitForAccepts(String candidate) throws InterruptedException, ExecutionException {
         // Start a counter to keep track of the time
         long startTime = System.currentTimeMillis();
+        String valueToAppend = null;
+
         // check if a quorum has already been reached
-        while ((float) acceptedValues.size() < quorumSize) {
-            Thread.sleep(250);
-            Logger.log(LogLevel.DEBUG, "Still waiting for quorum to be met for accept responses...");
-            Thread.sleep(250);
+        do {
+            Thread.sleep(500);
+
+            // Now we proceed to decide the value to append
+            Map<String, Integer> count = new HashMap<>();
+            for (String s : acceptedValues) {
+                if (count.containsKey(s)) {
+                    count.put(s, count.get(s) + 1);
+                } else {
+                    count.put(s, 1);
+                }
+            }
+
+            int max = 0;
+            for (Map.Entry<String, Integer> entry : count.entrySet()) {
+                if (entry.getValue() > max) {
+                    max = entry.getValue();
+                    valueToAppend = entry.getKey();
+                }
+            }
+
+            if ((max >= (2*f + 1)) && valueToAppend.equals(candidate))
+                break;
 
             // Check if the time has exceeded the maximum wait time
             if (System.currentTimeMillis() - startTime > this.maxWaitTime) {
@@ -361,33 +382,15 @@ public class ConsensusInstance {
                 this.aborted = true;
                 return null;
             }
-        }
 
-        Map<String, Integer> count = new HashMap<>();
-        for (String s : acceptedValues) {
-            if (count.containsKey(s)) {
-                count.put(s, count.get(s) + 1);
-            } else {
-                count.put(s, 1);
-            }
-        }
+            valueToAppend = null;
+            Logger.log(LogLevel.DEBUG, "Still waiting for accept responses...");
+        } while (acceptedValues.size() < 3*f+1);
 
-        String valueToAppend = null;
-        int max = 0;
-        for (Map.Entry<String, Integer> entry : count.entrySet()) {
-            if (entry.getValue() > max) {
-                max = entry.getValue();
-                valueToAppend = entry.getKey();
-            }
-        }
+        // Print all the writes received
+        Logger.log(LogLevel.INFO, "Accepts received: " + acceptedValues);
 
-        if ((max < f + 1) || (valueToAppend != null && !valueToAppend.equals(candidate))) {
-            Logger.log(LogLevel.ERROR,
-                    "Value to write is not the same as the candidate or does not have more than f+1");
-            return null;
-        }
-
-        Logger.log(LogLevel.INFO, "Value to append to blockchain " + valueToAppend);
+        Logger.log(LogLevel.INFO, "Value to append: " + valueToAppend);
         return valueToAppend;
     }
 
@@ -449,5 +452,9 @@ public class ConsensusInstance {
 
     public void setBlockchainMostRecentWrite(TimestampValuePair write) {
         state.setMostRecentWrite(write);
+    }
+
+    public void setClientRequest(String clientRequest) {
+        this.clientRequest = clientRequest;
     }
 }
