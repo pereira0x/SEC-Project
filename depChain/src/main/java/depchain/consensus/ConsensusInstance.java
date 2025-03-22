@@ -188,6 +188,11 @@ public class ConsensusInstance {
                     // pick the value to write
                     TimestampValuePair candidate = getValueFromCollected();
 
+                    if (candidate == null) {
+                        this.aborted = true;
+                        break;
+                    }
+
                     // Broadcast write
                     switch (Config.processBehaviors.get(this.myId)) {
                         case "spam":
@@ -269,6 +274,11 @@ public class ConsensusInstance {
 
         if (count <= this.f) {
             tmpVal = stateResponses.get(leaderId).getMostRecentWrite();
+        }
+
+        if (!tmpVal.getValue().equals(this.clientRequest)) {
+            Logger.log(LogLevel.ERROR, "Decided value is not the client request: " + tmpVal.getValue() + " != " + this.clientRequest);
+            return null;
         }
 
         Logger.log(LogLevel.INFO, "Decided value: " + tmpVal);
