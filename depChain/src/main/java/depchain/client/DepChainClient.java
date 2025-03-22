@@ -3,13 +3,17 @@ package depchain.client;
 import java.net.*;
 import java.security.KeyPair;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 import depchain.library.ClientLibrary;
 import depchain.network.PerfectLink;
 import depchain.utils.Config;
-import io.github.cdimascio.dotenv.Dotenv;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
+
 import java.util.Scanner;
+import java.util.List;
+import java.util.Arrays;
 
 public class DepChainClient {
 
@@ -17,12 +21,14 @@ public class DepChainClient {
     private int clientPort;
     private int clientId;
     private final int f;
+    private final List<Integer> processIds;
 
     // constructor
     public DepChainClient(int clientId, int clientPort, int f) {
         this.clientId = clientId;
         this.clientPort = clientPort;
         this.f = f;
+        this.processIds = Arrays.asList(1, 2, 3, 4);
 
         Dotenv dotenv = Dotenv.load();
         String configFilePath = dotenv.get("CONFIG_FILE_PATH");
@@ -40,9 +46,6 @@ public class DepChainClient {
             return;
         }
 
-        // Assume leader is the always running process with id 1 on localhost:8001
-        InetSocketAddress leaderAddr = new InetSocketAddress("localhost", 8001);
-
         PerfectLink pl;
         try {
             pl = new PerfectLink(clientId, clientPort, Config.processAddresses, Config.getPrivateKey(clientId),
@@ -52,7 +55,7 @@ public class DepChainClient {
             return;
         }
 
-        this.clientLib = new ClientLibrary(pl, 1, leaderAddr, clientId, f);
+        this.clientLib = new ClientLibrary(pl, 1, processIds, clientId, f);
     }
 
     public static void main(String[] args) throws Exception {
@@ -89,10 +92,12 @@ public class DepChainClient {
                         Logger.log(LogLevel.ERROR, "Usage: append <message>");
                     }
                     client.append(parts[1]);
+                    break;
                 case "exit":
                     break;
                 default:
                     Logger.log(LogLevel.ERROR, "Unknown command: " + command);
+                    break;
             }
         }
         Logger.log(LogLevel.INFO, "Exiting...");

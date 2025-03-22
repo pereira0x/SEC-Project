@@ -105,23 +105,25 @@ public class BlockchainMember {
                 new Thread(() -> {
                     String decidedValue = null;
                     if (msg.getType() == Message.Type.CLIENT_REQUEST) {
-                        if (memberId == leaderId) {
-                            int instanceId = epochNumber++;
+                        if (consensusInstance != null) {
+                            consensusInstance.setClientRequest(msg.getValue());
+                        } else {
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                    instanceId, f);
+                                    epochNumber++, f, msg.getValue());
+                        }
+
+                        if (memberId == leaderId) {
                             consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, msg.getValue()));
-                            Logger.log(LogLevel.DEBUG, "Waiting for decision...");
+                            Logger.log(LogLevel.DEBUG, "Waiting for consensus decision...");
 
                             decidedValue = consensusInstance.decide();
-
-                            Logger.log(LogLevel.DEBUG, "Decided value: " + decidedValue);
                         }
                     } else {
                         // For consensus messages, dispatch to the corresponding consensus instance.
                         if (consensusInstance == null) {
                             // instantiate a new consensus instance
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds,
-                                    perfectLink, msg.getEpoch(), f);
+                                    perfectLink, msg.getEpoch(), f, null);
                         }
 
                         consensusInstance.processMessage(msg);

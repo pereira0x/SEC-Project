@@ -12,17 +12,17 @@ import depchain.utils.Logger.LogLevel;
 public class ClientLibrary {
     private final PerfectLink perfectLink;
     private final int leaderId;
-    private final InetSocketAddress leaderAddress;
+    private final List<Integer> nodeIds;
     private final int clientId;
     private int nonce = 0;
     private final int f;
     private final long timeout = 6000;
     private int confirmedAppends = 0;
 
-    public ClientLibrary(PerfectLink perfectLink, int leaderId, InetSocketAddress leaderAddress, int clientId, int f) {
+    public ClientLibrary(PerfectLink perfectLink, int leaderId, List<Integer> nodeIds, int clientId, int f) {
         this.perfectLink = perfectLink;
         this.leaderId = leaderId;
-        this.leaderAddress = leaderAddress;
+        this.nodeIds = nodeIds;
         this.clientId = clientId;
         this.f = f;
     }
@@ -32,7 +32,8 @@ public class ClientLibrary {
         // Create a CLIENT_REQUEST message. (Assume the client sets its own ID.)
         Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, confirmedAppends, request, clientId).setNonce(nonce)
                 .build();
-        perfectLink.send(leaderId, reqMsg);
+
+        broadcast(reqMsg);
 
         // Start the timer
         long startTime = System.currentTimeMillis();
@@ -67,5 +68,11 @@ public class ClientLibrary {
 
         Logger.log(LogLevel.ERROR, "Timeout: No replies received at least f+1 times");
         return null;
+    }
+
+    public void broadcast(Message msg) throws Exception {
+        for (int nodeId : nodeIds) {
+            perfectLink.send(nodeId, msg);
+        }
     }
 }
