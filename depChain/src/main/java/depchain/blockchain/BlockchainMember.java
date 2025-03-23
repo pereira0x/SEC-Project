@@ -22,7 +22,6 @@ public class BlockchainMember {
     private final int leaderId; // Static leader ID.
     private String behavior;
     private final List<Integer> allProcessIds;
-    private int clientId;
     private PerfectLink perfectLink;
     private ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>();
     private final int f; // Maximum number of Byzantine faults allowed.
@@ -34,7 +33,6 @@ public class BlockchainMember {
         this.memberPort = memberPort;
         this.leaderId = leaderId;
         this.allProcessIds = Arrays.asList(1, 2, 3, 4);
-        this.clientId = 5;
         this.f = f;
 
         Dotenv dotenv = Dotenv.load();
@@ -145,13 +143,13 @@ public class BlockchainMember {
                             consensusInstances.remove(msg.getClientId());
 
                             // Send CLIENT_REPLY to the client.
-                            InetSocketAddress clientAddr = Config.processAddresses.get(clientId);
+                            InetSocketAddress clientAddr = Config.processAddresses.get(msg.getClientId());
                             if (clientAddr != null) {
                                 // TODO: EPOCH NUMBER MUST BE A NEW ONE
                                 // TODO: IMPLEMENT CLIENT IDS PROPERLY
                                 Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
                                         decidedValue, memberId, msg.getClientId()).build();
-                                perfectLink.send(clientId, reply);
+                                perfectLink.send(msg.getClientId(), reply);
                             }   
                         } catch (Exception e) {
                             e.printStackTrace();
