@@ -18,6 +18,7 @@ public class Message implements Serializable {
     private final int epoch; // For our design, epoch doubles as the consensus instance ID.
     private String value; // The value (e.g., the string to append).
     private final int senderId; // The sender's ID (for clients, use a distinct range).
+    private final int clientId; // All messages relate to a client request in some way, apart from session and acks.
     private final byte[] signature; // Signature over the message content (computed by sender).
     private int nonce; // nonce for the message (computed by sender).
 
@@ -32,6 +33,7 @@ public class Message implements Serializable {
         this.epoch = builder.epoch;
         this.value = builder.value;
         this.senderId = builder.senderId;
+        this.clientId = builder.clientId;
         this.signature = builder.signature;
         this.state = builder.state;
         this.statesMap = builder.statesMap;
@@ -54,6 +56,10 @@ public class Message implements Serializable {
 
     public int getSenderId() {
         return senderId;
+    }
+
+    public int getClientId() {
+        return clientId;
     }
 
     public byte[] getSignature() {
@@ -92,11 +98,11 @@ public class Message implements Serializable {
         content += epoch;
         content += value;
         content += senderId;
+        content += clientId;
         content += nonce;
         if (sessionKey != null) {
             content += sessionKey.getData();
         }
-
         return content;
     }
 
@@ -105,6 +111,7 @@ public class Message implements Serializable {
         private final int epoch;
         private final String value;
         private final int senderId;
+        private final int clientId;
         private byte[] signature;
         private ByteArrayWrapper sessionKey;
         private State state;
@@ -112,11 +119,12 @@ public class Message implements Serializable {
         private TimestampValuePair write;
         private int nonce;
 
-        public MessageBuilder(Type type, int epoch, String value, int senderId) {
+        public MessageBuilder(Type type, int epoch, String value, int senderId, int clientId) {
             this.type = type;
             this.epoch = epoch;
             this.value = value;
             this.senderId = senderId;
+            this.clientId = clientId;
             this.signature = null;
             this.sessionKey = null;
             this.nonce = -1;

@@ -109,7 +109,7 @@ public class BlockchainMember {
                             consensusInstance.setClientRequest(msg.getValue());
                         } else {
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                    epochNumber++, f, msg.getValue());
+                                    epochNumber++, f, msg.getValue(), msg.getClientId());
                         }
 
                         if (memberId == leaderId) {
@@ -123,7 +123,7 @@ public class BlockchainMember {
                         if (consensusInstance == null) {
                             // instantiate a new consensus instance
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds,
-                                    perfectLink, msg.getEpoch(), f, null);
+                                    perfectLink, msg.getEpoch(), f, null, msg.getClientId());
                         }
 
                         consensusInstance.processMessage(msg);
@@ -144,7 +144,7 @@ public class BlockchainMember {
                                 // TODO: EPOCH NUMBER MUST BE A NEW ONE
                                 // TODO: IMPLEMENT CLIENT IDS PROPERLY
                                 Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
-                                        decidedValue, memberId).build();
+                                        decidedValue, memberId, msg.getClientId()).build();
                                 perfectLink.send(clientId, reply);
                             }   
                         } catch (Exception e) {
