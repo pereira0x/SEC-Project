@@ -19,12 +19,12 @@ import depchain.utils.Logger.LogLevel;
 public class BlockchainMember {
     private final int memberId;
     private final int memberPort;
-    private final int leaderId; // Static leader ID.
+    private final int leaderId;                 // Static leader ID.
     private String behavior;
-    private final List<Integer> allProcessIds;
+    private final List<Integer> allProcessIds;  // All node IDs (no clients).
     private PerfectLink perfectLink;
     private ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>();
-    private final int f; // Maximum number of Byzantine faults allowed.
+    private final int f;                        // Maximum number of Byzantine faults allowed.
     private int epochNumber = 0;
     private ArrayList<String> blockchain = new ArrayList<>();
 

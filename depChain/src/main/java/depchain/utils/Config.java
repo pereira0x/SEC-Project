@@ -63,8 +63,8 @@ public class Config {
     }
 
     private static void loadKeys(String resourcesFolder) throws Exception {
-        // For servers 1..4:
-        for (int serverId = 1; serverId <= 4; serverId++) {
+        final int totalServers = processAddresses.size();
+        for (int serverId = 1; serverId <= totalServers; serverId++) {
             String privKeyPath = resourcesFolder + "/priv_key_" + serverId + ".pem";
             String pubKeyPath = resourcesFolder + "/pub_key_" + serverId + ".pem";
 
@@ -74,16 +74,6 @@ public class Config {
             privateKeys.put(serverId, priv);
             publicKeys.put(serverId, pub);
         }
-
-        // For the single client (ID=1 in config.txt)
-        String privKeyClientPath = resourcesFolder + "/priv_key_client.pem";
-        String pubKeyClientPath = resourcesFolder + "/pub_key_client.pem";
-
-        PrivateKey privClient = loadPrivateKey(privKeyClientPath);
-        PublicKey pubClient = loadPublicKey(pubKeyClientPath);
-
-        privateKeys.put(5, privClient);
-        publicKeys.put(5, pubClient);
     }
 
     /**
