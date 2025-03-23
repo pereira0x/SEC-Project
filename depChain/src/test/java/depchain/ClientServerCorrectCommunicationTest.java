@@ -32,8 +32,13 @@ public class ClientServerCorrectCommunicationTest {
         server3Thread.start();
         server4Thread.start();
 
-        // Start client
+        // Start clients
+        // Start a thread for the 2 client -> only for full establishment
+        new Thread(() -> {
+            DepChainClient client1 = new DepChainClient(6, 9002, 1);
+        }).start();
         DepChainClient client1 = new DepChainClient(5, 9001, 1);
+
         String response = client1.append("Hello");
 
         // blockchain is of type ArrayList<String>

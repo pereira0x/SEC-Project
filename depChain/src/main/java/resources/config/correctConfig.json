@@ -33,12 +33,12 @@
         "host" : "localhost",
         "port" : 9001,
         "behavior" : "correct"
-    }/*,
+    },
     {
         "type" : "client",
         "id" : 6,
         "host" : "localhost",
         "port" : 9002,
         "behavior" : "correct"
-    }*/
+    }
 ]

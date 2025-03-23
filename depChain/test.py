@@ -10,8 +10,9 @@ import platform
 install_command = 'mvn clean install'
 # Define the base command for the server
 server_base_command = 'mvn exec:java -Dexec.mainClass="depchain.blockchain.BlockchainMember" -Dexec.args='
-# Define the base command for the client
-client_command = 'mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="5 9001"'
+# Define the base command for the clients
+client1_command = 'mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="5 9001"'
+client2_command = 'mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="6 9002"'
 # Define the server arguments
 server_args = [
     '"1 8001"',
@@ -76,6 +77,10 @@ def create_tmux_layout():
     # Make the client pane span the full width
     subprocess.run(['tmux', 'select-layout', '-t', session_name, 'tiled'])
 
+    # Make a second client pane next to the first one
+    subprocess.run(['tmux', 'split-window', '-h', '-t', f'{session_name}:0.2'])
+    subprocess.run(['tmux', 'select-layout', '-t', session_name, 'tiled'])
+
 # Function to launch all processes in the panes
 def launch_processes():
     print("Launching servers and client in tmux panes...")
@@ -120,9 +125,14 @@ def launch_processes():
         subprocess.run(['tmux', 'send-keys', '-t', target, f'echo "Server {i+1} (Port: 800{i+1})"', 'Enter'])
         subprocess.run(['tmux', 'send-keys', '-t', target, server_command, 'Enter'])
     
-    # Launch client process in the last pane
+    # Launch client processes in the last pane
     subprocess.run(['tmux', 'send-keys', '-t', client_target, 'echo "Client (Port: 9001)"', 'Enter'])
-    subprocess.run(['tmux', 'send-keys', '-t', client_target, client_command, 'Enter'])
+    subprocess.run(['tmux', 'send-keys', '-t', client_target, client1_command, 'Enter'])
+
+    # Launch the second client in the second pane
+    client2_target = f'{session_name}:0.5'
+    subprocess.run(['tmux', 'send-keys', '-t', client2_target, 'echo "Client (Port: 9002)"', 'Enter'])
+    subprocess.run(['tmux', 'send-keys', '-t', client2_target, client2_command, 'Enter'])
     
     print("All processes have been launched in tmux panes.")
 
