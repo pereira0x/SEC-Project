@@ -24,8 +24,7 @@ public class BlockchainMember {
     private final List<Integer> allProcessIds;
     private int clientId;
     private PerfectLink perfectLink;
-    /* private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>(); */
-    private ConsensusInstance consensusInstance;
+    private ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>();
     private final int f; // Maximum number of Byzantine faults allowed.
     private int epochNumber = 0;
     private ArrayList<String> blockchain = new ArrayList<>();
@@ -92,17 +91,21 @@ public class BlockchainMember {
             try {
                 Message msg = perfectLink.deliver(); // waits for new elements to be added to the linked blocking
                                                      // queue
+
                 // If a CLIENT_REQUEST is received and this node is leader,
-                // then start a consensus instance for the client request.
+                // then start a consensus instance for the client request
                 switch (this.behavior) {
                     case "ignoreMessages":
-                        // Byzantine behavior: ignore all messages.
+                        // Byzantine behavior: ignore all messages
                         Logger.log(LogLevel.WARNING, "Byzantine behavior: dropping message.");
                         continue;
                     default:
                         break;
                 }
                 new Thread(() -> {
+                    // Get the consensus instance for the respective client
+                    ConsensusInstance consensusInstance = consensusInstances.get(msg.getClientId());
+
                     String decidedValue = null;
                     if (msg.getType() == Message.Type.CLIENT_REQUEST) {
                         if (consensusInstance != null) {
@@ -110,6 +113,7 @@ public class BlockchainMember {
                         } else {
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
                                     epochNumber++, f, msg.getValue(), msg.getClientId());
+                            consensusInstances.put(msg.getClientId(), consensusInstance);
                         }
 
                         if (memberId == leaderId) {
@@ -124,6 +128,7 @@ public class BlockchainMember {
                             // instantiate a new consensus instance
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds,
                                     perfectLink, msg.getEpoch(), f, null, msg.getClientId());
+                            consensusInstances.put(msg.getClientId(), consensusInstance);
                         }
 
                         consensusInstance.processMessage(msg);
@@ -137,6 +142,7 @@ public class BlockchainMember {
                             this.blockchain.add(decidedValue);
                             Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain);
                             consensusInstance = null;
+                            consensusInstances.remove(msg.getClientId());
 
                             // Send CLIENT_REPLY to the client.
                             InetSocketAddress clientAddr = Config.processAddresses.get(clientId);
@@ -156,6 +162,7 @@ public class BlockchainMember {
                     if (consensusInstance != null && consensusInstance.isAborted()) {
                         Logger.log(LogLevel.ERROR, "Consensus aborted.");
                         consensusInstance = null;
+                        consensusInstances.remove(msg.getClientId());
                     }
                 }).start();
             } catch (InterruptedException e) {
