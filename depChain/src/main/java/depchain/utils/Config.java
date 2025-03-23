@@ -45,6 +45,7 @@ public class Config {
 
     private static void loadAddresses(String configFilePath) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_COMMENTS, true);   // Allow comments in JSON
         JsonNode rootNode = mapper.readTree(new File(configFilePath));
 
         for (JsonNode node : rootNode) {
