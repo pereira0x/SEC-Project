@@ -18,3 +18,6 @@ buildNumber.properties
 
 report.aux
 report.log
+
+# MacOS trash
+.DS_Store
