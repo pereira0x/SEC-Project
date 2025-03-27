@@ -141,7 +141,7 @@ def interrupt_processes():
     print("Interrupting all running processes...")
     
     # Send Ctrl+C to all panes
-    for i in range(5):  # 4 servers + 1 client = 5 panes
+    for i in range(6):  # 4 servers + 2 client = 6 panes
         target = f'{session_name}:0.{i}'
         subprocess.run(['tmux', 'send-keys', '-t', target, 'C-c', 'C-c'])
     

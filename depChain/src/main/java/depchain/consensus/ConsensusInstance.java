@@ -316,7 +316,9 @@ public class ConsensusInstance {
         String valueToWrite = null;
 
         // check if a quorum has already been reached
+        int numWrites;
         do {
+            numWrites = 0;
             Thread.sleep(500);
 
             // Now we proceed to decide the value to write
@@ -327,6 +329,7 @@ public class ConsensusInstance {
                 } else {
                     count.put(s.getValue(), 1);
                 }
+                numWrites++;
             }
 
             int max = 0;
@@ -349,7 +352,7 @@ public class ConsensusInstance {
 
             valueToWrite = null;
             Logger.log(LogLevel.DEBUG, "Still waiting for write responses...");
-        } while (writeResponses.size() < 3*f+1);
+        } while (numWrites < 3*f+1);
 
         // Print all the writes received
         Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
@@ -364,7 +367,9 @@ public class ConsensusInstance {
         String valueToAppend = null;
 
         // check if a quorum has already been reached
+        int numAccepts;
         do {
+            numAccepts = 0;
             Thread.sleep(500);
 
             // Now we proceed to decide the value to append
@@ -375,6 +380,7 @@ public class ConsensusInstance {
                 } else {
                     count.put(s, 1);
                 }
+                numAccepts++;
             }
 
             int max = 0;
@@ -397,7 +403,7 @@ public class ConsensusInstance {
 
             valueToAppend = null;
             Logger.log(LogLevel.DEBUG, "Still waiting for accept responses...");
-        } while (acceptedValues.size() < 3*f+1);
+        } while (numAccepts < 3*f+1);
 
         // Print all the writes received
         Logger.log(LogLevel.INFO, "Accepts received: " + acceptedValues);
