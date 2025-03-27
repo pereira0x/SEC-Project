@@ -190,7 +190,7 @@ launch_processes()
 # Keep the original terminal open and provide options
 while True:
     user_input = input(
-        "Type 'restart' to interrupt and restart, 'kill' to terminate session and quit, or 'attach' to view session in this terminal: "
+        "Type 'restart' to interrupt and restart, or 'kill' to terminate session and quit: "
     ).strip().lower()
     
     if user_input == 'restart':
@@ -200,9 +200,5 @@ while True:
     elif user_input == 'kill':
         kill_session()
         break
-    elif user_input == 'attach':
-        # Allow attaching to the session from the current terminal
-        os.system(f'tmux attach-session -t {session_name}')
-        print("Returned to control interface. Sessions are still running.")
     else:
         print("Invalid input. Please type 'restart', 'kill', or 'attach'.")
