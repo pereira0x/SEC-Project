@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 
 
 import depchain.blockchain.block.Block;
@@ -88,9 +89,9 @@ public class EVMUtils {
     }
 
     // account address is an hash pof the onwer's public key
-    public static String generateAccountHash(String publicKey) throws NoSuchAlgorithmException {
+    public static String getAccountAddress(PublicKey publicKey) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hash = digest.digest(publicKey.getBytes(StandardCharsets.UTF_8));
+        byte[] hash = digest.digest(publicKey.getEncoded());
         
         StringBuilder hexString = new StringBuilder();
         for (byte b : hash) {

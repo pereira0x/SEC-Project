@@ -3,10 +3,10 @@
     "previous_block_hash": null,
     "transactions": [],
     "state": {
-      "client1": { 
+      "35bac2533f3d72f58b678e4dbb59c11272e7b75c94dabf0a24d1827890ac69af": { 
         "balance": 100000
       },
-      "client2": {
+      "1259fb40b29be1d77a8031d5ee843d281c3f105cfaa2dec04db3711e279825e0": {
         "balance": 200000
       },
       "smartAccount": {

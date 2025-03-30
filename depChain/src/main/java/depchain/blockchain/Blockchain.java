@@ -8,13 +8,16 @@ import org.json.JSONObject;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.security.NoSuchAlgorithmException;
 
 import depchain.account.EOAccount;
 import depchain.account.SmartAccount;
 import depchain.blockchain.block.Block;
 import depchain.blockchain.block.BlockParser;
+import depchain.utils.EVMUtils;
 import io.github.cdimascio.dotenv.Dotenv;
 import java.io.IOException;
 
@@ -22,12 +25,11 @@ public class Blockchain {
     
     private int memberId;
     private List<Block> blocks;
-    private EOAccount eoAccount1;
-    private EOAccount eoAccount2;
+    private List<EOAccount> eoAccounts = new ArrayList<>();
     private SmartAccount smartAccount;
 
 
-    public Blockchain(int memberId) throws IOException {
+    public Blockchain(int memberId, List<PublicKey> clientPublicKeys) throws IOException {
         this.memberId = memberId;
 /*         this.blocks = new ArrayList<>();
         this.eoAccount1 = new EOAccount("EOAccount1", "EOAccount1PublicKey", "EOAccount1PrivateKey");
@@ -36,29 +38,68 @@ public class Blockchain {
         
         // directory path is env variable - Dotenv
         String directoryPath = Dotenv.load().get("BLOCKCHAIN_DIR");
+        
+
         if (directoryPath == null) {
             throw new IllegalArgumentException("Environment variable BLOCKCHAIN_DIR is not set.");
         }
+        // apend /memberId to directory path
+       String  directoryPathMember = directoryPath + "/member" + memberId;
 
         List<Path> jsonFiles = new ArrayList<>();
+        String content = null; // Declare content variable here
         try {
-            jsonFiles = Files.list(Paths.get(directoryPath))
+            jsonFiles = Files.list(Paths.get(directoryPathMember))
                     .filter(Files::isRegularFile)
                     .filter(path -> path.toString().endsWith(".json"))
                     .sorted(Comparator.comparing(Path::getFileName))
                     .collect(Collectors.toList());
+
         } catch (IOException e) {
             /* throw new RuntimeException("Error reading files from directory: " + directoryPath, e); */
         }
 
             if (jsonFiles.isEmpty()) {
-                /* throw new IllegalArgumentException("No JSON files found in the directory."); */
+                // insert genesis block
+                System.out.println("No JSON files found in the directory. Fetching from genesis block.");
+                jsonFiles.add(Paths.get(directoryPath + "/genesisBlock.json"));
+                content = new String(Files.readAllBytes(jsonFiles.get(0)));
+            } else{
+                Path lastBlockFile = jsonFiles.get(jsonFiles.size() - 1);
+                content = new String(Files.readAllBytes(lastBlockFile));
             }
 
-            Path lastBlockFile = jsonFiles.get(jsonFiles.size() - 1);
-            String content = new String(Files.readAllBytes(lastBlockFile));
             JSONObject json = new JSONObject(content);
-            System.out.println("JSON: " + json.toString());
+            /* System.out.println("JSON: " + json.toString()); */
+
+
+            // Create Externally Owned Accounts (EOA)
+            JSONObject state = json.getJSONObject("state");
+            for(PublicKey clientKey : clientPublicKeys) {
+                String accountAddress;
+                try {
+                    accountAddress = EVMUtils.getAccountAddress(clientKey);
+                } catch (NoSuchAlgorithmException e) {
+                    throw new RuntimeException("Error generating account address", e);
+                }
+
+                try {
+                    if (!state.has(accountAddress)) {
+                        throw new IllegalArgumentException("Account address not found in state: " + accountAddress);
+                    }
+                } catch (IllegalArgumentException e) {
+                    /* Handle the exception */
+                }
+                JSONObject account = state.getJSONObject(accountAddress);
+                Long balance = account.getLong("balance");
+                
+                EOAccount eoAccount = new EOAccount(accountAddress, balance);
+
+                System.out.println("EOAccount: " + eoAccount.getAddress() + " Balance: " + eoAccount.getBalance());
+                eoAccounts.add(eoAccount);
+                
+            }
+
     }
 
 }

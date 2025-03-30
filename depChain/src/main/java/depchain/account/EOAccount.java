@@ -5,13 +5,17 @@ public class EOAccount {
     private String address;
     private Long balance;
 
-    public EOAccount(String address, String publicKey, String privateKey) {
+    public EOAccount(String address, Long balance) {
         this.address = address;
         this.balance = 0L;
     }
 
     public String getAddress() {
         return address;
+    }
+
+    public Long getBalance() {
+        return balance;
     }
 
 
