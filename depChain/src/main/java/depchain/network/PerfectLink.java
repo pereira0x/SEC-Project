@@ -71,6 +71,9 @@ public class PerfectLink {
 
         // Server initiate sessions with other server of lower ID
         for (int i = 1; i < myId; i++) {
+            if(myId >= 5 && i >= 5) {
+                continue; // Skip clients
+            }
             Logger.log(LogLevel.INFO, "Process " + myId + " starting session with process " + i);
             startSession(i);
         }
