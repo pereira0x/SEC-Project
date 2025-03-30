@@ -3,7 +3,7 @@ package depchain;
 import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
 
-import depchain.account.SmartContract;
+import depchain.account.SmartAccount;
 
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +12,9 @@ public class SmartContractsTest {
 
     @Test
     public void testSmartContracts() {
-        SmartContract smartContract = new SmartContract();
+        SmartAccount smartContract = new SmartAccount();
+
+        // 
     }
     
 }

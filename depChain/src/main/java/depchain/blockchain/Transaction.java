@@ -6,13 +6,22 @@ import java.util.ArrayList;
 
 public class Transaction {
 
+    // enum
+    public enum TransactionType {
+        TRANSFER_DEPCOIN,
+        TRANSFER_IST_COIN,
+        TRANSFER_FROM_IST_COIN,
+        SET_BLACKLIST,
+        
+    }
+
     private long nonce;
     private String sender;
     private String recipient;
     private double amount;
     private String signature;
     private String data;
-    // TODO: need to add gas??
+    private TransactionType type;
 
 
     public Transaction(long nonce, String sender, String recipient, double amount, String signature, String data) {

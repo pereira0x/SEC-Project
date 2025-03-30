@@ -13,6 +13,7 @@ import depchain.utils.Config;
 
 import java.net.InetSocketAddress;
 import io.github.cdimascio.dotenv.Dotenv;
+import java.io.IOException;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 
@@ -57,6 +58,12 @@ public class BlockchainMember {
         String behavior = Config.processBehaviors.get(memberId);
         this.behavior = behavior != null ? behavior : "correct";
 
+        try {
+            Blockchain blockchain = new Blockchain(this.memberId);
+        } catch (IOException e) {
+            Logger.log(LogLevel.ERROR, "Failed to initialize Blockchain: " + e.getMessage());
+        }
+
         PerfectLink pl;
         try {
             pl = new PerfectLink(memberId, memberPort, Config.processAddresses, Config.getPrivateKey(memberId),
@@ -68,6 +75,8 @@ public class BlockchainMember {
         this.perfectLink = pl;
 
         startMessageHandler();
+
+        
     }
 
     public static void main(String[] args) throws Exception {

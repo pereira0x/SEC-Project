@@ -9,6 +9,11 @@ import org.web3j.utils.Numeric;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+
+import depchain.blockchain.block.Block;
 
 public class EVMUtils {
 
@@ -68,5 +73,29 @@ public class EVMUtils {
             hexString = hexString.substring(2);
         }
         return "0".repeat(64 - hexString.length()) + hexString;
+    }
+
+    public static String generateBlockHash(Block block) throws NoSuchAlgorithmException {
+        String data = block.getPreviousBlockHash() + block.getTransactions().toString() + block.getState().toString();
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(data.getBytes(StandardCharsets.UTF_8));
+        
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hash) {
+            hexString.append(String.format("%02x", b));
+        }
+        return hexString.toString();
+    }
+
+    // account address is an hash pof the onwer's public key
+    public static String generateAccountHash(String publicKey) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(publicKey.getBytes(StandardCharsets.UTF_8));
+        
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hash) {
+            hexString.append(String.format("%02x", b));
+        }
+        return hexString.toString();
     }
 }

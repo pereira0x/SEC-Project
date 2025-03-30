@@ -23,12 +23,12 @@ import org.web3j.utils.Numeric;
 
 import io.github.cdimascio.dotenv.Dotenv;
 
-public class SmartContract {
+public class SmartAccount {
     
     private static String deploymentBytecode = Dotenv.load().get("DEPLOYMENT_BYTECODE");
     private static String runtimeBytecode = Dotenv.load().get("RUNTIME_BYTECODE");
 
-    public SmartContract() {
+    public SmartAccount() {
         SimpleWorld simpleWorld = new SimpleWorld();
 
         // creates sender account
