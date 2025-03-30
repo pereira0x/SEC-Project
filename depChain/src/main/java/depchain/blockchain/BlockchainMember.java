@@ -57,11 +57,11 @@ public class BlockchainMember {
         this.behavior = behavior != null ? behavior : "correct";
 
 
-        try {
-           // Blockchain blockchain = new Blockchain(this.memberId, Config.getClientPublicKeys());
+        /* try {
+           Blockchain blockchain = new Blockchain(this.memberId, Config.getClientPublicKeys());
         } catch (IOException e) {
             Logger.log(LogLevel.ERROR, "Failed to initialize Blockchain: " + e.getMessage());
-        }
+        } */
 
         PerfectLink pl;
         try {
