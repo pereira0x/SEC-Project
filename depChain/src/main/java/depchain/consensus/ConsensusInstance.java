@@ -34,9 +34,10 @@ public class ConsensusInstance {
     private boolean aborted = false;
     private final long maxWaitTime = 5000; // 5 seconds
     private String clientRequest;
+    private int requesterId;
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
-            int f, String clientRequest) {
+            int f, String clientRequest, int requesterId) {
         this.myId = myId;
         this.leaderId = leaderId;
         this.f = f;
@@ -45,6 +46,11 @@ public class ConsensusInstance {
         this.epoch = epoch;
         this.quorumSize = (float) 2 * f + 1;
         this.clientRequest = clientRequest;
+        this.requesterId = requesterId; 
+    }
+
+    public int getRequesterId() {
+        return requesterId;
     }
 
     // Leader sends READ messages to all.

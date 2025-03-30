@@ -23,7 +23,6 @@ public class BlockchainMember {
     private final int leaderId; // Static leader ID.
     private String behavior;
     private final List<Integer> allProcessIds;
-    private int clientId;
     private PerfectLink perfectLink;
     /* private final ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>(); */
     private ConsensusInstance consensusInstance;
@@ -36,7 +35,6 @@ public class BlockchainMember {
         this.memberPort = memberPort;
         this.leaderId = leaderId;
         this.allProcessIds = Arrays.asList(1, 2, 3, 4);
-        this.clientId = 5;
         this.f = f;
 
         Dotenv dotenv = Dotenv.load();
@@ -58,8 +56,9 @@ public class BlockchainMember {
         String behavior = Config.processBehaviors.get(memberId);
         this.behavior = behavior != null ? behavior : "correct";
 
+
         try {
-            Blockchain blockchain = new Blockchain(this.memberId);
+           // Blockchain blockchain = new Blockchain(this.memberId, Config.getClientPublicKeys());
         } catch (IOException e) {
             Logger.log(LogLevel.ERROR, "Failed to initialize Blockchain: " + e.getMessage());
         }
@@ -118,7 +117,7 @@ public class BlockchainMember {
                             consensusInstance.setClientRequest(msg.getValue());
                         } else {
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                    epochNumber++, f, msg.getValue());
+                                    epochNumber++, f, msg.getValue(), msg.getSenderId());
                         }
 
                         if (memberId == leaderId) {
@@ -132,7 +131,7 @@ public class BlockchainMember {
                         if (consensusInstance == null) {
                             // instantiate a new consensus instance
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds,
-                                    perfectLink, msg.getEpoch(), f, null);
+                                    perfectLink, msg.getEpoch(), f, null, msg.getSenderId());
                         }
 
                         consensusInstance.processMessage(msg);
@@ -145,10 +144,15 @@ public class BlockchainMember {
                             // Append the decided value to the blockchain.
                             this.blockchain.add(decidedValue);
                             Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain);
+
+                            int clientId = consensusInstance.getRequesterId();
+
                             consensusInstance = null;
 
                             // Send CLIENT_REPLY to the client.
                             InetSocketAddress clientAddr = Config.processAddresses.get(clientId);
+
+                            
                             if (clientAddr != null) {
                                 // TODO: EPOCH NUMBER MUST BE A NEW ONE
                                 // TODO: IMPLEMENT CLIENT IDS PROPERLY

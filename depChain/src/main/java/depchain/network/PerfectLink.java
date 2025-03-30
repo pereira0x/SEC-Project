@@ -79,11 +79,43 @@ public class PerfectLink {
         }
 
         // wait for all sessions to be established
+        // if server wait for processesAddresses.size() - 1
+
+        if(myId <= processAddresses.size() - Config.clientIds.size()){
+
         while (activeSessionMap.size() < processAddresses.size() - 1 ||
                 activeSessionMap.values().stream().anyMatch(value -> value == false)) {
             Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
+            //  print sessions that have been established
+            for (int i = 1; i <= processAddresses.size(); i++) {
+                if (activeSessionMap.containsKey(i)) {
+                    Logger.log(LogLevel.INFO, "Session with process " + i + ": " + activeSessionMap.get(i));
+                }
+                else {
+                    Logger.log(LogLevel.INFO, "Session with process " + i + ": not established");
+                }
+            }
             Thread.sleep(500);
         }
+    }
+        // if client wait for processAddresses.size() - numberOfClients
+        else {
+            while (activeSessionMap.size() < processAddresses.size() - Config.clientIds.size() ||
+                    activeSessionMap.values().stream().anyMatch(value -> value == false)) {
+                Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
+                //  print sessions that have been established
+                for (int i = 1; i <= processAddresses.size(); i++) {
+                    if (activeSessionMap.containsKey(i)) {
+                        Logger.log(LogLevel.INFO, "Session with process " + i + ": " + activeSessionMap.get(i));
+                    }
+                    else {
+                        Logger.log(LogLevel.INFO, "Session with process " + i + ": not established");
+                    }
+                }
+                Thread.sleep(500);
+            }
+        }
+        
     }
 
     public boolean hasActiveSession(int processId) {
