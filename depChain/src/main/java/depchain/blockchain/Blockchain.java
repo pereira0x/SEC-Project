@@ -85,8 +85,28 @@ public class Blockchain {
         // Create Smart Contract Account (SCA)
         getSmartContractAccount(state);
 
-       
 
+        // Create blocks
+        try {
+            createBlocks(jsonFiles);
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating blocks", e);
+        }
+
+/*         for (Block block : blocks) {
+            System.out.println(block.toString());
+        } */
+
+    }
+
+    public void createBlocks(List<Path> jsonFiles) throws IOException, Exception {
+        blocks = new ArrayList<>();
+        for (Path jsonFile : jsonFiles) {
+            String content = new String(Files.readAllBytes(jsonFile));
+            JSONObject json = new JSONObject(content);
+            Block block = BlockParser.parseBlock(json);
+            blocks.add(block);
+        }
     }
 
     public void getSmartContractAccount(JSONObject state) {
@@ -126,7 +146,6 @@ public class Blockchain {
         }
         JSONObject account = state.getJSONObject(accountAddress);
         Long balance = account.getLong("balance");
-        System.out.println("Account: " + accountAddress + " Balance: " + balance);
         
         EOAccount eoAccount = new EOAccount(accountAddress, balance);
 

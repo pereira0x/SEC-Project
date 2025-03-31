@@ -12,7 +12,7 @@ public class SmartContractsTest {
 
     @Test
     public void testSmartContracts() {
-        SmartAccount smartContract = new SmartAccount();
+        //SmartAccount smartContract = new SmartAccount(
 
         // 
     }

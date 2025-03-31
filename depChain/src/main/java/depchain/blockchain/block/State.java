@@ -4,17 +4,31 @@ import java.util.Map;
 
 
 public class State {
-  private Map<String, Long> accounts;
-  private AccessControl accessControl;
-  private Map<String, String> storage;
+  private Map<String, Long> balances;
+
+
+  public State(Map<String, Long> balances) {
+    this.balances = balances;
+  }
 
   // Getters and setters
-  public Map<String, Long> getAccounts() { return accounts; }
-  public void setAccounts(Map<String, Long> accounts) { this.accounts = accounts; }
+  public Map<String, Long> getBalances() {
+    return balances;
+  }
 
-  public AccessControl getAccessControl() { return accessControl; }
-  public void setAccessControl(AccessControl accessControl) { this.accessControl = accessControl; }
+  public void setBalances(Map<String, Long> balances) {
+    this.balances = balances;
+  }
 
-  public Map<String, String> getStorage() { return storage; }
-  public void setStorage(Map<String, String> storage) { this.storage = storage; }
+  @Override
+  public String toString() {
+    String str = "State{";
+    for (Map.Entry<String, Long> entry : balances.entrySet()) {
+      str += " " + entry.getKey() + ": " + entry.getValue() + ",";
+    }
+    str = str.substring(0, str.length() - 1); // Remove the last comma
+    str += " }";
+    return str;
+  }
+
 }

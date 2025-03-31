@@ -24,23 +24,26 @@ public class Transaction {
     private TransactionType type;
 
 
-    public Transaction(long nonce, String sender, String recipient, double amount, String signature, String data) {
+
+    public Transaction(long nonce, String sender, String recipient, double amount, String signature, String data, TransactionType type) {
         this.nonce = nonce;
         this.sender = sender;
         this.recipient = recipient;
         this.amount = amount;
         this.signature = signature;
         this.data = data;
+        this.type = type;
     }
 
 
-    public class TransactionBuilder {
+    public static class TransactionBuilder {
         private long nonce;
         private String sender;
         private String recipient;
         private double amount;
         private String signature;
         private String data;
+        private TransactionType type;
 
         public TransactionBuilder() {
         }
@@ -75,8 +78,13 @@ public class Transaction {
             return this;
         }
 
+        public TransactionBuilder setType(TransactionType type) {
+            this.type = type;
+            return this;
+        }
+
         public Transaction build() {
-            return new Transaction(nonce, sender, recipient, amount, signature, data);
+            return new Transaction(nonce, sender, recipient, amount, signature, data, type);
         }
     }
 }
