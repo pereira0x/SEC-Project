@@ -14,6 +14,7 @@ server_base_command = 'mvn exec:java -Dexec.mainClass="depchain.blockchain.Block
 # Define the base command for the client
 client1_command = 'mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="5 9001"'
 client2_command = 'mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="6 9002"'
+client3_command = 'mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="7 9003"'
 # Define the server arguments
 server_args = [
     '"1 8001"',
@@ -69,16 +70,15 @@ def create_tmux_layout():
     
     # Set up a more reliable layout
     # First create a 2x2 grid for servers
-    subprocess.run(['tmux', 'split-window', '-h', '-t', f'{session_name}:0.0'])
     subprocess.run(['tmux', 'split-window', '-v', '-t', f'{session_name}:0.0'])
-    subprocess.run(['tmux', 'split-window', '-v', '-t', f'{session_name}:0.1'])
-    # Now add the client pane at the bottom
-    subprocess.run(['tmux', 'split-window', '-v', '-t', f'{session_name}:0.2'])
-    # Add another client pane next to the first client
-    subprocess.run(['tmux', 'split-window', '-h', '-t', f'{session_name}:0.3'])
+    subprocess.run(['tmux', 'split-window', '-v', '-t', f'{session_name}:0.0'])
+    subprocess.run(['tmux', 'split-window', '-h', '-t', f'{session_name}:0.1'])
+    # Now add a single bottom pane for clients
+    subprocess.run(['tmux', 'split-window', '-v', '-t', f'{session_name}:0.3'])
+    # Split the bottom pane into 3 horizontal panes for clients
+    subprocess.run(['tmux', 'split-window', '-h', '-t', f'{session_name}:0.4'])
+    subprocess.run(['tmux', 'split-window', '-h', '-t', f'{session_name}:0.5'])
     
-    # Make the client pane span the full width
-    subprocess.run(['tmux', 'select-layout', '-t', session_name, 'tiled'])
 
 # Function to launch all processes in the panes
 def launch_processes():
@@ -91,12 +91,15 @@ def launch_processes():
     client2_target = f'{session_name}:0.5'  # This should be the 6th pane
     subprocess.run(['tmux', 'send-keys', '-t', client2_target, install_command, 'Enter'])
     
+    client3_target = f'{session_name}:0.6'  # This should be the 7th pane
+    subprocess.run(['tmux', 'send-keys', '-t', client3_target, install_command, 'Enter'])
+    
     # Wait for the installation to complete by checking if the process is still running
     print("Waiting for installation to complete...")
     
     # Method 1: Poll the pane for completion
     def is_process_running():
-        for target in [client1_target, client2_target]:
+        for target in [client1_target, client2_target, client3_target]:
             result = subprocess.run(
                 ['tmux', 'capture-pane', '-p', '-t', target], 
                 capture_output=True, 
@@ -134,6 +137,11 @@ def launch_processes():
     subprocess.run(['tmux', 'send-keys', '-t', client2_target, 'echo "Client (Port: 9002)"', 'Enter'])
     subprocess.run(['tmux', 'send-keys', '-t', client2_target, client2_command, 'Enter'])
     
+    # Launch client3 process in the last pane
+    subprocess.run(['tmux', 'send-keys', '-t', client3_target, 'echo "Client (Port: 9003)"', 'Enter'])
+    subprocess.run(['tmux', 'send-keys', '-t', client3_target, client3_command, 'Enter'])
+    
+    
     print("All processes have been launched in tmux panes.")
 
 # Function to interrupt all running processes
@@ -141,7 +149,7 @@ def interrupt_processes():
     print("Interrupting all running processes...")
     
     # Send Ctrl+C to all panes
-    for i in range(6):  # 4 servers + 1 client = 5 panes
+    for i in range(7):  # 4 servers + 3 client = 7 panes
         target = f'{session_name}:0.{i}'
         subprocess.run(['tmux', 'send-keys', '-t', target, 'C-c', 'C-c'])
     

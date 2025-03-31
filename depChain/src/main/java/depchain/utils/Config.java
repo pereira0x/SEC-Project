@@ -69,10 +69,14 @@ public class Config {
 
             processAddresses.put(id, address);
         }
+      /*   for (int clientId : clientIds) {
+            Logger.log(LogLevel.DEBUG, "Client ID: " + clientId);
+        } */
     }
 
     private static void loadKeys(String resourcesFolder) throws Exception {
-        final int totalServers = processAddresses.size();
+        final int totalServers = processAddresses.size() - clientIds.size();
+        System.out.println("Total servers: " + totalServers);
         for (int serverId = 1; serverId <= totalServers; serverId++) {
             String privKeyPath = resourcesFolder + "/priv_key_" + serverId + ".pem";
             String pubKeyPath = resourcesFolder + "/pub_key_" + serverId + ".pem";
@@ -104,8 +108,16 @@ public class Config {
 
         privateKeys.put(6, privClient2);
         publicKeys.put(6, pubClient2);
-        
 
+        // For the client 3 (ID=3 in config.txt)
+        String privKeyClient3Path = resourcesFolder + "/priv_key_client3.pem";
+        String pubKeyClient3Path = resourcesFolder + "/pub_key_client3.pem";
+
+        PrivateKey privClient3 = loadPrivateKey(privKeyClient3Path);
+        PublicKey pubClient3 = loadPublicKey(pubKeyClient3Path);
+
+        privateKeys.put(7, privClient3);
+        publicKeys.put(7, pubClient3);
 
     }
 
