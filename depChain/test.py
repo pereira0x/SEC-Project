@@ -10,7 +10,8 @@ import platform
 install_command = 'mvn clean install'
 # Define the base command for the server
 server_base_command = 'mvn exec:java -Dexec.mainClass="depchain.blockchain.BlockchainMember" -Dexec.args='
-# Define the base command for the client
+
+# Define the base command for the clients
 client1_command = 'mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="5 9001"'
 client2_command = 'mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="6 9002"'
 # Define the server arguments
@@ -77,6 +78,10 @@ def create_tmux_layout():
     subprocess.run(['tmux', 'split-window', '-h', '-t', f'{session_name}:0.3'])
     
     # Make the client pane span the full width
+    subprocess.run(['tmux', 'select-layout', '-t', session_name, 'tiled'])
+
+    # Make a second client pane next to the first one
+    subprocess.run(['tmux', 'split-window', '-h', '-t', f'{session_name}:0.2'])
     subprocess.run(['tmux', 'select-layout', '-t', session_name, 'tiled'])
 
 # Function to launch all processes in the panes
@@ -189,7 +194,7 @@ launch_processes()
 # Keep the original terminal open and provide options
 while True:
     user_input = input(
-        "Type 'restart' to interrupt and restart, 'kill' to terminate session and quit, or 'attach' to view session in this terminal: "
+        "Type 'restart' to interrupt and restart, or 'kill' to terminate session and quit: "
     ).strip().lower()
     
     if user_input == 'restart':
@@ -199,9 +204,5 @@ while True:
     elif user_input == 'kill':
         kill_session()
         break
-    elif user_input == 'attach':
-        # Allow attaching to the session from the current terminal
-        os.system(f'tmux attach-session -t {session_name}')
-        print("Returned to control interface. Sessions are still running.")
     else:
         print("Invalid input. Please type 'restart', 'kill', or 'attach'.")

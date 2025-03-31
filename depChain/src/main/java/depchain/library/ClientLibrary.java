@@ -16,7 +16,7 @@ public class ClientLibrary {
     private final int clientId;
     private int nonce = 0;
     private final int f;
-    private final long timeout = 6000;
+    private final long timeout = 10000;
     private int confirmedAppends = 0;
 
     public ClientLibrary(PerfectLink perfectLink, int leaderId, List<Integer> nodeIds, int clientId, int f) {
@@ -30,7 +30,7 @@ public class ClientLibrary {
     // Append a string to the blockchain.
     public String append(String request) throws Exception {
         // Create a CLIENT_REQUEST message. (Assume the client sets its own ID.)
-        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, confirmedAppends, request, clientId).setNonce(nonce)
+        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, confirmedAppends, request, clientId, clientId).setNonce(nonce)
                 .build();
 
         broadcast(reqMsg);

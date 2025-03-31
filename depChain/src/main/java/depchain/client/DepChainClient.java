@@ -21,7 +21,7 @@ public class DepChainClient {
     private int clientPort;
     private int clientId;
     private final int f;
-    private final List<Integer> processIds;
+    private final List<Integer> processIds; // All node IDs (no clients).
 
     // constructor
     public DepChainClient(int clientId, int clientPort, int f) {
