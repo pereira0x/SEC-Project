@@ -15,6 +15,8 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import java.util.ArrayList;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import depchain.utils.Logger;
@@ -33,6 +35,8 @@ public class Config {
 
     // (If you need private keys in code, add them here:)
     public static ConcurrentHashMap<Integer, PrivateKey> privateKeys = new ConcurrentHashMap<>();
+
+    public static List<Integer> clientIds = new ArrayList<>();
 
     /**
      * Call this once at startup to read: - server/client host:port info from config.txt - private/public keys from PEM
@@ -59,6 +63,10 @@ public class Config {
 
             InetSocketAddress address = new InetSocketAddress(host, port);
 
+            if(type.equals("client")) {
+                clientIds.add(id);
+            }
+
             processAddresses.put(id, address);
         }
     }
@@ -75,6 +83,30 @@ public class Config {
             privateKeys.put(serverId, priv);
             publicKeys.put(serverId, pub);
         }
+
+
+        // For the client 1 (ID=1 in config.txt)
+        String privKeyClientPath = resourcesFolder + "/priv_key_client1.pem";
+        String pubKeyClientPath = resourcesFolder + "/pub_key_client1.pem";
+
+        PrivateKey privClient = loadPrivateKey(privKeyClientPath);
+        PublicKey pubClient = loadPublicKey(pubKeyClientPath);
+
+        privateKeys.put(5, privClient);
+        publicKeys.put(5, pubClient);
+
+        // For the client 2 (ID=2 in config.txt)
+        String privKeyClient2Path = resourcesFolder + "/priv_key_client2.pem";
+        String pubKeyClient2Path = resourcesFolder + "/pub_key_client2.pem";
+
+        PrivateKey privClient2 = loadPrivateKey(privKeyClient2Path);
+        PublicKey pubClient2 = loadPublicKey(pubKeyClient2Path);
+
+        privateKeys.put(6, privClient2);
+        publicKeys.put(6, pubClient2);
+        
+
+
     }
 
     /**
@@ -113,5 +145,17 @@ public class Config {
 
     public static PublicKey getPublicKey(int id) {
         return publicKeys.get(id);
+    }
+
+    public static List<PublicKey> getClientPublicKeys() {
+        List<PublicKey> clientKeys = new ArrayList<>();
+        for (int clientId : clientIds) {
+            PublicKey clientKey = publicKeys.get(clientId);
+            if (clientKey != null) {
+                clientKeys.add(clientKey);
+            }
+        }
+
+        return clientKeys;  
     }
 }

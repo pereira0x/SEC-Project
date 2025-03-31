@@ -38,6 +38,7 @@ public class ConsensusInstance {
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
             int f, String clientRequest, int clientId) {
+
         this.myId = myId;
         this.leaderId = leaderId;
         this.f = f;
@@ -47,6 +48,7 @@ public class ConsensusInstance {
         this.quorumSize = (float) 2 * f + 1;
         this.clientRequest = clientRequest;
         this.clientId = clientId;
+
     }
 
     // Leader sends READ messages to all.

@@ -32,7 +32,51 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.13.0</version>
-
+        </dependency>
+        <dependency>
+            <groupId>org.web3j</groupId>
+            <artifactId>core</artifactId>
+            <version>4.9.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tuweni</groupId>
+            <artifactId>tuweni-bytes</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tuweni</groupId>
+            <artifactId>tuweni-units</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+        <dependency> 
+            <groupId>org.hyperledger.fabric-sdk-java</groupId> 
+            <artifactId>fabric-sdk-java</artifactId> 
+            <version>2.2.14</version> 
+        </dependency>
+        <dependency>
+            <groupId>org.hyperledger.besu</groupId>
+            <artifactId>evm</artifactId>
+            <version>22.1.2</version> 
+        </dependency>
+        <dependency>
+            <groupId>org.hyperledger.besu</groupId>
+            <artifactId>besu-datatypes</artifactId>
+            <version>25.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hyperledger.besu</groupId>
+            <artifactId>evm</artifactId>
+            <version>24.12.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20210307</version>
         </dependency>
     </dependencies>
     <build>
@@ -61,4 +105,14 @@
             </plugin>
         </plugins>
     </build>
+    <repositories>
+        <repository>
+            <id>hyperledger-besu-repo</id>
+            <url>https://hyperledger.jfrog.io/artifactory/besu-maven</url>
+        </repository>
+        <repository>
+            <id>hyperledger-fabric-maven-repo</id>
+            <url>https://hyperledger.jfrog.io/artifactory/fabric-maven</url>
+        </repository>
+    </repositories>
 </project>

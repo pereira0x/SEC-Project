@@ -13,6 +13,7 @@ import depchain.utils.Config;
 
 import java.net.InetSocketAddress;
 import io.github.cdimascio.dotenv.Dotenv;
+import java.io.IOException;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 
@@ -54,6 +55,13 @@ public class BlockchainMember {
         String behavior = Config.processBehaviors.get(memberId);
         this.behavior = behavior != null ? behavior : "correct";
 
+
+        try {
+           Blockchain blockchain = new Blockchain(this.memberId, Config.getClientPublicKeys());
+        } catch (IOException e) {
+            Logger.log(LogLevel.ERROR, "Failed to initialize Blockchain: " + e.getMessage());
+        }
+
         PerfectLink pl;
         try {
             pl = new PerfectLink(memberId, memberPort, Config.processAddresses, Config.getPrivateKey(memberId),
@@ -65,6 +73,8 @@ public class BlockchainMember {
         this.perfectLink = pl;
 
         startMessageHandler();
+
+        
     }
 
     public static void main(String[] args) throws Exception {
@@ -139,11 +149,14 @@ public class BlockchainMember {
                             // Append the decided value to the blockchain.
                             this.blockchain.add(decidedValue);
                             Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain);
+
+
                             consensusInstance = null;
                             consensusInstances.remove(msg.getClientId());
 
                             // Send CLIENT_REPLY to the client.
                             InetSocketAddress clientAddr = Config.processAddresses.get(msg.getClientId());
+
                             if (clientAddr != null) {
                                 // TODO: EPOCH NUMBER MUST BE A NEW ONE
                                 // TODO: IMPLEMENT CLIENT IDS PROPERLY
