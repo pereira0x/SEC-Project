@@ -20,6 +20,9 @@ import depchain.blockchain.block.BlockParser;
 import depchain.utils.EVMUtils;
 import io.github.cdimascio.dotenv.Dotenv;
 import java.io.IOException;
+import depchain.utils.Logger;
+import depchain.utils.Logger.LogLevel;
+
 
 public class Blockchain {
     
@@ -59,47 +62,76 @@ public class Blockchain {
             /* throw new RuntimeException("Error reading files from directory: " + directoryPath, e); */
         }
 
-            if (jsonFiles.isEmpty()) {
-                // insert genesis block
-                System.out.println("No JSON files found in the directory. Fetching from genesis block.");
-                jsonFiles.add(Paths.get(directoryPath + "/genesisBlock.json"));
-                content = new String(Files.readAllBytes(jsonFiles.get(0)));
-            } else{
-                Path lastBlockFile = jsonFiles.get(jsonFiles.size() - 1);
-                content = new String(Files.readAllBytes(lastBlockFile));
+        if (jsonFiles.isEmpty()) {
+            // insert genesis block
+            System.out.println("No JSON files found in the directory. Fetching from genesis block.");
+            jsonFiles.add(Paths.get(directoryPath + "/genesisBlock.json"));
+            content = new String(Files.readAllBytes(jsonFiles.get(0)));
+        } else{
+            Path lastBlockFile = jsonFiles.get(jsonFiles.size() - 1);
+            content = new String(Files.readAllBytes(lastBlockFile));
+        }
+
+        JSONObject json = new JSONObject(content);
+        /* System.out.println("JSON: " + json.toString()); */
+
+
+        // Create Externally Owned Accounts (EOA)
+        JSONObject state = json.getJSONObject("state");
+        for(PublicKey clientKey : clientPublicKeys) {
+            createEOAccount(clientKey, state);
+        }
+
+        // Create Smart Contract Account (SCA)
+        getSmartContractAccount(state);
+
+       
+
+    }
+
+    public void getSmartContractAccount(JSONObject state) {
+
+        String deploymentBytecode = Dotenv.load().get("RUNTIME_BYTECODE");
+        String smartAccountAddress;
+        try {
+            smartAccountAddress = EVMUtils.getSmartAccountAddress(deploymentBytecode);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error generating smart account address", e);
+        }
+        JSONObject smartContract = state.getJSONObject(smartAccountAddress);
+        // String smartContractBytecode = smartContract.getString("bytecode");
+        Long smartContractBalance = smartContract.getLong("balance");
+        JSONObject storage = smartContract.getJSONObject("storage");
+        Integer smartContractOwner = storage.getInt("owner");
+
+        smartAccount = new SmartAccount(smartAccountAddress, smartContractBalance, smartContractOwner);
+
+        System.out.println("Smart Contract Account: " + smartAccount.getAddress() + " Balance: " + smartAccount.getBalance() + " Owner: " + smartAccount.getOwner());
+    }
+
+    public void createEOAccount(PublicKey clientKey, JSONObject state) {
+        String accountAddress;
+        try {
+            accountAddress = EVMUtils.getEOAccountAddress(clientKey);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error generating account address", e);
+        }
+
+        try {
+            if (!state.has(accountAddress)) {
+                Logger.log(LogLevel.ERROR, "Account address not found in state: " + accountAddress);
             }
+        } catch (IllegalArgumentException e) {
+            /* Handle the exception */
+        }
+        JSONObject account = state.getJSONObject(accountAddress);
+        Long balance = account.getLong("balance");
+        System.out.println("Account: " + accountAddress + " Balance: " + balance);
+        
+        EOAccount eoAccount = new EOAccount(accountAddress, balance);
 
-            JSONObject json = new JSONObject(content);
-            /* System.out.println("JSON: " + json.toString()); */
-
-
-            // Create Externally Owned Accounts (EOA)
-            JSONObject state = json.getJSONObject("state");
-            for(PublicKey clientKey : clientPublicKeys) {
-                String accountAddress;
-                try {
-                    accountAddress = EVMUtils.getAccountAddress(clientKey);
-                } catch (NoSuchAlgorithmException e) {
-                    throw new RuntimeException("Error generating account address", e);
-                }
-
-                try {
-                    if (!state.has(accountAddress)) {
-                        throw new IllegalArgumentException("Account address not found in state: " + accountAddress);
-                    }
-                } catch (IllegalArgumentException e) {
-                    /* Handle the exception */
-                }
-                JSONObject account = state.getJSONObject(accountAddress);
-                Long balance = account.getLong("balance");
-                
-                EOAccount eoAccount = new EOAccount(accountAddress, balance);
-
-                System.out.println("EOAccount: " + eoAccount.getAddress() + " Balance: " + eoAccount.getBalance());
-                eoAccounts.add(eoAccount);
-                
-            }
-
+        System.out.println("EOAccount: " + eoAccount.getAddress() + " Balance: " + eoAccount.getBalance());
+        eoAccounts.add(eoAccount);
     }
 
 }

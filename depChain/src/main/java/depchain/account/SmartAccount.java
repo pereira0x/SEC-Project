@@ -1,7 +1,7 @@
 package depchain.account;
 
 
-import static depchain.utils.EVMUtils.*;
+/* import static depchain.utils.EVMUtils.*;
 
 import org.apache.tuweni.bytes.Bytes;
 
@@ -21,11 +21,58 @@ import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
 
 
-import io.github.cdimascio.dotenv.Dotenv;
+import io.github.cdimascio.dotenv.Dotenv; */
 
 public class SmartAccount {
     
-    private static String deploymentBytecode = Dotenv.load().get("DEPLOYMENT_BYTECODE");
+    private String address;
+    private Long balance;
+    private Storage storage;
+
+    // create an inner class Storage
+    public class Storage {
+        private int owner;
+
+        public Storage(int owner) {
+            this.owner = owner;
+        }
+        public int getOwner() {
+            return owner;
+        }
+    }
+
+    public SmartAccount(String address, Long balance, int owner) {
+        this.address = address;
+        this.balance = balance;
+        this.storage = new Storage(owner);
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public Long getBalance() {
+        return balance;
+    }
+ 
+    public int getOwner() {
+        return storage.getOwner();
+    }
+
+    public void add(Long value) {
+        this.balance += value;
+    }
+
+    public void remove(Long value) {
+        if (this.balance >= value) {
+            this.balance -= value;
+        } else {
+            throw new IllegalArgumentException("Insufficient balance");
+        }
+    }
+
+
+/*     private static String deploymentBytecode = Dotenv.load().get("DEPLOYMENT_BYTECODE");
     private static String runtimeBytecode = Dotenv.load().get("RUNTIME_BYTECODE");
 
     public SmartAccount() {
@@ -80,6 +127,6 @@ public class SmartAccount {
 
 
 }
-
+ */
     
 }

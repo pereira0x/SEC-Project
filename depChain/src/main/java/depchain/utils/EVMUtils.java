@@ -89,9 +89,21 @@ public class EVMUtils {
     }
 
     // account address is an hash pof the onwer's public key
-    public static String getAccountAddress(PublicKey publicKey) throws NoSuchAlgorithmException {
+    public static String getEOAccountAddress(PublicKey publicKey) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(publicKey.getEncoded());
+        
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hash) {
+            hexString.append(String.format("%02x", b));
+        }
+        return hexString.toString();
+    }
+
+    public static String getSmartAccountAddress(String bytecode) throws NoSuchAlgorithmException {
+        // Hash the bytecode using SHA-256
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(bytecode.getBytes(StandardCharsets.UTF_8));
         
         StringBuilder hexString = new StringBuilder();
         for (byte b : hash) {
