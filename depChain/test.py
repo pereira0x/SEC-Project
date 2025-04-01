@@ -89,10 +89,8 @@ def launch_processes():
     subprocess.run(['tmux', 'send-keys', '-t', client1_target, install_command, 'Enter'])
     
     client2_target = f'{session_name}:0.5'  # This should be the 6th pane
-    subprocess.run(['tmux', 'send-keys', '-t', client2_target, install_command, 'Enter'])
     
     client3_target = f'{session_name}:0.6'  # This should be the 7th pane
-    subprocess.run(['tmux', 'send-keys', '-t', client3_target, install_command, 'Enter'])
     
     # Wait for the installation to complete by checking if the process is still running
     print("Waiting for installation to complete...")
