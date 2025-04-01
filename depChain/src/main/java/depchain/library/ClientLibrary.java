@@ -129,8 +129,8 @@ public class ClientLibrary {
             Logger.log(LogLevel.ERROR, "Transaction " + transaction.getNonce() + " not confirmed in time.");
             return;
         }
+
+        nonce++;
         Logger.log(LogLevel.INFO, "Transaction Confirmed: " + transaction.getNonce());
-        Logger.log(LogLevel.INFO, "Confirmations: " + confirmations);
-        Logger.log(LogLevel.INFO, "Required Confirmations: " + requiredConfirmations);
     }
 }

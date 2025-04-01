@@ -1,8 +1,12 @@
 package depchain.blockchain;
 
+import java.io.Serializable;
+import java.util.Objects;
 
 
-public class Transaction {
+public class Transaction implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     // enum
     public enum TransactionType {
@@ -10,7 +14,6 @@ public class Transaction {
         TRANSFER_IST_COIN,
         TRANSFER_FROM_IST_COIN,
         SET_BLACKLIST,
-        
     }
 
     private long nonce;
@@ -21,9 +24,8 @@ public class Transaction {
     private String data;
     private TransactionType type;
 
-
-
-    public Transaction(long nonce, String sender, String recipient, double amount, String signature, String data, TransactionType type) {
+    public Transaction(long nonce, String sender, String recipient, double amount, String signature, String data,
+            TransactionType type) {
         this.nonce = nonce;
         this.sender = sender;
         this.recipient = recipient;
@@ -37,6 +39,37 @@ public class Transaction {
         return nonce;
     }
 
+    @Override
+    public String toString() {
+        return "Transaction{" +
+                "nonce=" + nonce +
+                ", sender='" + sender + '\'' +
+                ", recipient='" + recipient + '\'' +
+                ", amount=" + amount +
+                ", signature='" + signature + '\'' +
+                ", data='" + data + '\'' +
+                ", type=" + type +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        // TODO: consider signature and data
+        if (obj instanceof Transaction) {
+            Transaction other = (Transaction) obj;
+            return nonce == other.nonce &&
+                    sender.equals(other.sender) &&
+                    recipient.equals(other.recipient) &&
+                    amount == other.amount &&
+                    type == other.type;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(nonce, sender, recipient, amount, type);
+    }
 
     public static class TransactionBuilder {
         private long nonce;

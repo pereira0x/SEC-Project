@@ -1,11 +1,15 @@
 package depchain.blockchain.block;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 
 import depchain.blockchain.Transaction;
 
-public class Block {
+public class Block implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String blockHash;
     private String previousBlockHash;
@@ -23,7 +27,8 @@ public class Block {
         this.state = state;
     }
 
-    public Block(String blockHash, String previousBlockHash, ArrayList<Transaction> transactions, Map<String, Long> balances) {
+    public Block(String blockHash, String previousBlockHash, ArrayList<Transaction> transactions,
+            Map<String, Long> balances) {
         this.blockHash = blockHash;
         this.previousBlockHash = previousBlockHash;
         this.transactions = transactions;
@@ -82,9 +87,15 @@ public class Block {
     public boolean equals(Object obj) {
         if (obj instanceof Block) {
             Block other = (Block) obj;
-            return blockHash.equals(other.blockHash) && previousBlockHash.equals(other.previousBlockHash) && transactions.equals(other.transactions) && state.equals(other.state);
+            return blockHash.equals(other.blockHash) && previousBlockHash.equals(other.previousBlockHash)
+                    && transactions.equals(other.transactions) && state.equals(other.state);
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(blockHash, previousBlockHash, transactions, state);
     }
 
     // BlockBuilder class
@@ -95,6 +106,8 @@ public class Block {
         private BlockState state;
 
         public BlockBuilder(ArrayList<Transaction> transactions, String previousBlockHash) {
+            System.out.println("BlockBuilder constructor called");
+            System.out.println("transactions: " + transactions);
             this.transactions = transactions;
             this.previousBlockHash = previousBlockHash;
         }

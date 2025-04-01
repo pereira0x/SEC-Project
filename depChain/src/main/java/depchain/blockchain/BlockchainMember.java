@@ -34,7 +34,7 @@ public class BlockchainMember {
     private int epochNumber = 0;
     private Blockchain blockchain;
 
-    private ArrayList<Transaction> pendingTransactions = new ArrayList<>();
+    private final List<Transaction> pendingTransactions = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     private final int transactions_treshold = Dotenv.load().get("TRANSACTIONS_TRESHOLD") != null ? Integer.parseInt(Dotenv.load().get("TRANSACTIONS_TRESHOLD")) : 2;
 
@@ -66,7 +66,7 @@ public class BlockchainMember {
 
 
         try {
-           Blockchain blockchain = new Blockchain(this.memberId, Config.getClientPublicKeys());
+           this.blockchain = new Blockchain(this.memberId, Config.getClientPublicKeys());
         } catch (IOException e) {
             Logger.log(LogLevel.ERROR, "Failed to initialize Blockchain: " + e.getMessage());
         }
@@ -129,24 +129,38 @@ public class BlockchainMember {
                     /* String decidedBlock = null; */
                     Block decidedBlock = null;
                     if (msg.getType() == Message.Type.CLIENT_REQUEST) {
+                        
+                        // Add the transaction to the pending transactions list.
+                        synchronized (pendingTransactions) {
+                            pendingTransactions.add(msg.getTransaction());
+                        }
+
                         if(pendingTransactions.size() >= transactions_treshold) {
+    
                             String lastBlockHash = blockchain.getMostRecentBlock().getBlockHash();
                             BlockState state = blockchain.getMostRecentBlock().getBlockState();
-                            Block block = new Block.BlockBuilder(pendingTransactions, lastBlockHash)
+                            ArrayList<Transaction> transactions = new ArrayList<>(pendingTransactions);
+                            Block block = new Block.BlockBuilder(transactions, lastBlockHash)
                                 .setBlockState(state)
                                 .build();
+                           
+                            String blockHash = null;
                             try {
-                                String blockHash = EVMUtils.generateBlockHash(block);
+                                blockHash = EVMUtils.generateBlockHash(block);
+                                block.setBlockHash(blockHash);
+                                
                             } catch (NoSuchAlgorithmException e) {
                                 Logger.log(LogLevel.ERROR, "Failed to generate block hash: " + e.getMessage());
                                 return;
                             }
+
+
                             
                             if (consensusInstance != null) {
-                                consensusInstance.setblockProposed(block);
+                                consensusInstance.setBlockProposed(block);
                             } else {
                                 consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                        epochNumber++, f, msg.getBlock(), msg.getClientId());
+                                        epochNumber++, f, block, msg.getClientId());
                                 consensusInstances.put(msg.getClientId(), consensusInstance);
                             }
 
@@ -161,8 +175,7 @@ public class BlockchainMember {
                         }
 
                         else {
-                            Logger.log(LogLevel.DEBUG, "Adding transaction to pending transactions.");
-                            pendingTransactions.add(msg.getTransaction());
+                            Logger.log(LogLevel.DEBUG, "Added transaction to pending transactions.");
                         }
                     
                     } else {
@@ -183,11 +196,13 @@ public class BlockchainMember {
                         try {
                             // Append the decided value to the blockchain.
                             this.blockchain.addBlock(decidedBlock);
-                            Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain);
-
+                            Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain.getHashesChain());
 
                             consensusInstance = null;
                             consensusInstances.remove(msg.getClientId());
+                            synchronized (pendingTransactions) {
+                                pendingTransactions.clear();
+                            }
 
                             // Send CLIENT_REPLY to the client.
                             InetSocketAddress clientAddr = Config.processAddresses.get(msg.getClientId());
@@ -209,13 +224,18 @@ public class BlockchainMember {
                         Logger.log(LogLevel.ERROR, "Consensus aborted.");
                         consensusInstance = null;
                         consensusInstances.remove(msg.getClientId());
+                        synchronized (pendingTransactions) {
+                            pendingTransactions.clear();
+                        }
                     }
+
                 }).start();
             } catch (InterruptedException e) {
                 break;
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            
         }
     }
 
