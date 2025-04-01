@@ -1,13 +1,13 @@
 package depchain.network;
 
 import java.io.Serializable;
+import java.util.Map;
 
-import depchain.utils.ByteArrayWrapper;
+import depchain.blockchain.Transaction;
+import depchain.blockchain.block.Block;
 import depchain.consensus.State;
 import depchain.consensus.TimestampValuePair;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
+import depchain.utils.ByteArrayWrapper;
 
 public class Message implements Serializable {
     public enum Type {
@@ -16,11 +16,12 @@ public class Message implements Serializable {
 
     private final Type type;
     private final int epoch; // For our design, epoch doubles as the consensus instance ID.
-    private String value; // The value (e.g., the string to append).
     private final int senderId; // The sender's ID (for clients, use a distinct range).
     private final int clientId; // All messages relate to a client request in some way, apart from session and acks.
     private final byte[] signature; // Signature over the message content (computed by sender).
     private int nonce; // nonce for the message (computed by sender).
+    private Transaction transaction;
+    private Block block;
 
     // Optional fields
     private ByteArrayWrapper sessionKey; // session key for the message (computed by sender).
@@ -31,7 +32,6 @@ public class Message implements Serializable {
     private Message(MessageBuilder builder) {
         this.type = builder.type;
         this.epoch = builder.epoch;
-        this.value = builder.value;
         this.senderId = builder.senderId;
         this.clientId = builder.clientId;
         this.signature = builder.signature;
@@ -40,6 +40,8 @@ public class Message implements Serializable {
         this.write = builder.write;
         this.sessionKey = builder.sessionKey;
         this.nonce = builder.nonce;
+        this.transaction = builder.transaction;
+        this.block = builder.block;
     }
 
     public Type getType() {
@@ -48,10 +50,6 @@ public class Message implements Serializable {
 
     public int getEpoch() {
         return epoch;
-    }
-
-    public String getValue() {
-        return value;
     }
 
     public int getSenderId() {
@@ -90,13 +88,21 @@ public class Message implements Serializable {
         this.nonce = nonce;
     }
 
+    public Transaction getTransaction() {
+        return transaction;
+    }
+
+    public Block getBlock() {
+        return block;
+    }
+
+
     // Returns a string representation of the content to be signed.
     public String getSignableContent() {
 
         String content = "";
         content += type.toString();
         content += epoch;
-        content += value;
         content += senderId;
         content += clientId;
         content += nonce;
@@ -109,7 +115,6 @@ public class Message implements Serializable {
     public static class MessageBuilder {
         private final Type type;
         private final int epoch;
-        private final String value;
         private final int senderId;
         private final int clientId;
         private byte[] signature;
@@ -118,11 +123,12 @@ public class Message implements Serializable {
         private Map<Integer, State> statesMap;
         private TimestampValuePair write;
         private int nonce;
+        private Transaction transaction;
+        private Block block;
 
-        public MessageBuilder(Type type, int epoch, String value, int senderId, int clientId) {
+        public MessageBuilder(Type type, int epoch, int senderId, int clientId) {
             this.type = type;
             this.epoch = epoch;
-            this.value = value;
             this.senderId = senderId;
             this.clientId = clientId;
             this.signature = null;
@@ -157,6 +163,16 @@ public class Message implements Serializable {
 
         public MessageBuilder setSignature(byte[] signature) {
             this.signature = signature;
+            return this;
+        }
+
+        public MessageBuilder setTransaction(Transaction transaction) {
+            this.transaction = transaction;
+            return this;
+        }
+
+        public MessageBuilder setBlock(Block block) {
+            this.block = block;
             return this;
         }
 

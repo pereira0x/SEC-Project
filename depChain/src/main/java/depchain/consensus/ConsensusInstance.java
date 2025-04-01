@@ -1,22 +1,17 @@
 package depchain.consensus;
 
-import java.sql.Time;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.HashMap;
-import java.util.Map;
 
-import depchain.network.Message;
+import depchain.blockchain.block.Block; // Ensure this is the correct package for Transaction
+import depchain.network.Message; // Ensure this is the correct package for Block
 import depchain.network.PerfectLink;
 import depchain.utils.Config;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
-
-import depchain.consensus.State;
 
 public class ConsensusInstance {
     private final int myId;
@@ -24,20 +19,20 @@ public class ConsensusInstance {
     private final List<Integer> allProcessIds;
     private final PerfectLink perfectLink;
     private final int epoch; // In our design, epoch doubles as the consensus instance ID.
-    private String decidedValue = null;
+    private Block decidedBlock = null;
     private final float quorumSize;
     private Map<Integer, State> stateResponses = new HashMap<>();
     private Map<Integer, TimestampValuePair> writeResponses = new HashMap<>();
-    private List<String> acceptedValues = new ArrayList<>();
+    private List<Block> acceptedValues = new ArrayList<>();
     private final int f;
     private final State state = new State();
     private boolean aborted = false;
     private final long maxWaitTime = 5000; // 5 seconds
-    private String clientRequest;
+    private Block blockProposed;
     private final int clientId;
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
-            int f, String clientRequest, int clientId) {
+            int f, Block blockProposed, int clientId) {
 
         this.myId = myId;
         this.leaderId = leaderId;
@@ -46,14 +41,14 @@ public class ConsensusInstance {
         this.perfectLink = perfectLink;
         this.epoch = epoch;
         this.quorumSize = (float) 2 * f + 1;
-        this.clientRequest = clientRequest;
+        this.blockProposed = blockProposed;
         this.clientId = clientId;
 
     }
 
     // Leader sends READ messages to all.
     private void broadcastRead() {
-        Message readMsg = new Message.MessageBuilder(Message.Type.READ, epoch, null, myId, clientId).build();
+        Message readMsg = new Message.MessageBuilder(Message.Type.READ, epoch, myId, clientId).build();
 
         // Start by appending the leader's own state.
         stateResponses.put(leaderId, state);
@@ -69,7 +64,7 @@ public class ConsensusInstance {
     }
 
     private void broadcastCollected() {
-        Message collectedMsg = new Message.MessageBuilder(Message.Type.COLLECTED, epoch, null, myId, clientId)
+        Message collectedMsg = new Message.MessageBuilder(Message.Type.COLLECTED, epoch, myId, clientId)
                 .setStatesMap(stateResponses).build();
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
@@ -89,7 +84,7 @@ public class ConsensusInstance {
             e.printStackTrace();
         }
 
-        Message writeMsg = new Message.MessageBuilder(Message.Type.WRITE, epoch, null, myId, clientId).setWrite(candidate)
+        Message writeMsg = new Message.MessageBuilder(Message.Type.WRITE, epoch, myId, clientId).setWrite(candidate)
                 .build();
 
         // append to the writeset of my state the candidate
@@ -107,12 +102,14 @@ public class ConsensusInstance {
         }
     }
 
-    private void broadcastAccept(String candidate) {
+    private void broadcastAccept(Block candidate) {
         // update my state's most recent write
         state.setMostRecentWrite(new TimestampValuePair(epoch, candidate));
 
         acceptedValues.add(candidate);
-        Message acceptMsg = new Message.MessageBuilder(Message.Type.ACCEPT, epoch, candidate, myId, clientId).build();
+        Message acceptMsg = new Message.MessageBuilder(Message.Type.ACCEPT, epoch, myId, clientId)
+                                        .setBlock(candidate)
+                                        .build();
         for (int pid : allProcessIds) {
             if (pid != myId) {
                 try {
@@ -130,33 +127,35 @@ public class ConsensusInstance {
             switch (msg.getType()) {
                 case READ:
 
-                    Message stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId, clientId)
-                            .setState(state).build();
+                    Message stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId, clientId)
+                            .setState(state).setBlock(msg.getBlock()).build();
                     switch (Config.processBehaviors.get(this.myId)) {
                         case "byzantineState":
                             // Send a state message with a random state.
                             State currentStateCopy = state;
-                            currentStateCopy.setMostRecentWrite(new TimestampValuePair(1, "Byzantine"));
-                            currentStateCopy.addToWriteSet(new TimestampValuePair(1, "Byzantine"));
-                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId, clientId)
-                                    .setState(currentStateCopy).build();
+                            // TODO: empty block instead of hardcoded string "Byzantine"
+                            currentStateCopy.setMostRecentWrite(new TimestampValuePair(1, new Block()));
+                            currentStateCopy.addToWriteSet(new TimestampValuePair(1, new Block()));
+                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId, clientId)
+                                    .setState(currentStateCopy).setBlock(msg.getBlock()).build();
                             Logger.log(LogLevel.WARNING, "Byzantine state sent: " + currentStateCopy);
                             break;
                         case "impersonate":
                             // Send a state message impersonating another process - signature check should
                             // fail
                             int otherProcessId = myId == 3 ? 2 : 3;
-                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(),
-                                    otherProcessId, clientId).setState(state).build();
+                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch,
+                                    otherProcessId, clientId).setState(state).setBlock(msg.getBlock()).build();
                             Logger.log(LogLevel.WARNING, "Invalid signature sent: " + stateMsg);
                             break;
                         case "spam":
                             State currentStateCopySpam = state;
-                            currentStateCopySpam.setMostRecentWrite(new TimestampValuePair(1, "Spam"));
-                            currentStateCopySpam.addToWriteSet(new TimestampValuePair(1, "Spam"));
+                            // TODO: empty block instead of hardcoded string "Spam"
+                            currentStateCopySpam.setMostRecentWrite(new TimestampValuePair(1, new Block()));
+                            currentStateCopySpam.addToWriteSet(new TimestampValuePair(1, new Block()));
 
-                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, msg.getValue(), myId, clientId)
-                                    .setState(currentStateCopySpam).build();
+                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId, clientId)
+                                    .setState(currentStateCopySpam).setBlock(msg.getBlock()).build();
                             Logger.log(LogLevel.WARNING, "Spam state sent, 100 times: " + currentStateCopySpam);
                             for (int i = 0; i < 100; i++) {
                                 try {
@@ -212,10 +211,10 @@ public class ConsensusInstance {
                     broadcastWrite(candidate);
 
                     // Wait for writes
-                    String valueToWrite = waitForWrites(candidate.getValue());
+                    Block blockToWrite = waitForWrites(candidate.getValue());
 
                     // If the value to write is null, then abort
-                    if (valueToWrite == null) {
+                    if (blockToWrite == null) {
                         this.aborted = true;
                         break;
                     }
@@ -224,29 +223,29 @@ public class ConsensusInstance {
                     switch (Config.processBehaviors.get(this.myId)) {
                         case "spam":
                             for (int i = 0; i < 10; i++) {
-                                broadcastAccept(valueToWrite);
+                                broadcastAccept(blockToWrite);
                             }
                             break;
 
                         default:
                             break;
                     }
-                    broadcastAccept(valueToWrite);
+                    broadcastAccept(blockToWrite);
 
                     // Wait for accepts
-                    String valueToAppend = waitForAccepts(candidate.getValue());
+                    Block blockToAccept = waitForAccepts(candidate.getValue());
 
                     // If the value to append is null, then abort
-                    if (valueToAppend == null) {
+                    if (blockToAccept == null) {
                         this.aborted = true;
                         break;
                     }
 
-                    this.decidedValue = valueToAppend;
+                    this.decidedBlock = blockToAccept;
                     break;
                 case ACCEPT:
                     // Upon ACCEPT, update our local state.
-                    acceptedValues.add(msg.getValue());
+                    acceptedValues.add(msg.getBlock());
                     break;
                 default:
                     break;
@@ -280,8 +279,8 @@ public class ConsensusInstance {
             tmpVal = stateResponses.get(leaderId).getMostRecentWrite();
         }
 
-        if (!tmpVal.getValue().equals(this.clientRequest)) {
-            Logger.log(LogLevel.ERROR, "Decided value is not the client request: " + tmpVal.getValue() + " != " + this.clientRequest);
+        if (!tmpVal.getValue().equals(this.blockProposed)) {
+            Logger.log(LogLevel.ERROR, "Decided value is not the client request: " + tmpVal.getValue() + " != " + this.blockProposed);
             return null;
         }
 
@@ -312,10 +311,10 @@ public class ConsensusInstance {
         return true;
     }
 
-    public String waitForWrites(String candidate) throws InterruptedException, ExecutionException {
+    public Block waitForWrites(Block candidate) throws InterruptedException, ExecutionException {
         // Start a counter to keep track of the time
         long startTime = System.currentTimeMillis();
-        String valueToWrite = null;
+        Block blockToWrite = null;
 
         // check if a quorum has already been reached
         int numWrites;
@@ -324,25 +323,25 @@ public class ConsensusInstance {
             Thread.sleep(500);
 
             // Now we proceed to decide the value to write
-            Map<String, Integer> count = new HashMap<>();
-            for (TimestampValuePair s : writeResponses.values()) {
-                if (count.containsKey(s.getValue())) {
-                    count.put(s.getValue(), count.get(s.getValue()) + 1);
+            Map<Block, Integer> count = new HashMap<>();
+            for (TimestampValuePair b : writeResponses.values()) {
+                if (count.containsKey(b.getValue())) {
+                    count.put(b.getValue(), count.get(b.getValue()) + 1);
                 } else {
-                    count.put(s.getValue(), 1);
+                    count.put(b.getValue(), 1);
                 }
                 numWrites++;
             }
 
             int max = 0;
-            for (Map.Entry<String, Integer> entry : count.entrySet()) {
+            for (Map.Entry<Block, Integer> entry : count.entrySet()) {
                 if (entry.getValue() > max) {
                     max = entry.getValue();
-                    valueToWrite = entry.getKey();
+                    blockToWrite = entry.getKey();
                 }
             }
 
-            if ((max >= (2*f + 1)) && valueToWrite.equals(candidate))
+            if ((max >= (2*f + 1)) && blockToWrite.equals(candidate))
                 break;
 
             // Check if the time has exceeded the maximum wait time
@@ -352,21 +351,21 @@ public class ConsensusInstance {
                 return null;
             }
 
-            valueToWrite = null;
+            blockToWrite = null;
             Logger.log(LogLevel.DEBUG, "Still waiting for write responses...");
         } while (numWrites < 3*f+1);
 
         // Print all the writes received
         Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
 
-        Logger.log(LogLevel.INFO, "Value to write: " + valueToWrite);
-        return valueToWrite;
+        Logger.log(LogLevel.INFO, "Value to write: " + blockToWrite);
+        return blockToWrite;
     }
 
-    public String waitForAccepts(String candidate) throws InterruptedException, ExecutionException {
+    public Block waitForAccepts(Block candidate) throws InterruptedException, ExecutionException {
         // Start a counter to keep track of the time
         long startTime = System.currentTimeMillis();
-        String valueToAppend = null;
+        Block blockToAppend = null;
 
         // check if a quorum has already been reached
         int numAccepts;
@@ -375,8 +374,8 @@ public class ConsensusInstance {
             Thread.sleep(500);
 
             // Now we proceed to decide the value to append
-            Map<String, Integer> count = new HashMap<>();
-            for (String s : acceptedValues) {
+            Map<Block, Integer> count = new HashMap<>();
+            for (Block s : acceptedValues) {
                 if (count.containsKey(s)) {
                     count.put(s, count.get(s) + 1);
                 } else {
@@ -386,14 +385,14 @@ public class ConsensusInstance {
             }
 
             int max = 0;
-            for (Map.Entry<String, Integer> entry : count.entrySet()) {
+            for (Map.Entry<Block, Integer> entry : count.entrySet()) {
                 if (entry.getValue() > max) {
                     max = entry.getValue();
-                    valueToAppend = entry.getKey();
+                    blockToAppend = entry.getKey();
                 }
             }
 
-            if ((max >= (2*f + 1)) && valueToAppend.equals(candidate))
+            if ((max >= (2*f + 1)) && blockToAppend.equals(candidate))
                 break;
 
             // Check if the time has exceeded the maximum wait time
@@ -403,18 +402,18 @@ public class ConsensusInstance {
                 return null;
             }
 
-            valueToAppend = null;
+            blockToAppend = null;
             Logger.log(LogLevel.DEBUG, "Still waiting for accept responses...");
         } while (numAccepts < 3*f+1);
 
         // Print all the writes received
         Logger.log(LogLevel.INFO, "Accepts received: " + acceptedValues);
 
-        Logger.log(LogLevel.INFO, "Value to append: " + valueToAppend);
-        return valueToAppend;
+        Logger.log(LogLevel.INFO, "Value to append: " + blockToAppend);
+        return blockToAppend;
     }
 
-    public String decide() {
+    public Block decideBlock() {
         try {
             // Read Phase
             broadcastRead();
@@ -433,37 +432,37 @@ public class ConsensusInstance {
             // Broadcast write
             broadcastWrite(candidate);
             // Wait for writes
-            String valueToWrite = waitForWrites(candidate.getValue());
+            Block blockToWrite = waitForWrites(candidate.getValue());
 
             // If the value to write is null, then abort
-            if (valueToWrite == null) {
+            if (blockToWrite == null) {
                 this.aborted = true;
                 return null;
             }
 
             // Broadcast ACCEPT
-            broadcastAccept(valueToWrite);
+            broadcastAccept(blockToWrite);
 
             // Wait for accepts
-            String valueToAppend = waitForAccepts(candidate.getValue());
+            Block blockToAppend = waitForAccepts(candidate.getValue());
 
             // If the value to append is null, then abort
-            if (valueToAppend == null) {
+            if (blockToAppend == null) {
                 this.aborted = true;
                 return null;
             }
 
-            this.decidedValue = valueToAppend;
+            this.decidedBlock = blockToAppend;
 
-            return valueToAppend;
+            return blockToAppend;
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    public String getDecidedValue() {
-        return decidedValue;
+    public Block getDecidedBlock() {
+        return decidedBlock;
     }
 
     public boolean isAborted() {
@@ -474,7 +473,7 @@ public class ConsensusInstance {
         state.setMostRecentWrite(write);
     }
 
-    public void setClientRequest(String clientRequest) {
-        this.clientRequest = clientRequest;
+    public void setblockProposed(Block blockProposed) {
+        this.blockProposed = blockProposed;
     }
 }

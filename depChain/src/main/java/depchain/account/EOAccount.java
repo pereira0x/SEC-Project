@@ -7,7 +7,7 @@ public class EOAccount {
 
     public EOAccount(String address, Long balance) {
         this.address = address;
-        this.balance = 0L;
+        this.balance = balance;
     }
 
     public String getAddress() {
@@ -17,6 +17,7 @@ public class EOAccount {
     public Long getBalance() {
         return balance;
     }
+    
 
 
     public void add(Long value) {

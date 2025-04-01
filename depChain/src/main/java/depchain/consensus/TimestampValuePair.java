@@ -2,12 +2,14 @@ package depchain.consensus;
 
 import java.io.Serializable;
 
+import depchain.blockchain.block.Block;
+
 public class TimestampValuePair implements Serializable {
     private static final long serialVersionUID = 1L;
     public final int timestamp;
-    public final String value;
+    public final Block value;
 
-    public TimestampValuePair(int timestamp, String value) {
+    public TimestampValuePair(int timestamp, Block value) {
         this.timestamp = timestamp;
         this.value = value;
     }
@@ -16,7 +18,7 @@ public class TimestampValuePair implements Serializable {
         return timestamp;
     }
 
-    public String getValue() {
+    public Block getValue() {
         return value;
     }
 

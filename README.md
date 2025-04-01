@@ -162,3 +162,8 @@ Project developed for the Highly Dependable Systems course at Instituto Superior
 
 [1] Introduction to Reliable and Secure Distributed Programming. 2nd Edition.
 [2] Springer Computer Science Proceedings Guidelines: https://www.springer.com/gp/computer-science/lncs/conference-proceedings-guidelines
+
+
+
+O balance da smart account é o dinheiro que está dentro do smart contract. Na construção do smart contract o balance é todo do onwer. As trocas de iST coins são corridas somente pelo contrato. As trocas de depcoin são apenas registadas nos json
+
