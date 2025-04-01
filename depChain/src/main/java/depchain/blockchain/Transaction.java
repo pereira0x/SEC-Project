@@ -33,6 +33,10 @@ public class Transaction {
         this.type = type;
     }
 
+    public long getNonce() {
+        return nonce;
+    }
+
 
     public static class TransactionBuilder {
         private long nonce;

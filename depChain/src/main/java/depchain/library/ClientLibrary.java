@@ -1,7 +1,9 @@
 package depchain.library;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.web3j.crypto.WalletFile.Crypto;
 
 import depchain.blockchain.Transaction;
 import depchain.blockchain.block.Block;
@@ -21,68 +23,46 @@ public class ClientLibrary {
     private final long timeout = 10000;
     private int confirmedTransfers = 0;
 
+    // Map to store waiting transactions and their notifier objects
+    private final Map<Long, Object> pendingTransactions = new ConcurrentHashMap<>();
+
     public ClientLibrary(PerfectLink perfectLink, int leaderId, List<Integer> nodeIds, int clientId, int f) {
         this.perfectLink = perfectLink;
         this.leaderId = leaderId;
         this.nodeIds = nodeIds;
         this.clientId = clientId;
         this.f = f;
+
+        // Start the listening thread
+        new Thread(this::listenForReplies).start();
     }
 
-    // Append a string to the blockchain.
-/*     public String append(String request) throws Exception {
-        // Create a CLIENT_REQUEST message. (Assume the client sets its own ID.)
-        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, confirmedAppends, request, clientId, clientId).setNonce(nonce)
-                .build();
-
-        broadcast(reqMsg);
-
-        // Start the timer
-        long startTime = System.currentTimeMillis();
-
-        // initialize list of replies 
-        List<String> replies = new ArrayList<>();
-
-
-        //clear queue of old messages (old replies)
-        perfectLink.clearQueue();
-        // Wait for f+1 equal CLIENT_REPLY messages.
-        while (System.currentTimeMillis() - startTime < timeout) {
-            Message reply = perfectLink.deliver();
-            if (reply.getType() == Message.Type.CLIENT_REPLY) {
-                Logger.log(LogLevel.INFO, "Received reply from " + reply.getSenderId() + ": " + reply.getValue());
-                
-                replies.add(reply.getValue());
-                // Check if there are f+1 equal replies and that are the same as request
-                if (replies.size() >= f + 1) {
-                    int count = 0;
-                    for (int i = 0; i < replies.size(); i++)
-                        if (replies.get(i).equals(request))
-                            count++;
-                    if (count >= f + 1)
-                        nonce++;
-                        confirmedAppends++;
-                        return request;
+    private void listenForReplies() {
+        while (true) {
+            try {
+                Message reply = perfectLink.deliver();
+                if (reply.getType() == Message.Type.CLIENT_REPLY) {
+                    System.out.println("Received reply: " + reply);
+                    Block appendedBlock = reply.getBlock();
+                    if (appendedBlock != null) {
+                        for (Transaction tx : appendedBlock.getTransactions()) {
+                            Long txNonce = tx.getNonce();
+                            if (pendingTransactions.containsKey(txNonce)) {
+                                synchronized (pendingTransactions.get(txNonce)) {
+                                    pendingTransactions.get(txNonce).notify();
+                                }
+                            }
+                        }
+                    }
                 }
-        
-                Logger.log(LogLevel.ERROR, "Timeout: No valid replies received at least f+1 times");
-                return null;
+            } catch (Exception e) {
+                Logger.log(LogLevel.ERROR, "Error in listening thread: " + e.getMessage());
             }
-
-        }
-
-        Logger.log(LogLevel.ERROR, "Timeout: No replies received at least f+1 times");
-        return null;
-    } */
-
-    public void broadcast(Message msg) throws Exception {
-        for (int nodeId : nodeIds) {
-            perfectLink.send(nodeId, msg);
         }
     }
 
     public String transferDepcoin(int recipientId, Long amount) throws Exception {
-        // Create a CLIENT_REQUEST message. (Assume the client sets its own ID.)
+        // Create the transaction
         Transaction transaction = new Transaction.TransactionBuilder()
                 .setSender(String.valueOf(this.clientId))
                 .setRecipient(String.valueOf(recipientId))
@@ -90,41 +70,67 @@ public class ClientLibrary {
                 .setNonce(CryptoUtil.generateNonce())
                 .setType(Transaction.TransactionType.TRANSFER_DEPCOIN)
                 .build();
+
+        // Create message
         Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, confirmedTransfers, clientId, clientId)
-                                    .setTransaction(transaction)
-                                    .setNonce(nonce)
+                .setTransaction(transaction)
+                .setNonce(nonce)
                 .build();
 
+        // Register the transaction as pending
+        Object lock = new Object();
+        pendingTransactions.put(transaction.getNonce(), lock);
+
+        // Send the transaction
         broadcast(reqMsg);
 
-        // Start the timer
-        long startTime = System.currentTimeMillis();
+        // Schedule a separate thread to handle confirmations
+        new Thread(() -> {
+            waitforTransactionConfirmation(transaction, lock);
+        }).start();
 
-        // initialize list of replies 
-        List<Block> replies = new ArrayList<>();
-        perfectLink.clearQueue();
+        return "Transaction Sent: " + transaction.getNonce();
+    }
 
-        // Wait for f+1 equal CLIENT_REPLY messages.
-        while (System.currentTimeMillis() - startTime < timeout) {
-            Message reply = perfectLink.deliver();
-            if (reply.getType() == Message.Type.CLIENT_REPLY) {
-                Logger.log(LogLevel.INFO, "Received reply from " + reply.getSenderId() + ": " + reply.getBlock());
-                
-                replies.add(reply.getBlock());
-                // Check if there are f+1 equal replies and that are the same as request
-                if (replies.size() >= f + 1) {
-                    int count = 0;
-                    for (int i = 0; i < replies.size(); i++)
-                        if (replies.get(i).equals(transaction.toString()))
-                            count++;
-                    if (count >= f + 1)
-                        nonce++;
-                        confirmedTransfers++;
-                        return transaction.toString();
-                }
-            }
-
+    public void broadcast(Message msg) throws Exception {
+        for (int nodeId : nodeIds) {
+            perfectLink.send(nodeId, msg);
         }
-        return null;
+    }
+
+    public void waitforTransactionConfirmation(Transaction transaction, Object lock) {
+        int requiredConfirmations = f + 1;
+        int confirmations = 0;
+    
+        synchronized (lock) {
+            try {
+                long startTime = System.currentTimeMillis();
+                while (confirmations < requiredConfirmations) {
+                    long remainingTime = timeout - (System.currentTimeMillis() - startTime);
+                    if (remainingTime <= 0) {
+                        break; // Exit if timeout is reached
+                    }
+                    
+                    lock.wait(remainingTime);
+    
+                    // Check if this was a real confirmation (i.e., a real notify)
+                    if (pendingTransactions.containsKey(transaction.getNonce())) {
+                        confirmations++;
+                    }
+                }
+            } catch (InterruptedException e) {
+                Logger.log(LogLevel.ERROR, "Confirmation thread interrupted: " + e.getMessage());
+            }
+        }
+    
+        pendingTransactions.remove(transaction.getNonce());
+    
+        if (confirmations < requiredConfirmations) {
+            Logger.log(LogLevel.ERROR, "Transaction " + transaction.getNonce() + " not confirmed in time.");
+            return;
+        }
+        Logger.log(LogLevel.INFO, "Transaction Confirmed: " + transaction.getNonce());
+        Logger.log(LogLevel.INFO, "Confirmations: " + confirmations);
+        Logger.log(LogLevel.INFO, "Required Confirmations: " + requiredConfirmations);
     }
 }

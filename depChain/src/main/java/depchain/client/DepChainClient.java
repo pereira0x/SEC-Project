@@ -90,7 +90,8 @@ public class DepChainClient {
                     client.append(parts[1]);
                     break; */
                 case "transfer":
-                    if (parts.length < 3 || parts.length > 3) {
+                    if (parts.length < 3 || parts.length > 3 || !parts[1].matches("\\d+") || !parts[2].matches("\\d+")) {
+                        // Check if the second and third arguments are integers
                         Logger.log(LogLevel.ERROR, "Usage: transfer <recipientId> <amount>");
                     }
                     client.transferDepcoin(Integer.parseInt(parts[1]), Long.parseLong(parts[2]));

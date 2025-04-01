@@ -15,6 +15,7 @@ public class SmartContractsTest {
         //SmartAccount smartContract = new SmartAccount(
 
         // 
+        System.out.println("SmartContractTest");
     }
     
 }
