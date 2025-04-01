@@ -1,19 +1,15 @@
 package depchain.client;
 
-import java.net.*;
-import java.security.KeyPair;
-
-import io.github.cdimascio.dotenv.Dotenv;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Scanner;
 
 import depchain.library.ClientLibrary;
 import depchain.network.PerfectLink;
 import depchain.utils.Config;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
-
-import java.util.Scanner;
-import java.util.List;
-import java.util.Arrays;
+import io.github.cdimascio.dotenv.Dotenv;
 
 public class DepChainClient {
 
@@ -87,11 +83,17 @@ public class DepChainClient {
             String[] parts = line.split(" ");
             String command = parts[0];
             switch (command) {
-                case "append":
+                /* case "append":
                     if (parts.length < 2 || parts.length > 2) {
                         Logger.log(LogLevel.ERROR, "Usage: append <message>");
                     }
                     client.append(parts[1]);
+                    break; */
+                case "transfer":
+                    if (parts.length < 3 || parts.length > 3) {
+                        Logger.log(LogLevel.ERROR, "Usage: transfer <recipientId> <amount>");
+                    }
+                    client.transferDepcoin(Integer.parseInt(parts[1]), Long.parseLong(parts[2]));
                     break;
                 case "exit":
                     break;
@@ -106,7 +108,7 @@ public class DepChainClient {
         System.exit(0);
     }
 
-    // Now you can access clientLib in other methods
+   /*  // Now you can access clientLib in other methods
     public String append(String message) {
         Logger.log(LogLevel.INFO, "Client sending append request...");
         try {
@@ -115,6 +117,19 @@ public class DepChainClient {
             return response;
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to append message: " + e.getMessage());
+            return null;
+        }
+    } */
+
+
+    public String transferDepcoin(int recipientId, Long amount) {
+        Logger.log(LogLevel.INFO, "Client sending transfer request...");
+        try {
+            String response = clientLib.transferDepcoin(recipientId, amount);
+            Logger.log(LogLevel.INFO, "Client received response from f+1: " + response);
+            return response;
+        } catch (Exception e) {
+            Logger.log(LogLevel.ERROR, "Failed to transfer Depcoin: " + e.getMessage());
             return null;
         }
     }

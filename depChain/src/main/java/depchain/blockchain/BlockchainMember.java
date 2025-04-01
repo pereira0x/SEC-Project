@@ -1,21 +1,23 @@
 package depchain.blockchain;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
+import depchain.blockchain.block.Block;
 import depchain.consensus.ConsensusInstance;
-import depchain.consensus.State;
 import depchain.consensus.TimestampValuePair;
 import depchain.network.Message;
-import depchain.network.PerfectLink;
 import depchain.network.Message.Type;
+import depchain.network.PerfectLink;
 import depchain.utils.Config;
-
-import java.net.InetSocketAddress;
-import io.github.cdimascio.dotenv.Dotenv;
-import java.io.IOException;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
+import io.github.cdimascio.dotenv.Dotenv;
 
 public class BlockchainMember {
     private final int memberId;
@@ -27,7 +29,7 @@ public class BlockchainMember {
     private ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>();
     private final int f;                        // Maximum number of Byzantine faults allowed.
     private int epochNumber = 0;
-    private ArrayList<String> blockchain = new ArrayList<>();
+    private ArrayList<Block> blockchain = new ArrayList<>();
 
     public BlockchainMember(int memberId, int memberPort, int leaderId, int f) {
         this.memberId = memberId;
@@ -110,25 +112,29 @@ public class BlockchainMember {
                     default:
                         break;
                 }
+
+
+
                 new Thread(() -> {
                     // Get the consensus instance for the respective client
                     ConsensusInstance consensusInstance = consensusInstances.get(msg.getClientId());
 
-                    String decidedValue = null;
+                    /* String decidedBlock = null; */
+                    Block decidedBlock = null;
                     if (msg.getType() == Message.Type.CLIENT_REQUEST) {
                         if (consensusInstance != null) {
-                            consensusInstance.setClientRequest(msg.getValue());
+                            //consensusInstance.setClientRequest(msg.getBlock());
                         } else {
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                    epochNumber++, f, msg.getValue(), msg.getClientId());
+                                    epochNumber++, f, msg.getBlock(), msg.getClientId());
                             consensusInstances.put(msg.getClientId(), consensusInstance);
                         }
 
                         if (memberId == leaderId) {
-                            consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, msg.getValue()));
+                            consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, msg.getBlock()));
                             Logger.log(LogLevel.DEBUG, "Waiting for consensus decision...");
 
-                            decidedValue = consensusInstance.decide();
+                            decidedBlock = consensusInstance.decideBlock();
                         }
                     } else {
                         // For consensus messages, dispatch to the corresponding consensus instance.
@@ -141,13 +147,13 @@ public class BlockchainMember {
 
                         consensusInstance.processMessage(msg);
                         
-                        decidedValue = consensusInstance.getDecidedValue();
+                        decidedBlock = consensusInstance.getDecidedBlock();
                     }
 
-                    if (decidedValue != null) {
+                    if (decidedBlock != null) {
                         try {
                             // Append the decided value to the blockchain.
-                            this.blockchain.add(decidedValue);
+                            this.blockchain.add(decidedBlock);
                             Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain);
 
 
@@ -161,7 +167,7 @@ public class BlockchainMember {
                                 // TODO: EPOCH NUMBER MUST BE A NEW ONE
                                 // TODO: IMPLEMENT CLIENT IDS PROPERLY
                                 Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
-                                        decidedValue, memberId, msg.getClientId()).build();
+                                     memberId, msg.getClientId()).setBlock(decidedBlock).build();
                                 perfectLink.send(msg.getClientId(), reply);
                             }   
                         } catch (Exception e) {
@@ -184,7 +190,7 @@ public class BlockchainMember {
         }
     }
 
-    public ArrayList<String> getBlockchain() {
+    public ArrayList<Block> getBlockchain() {
         return this.blockchain;
     }
 

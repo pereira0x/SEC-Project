@@ -1,9 +1,9 @@
 package depchain.consensus;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-import depchain.consensus.TimestampValuePair;
-import java.io.Serializable;
+import depchain.blockchain.block.Block;
 
 public class State implements Serializable {
 
@@ -13,7 +13,7 @@ public class State implements Serializable {
     public final ArrayList<TimestampValuePair> writeset;
 
     public State() {
-        this.mostRecentWrite = new TimestampValuePair(0, "");
+        this.mostRecentWrite = new TimestampValuePair(0, new Block());
         this.writeset = new ArrayList<>();
     }
 
@@ -38,8 +38,8 @@ public class State implements Serializable {
         this.mostRecentWrite = write;
     }
 
-    public ArrayList<String> getBlockchain() {
-        ArrayList<String> blockchain = new ArrayList<>();
+    public ArrayList<Block> getBlockchain() {
+        ArrayList<Block> blockchain = new ArrayList<>();
         for (TimestampValuePair write : writeset) {
             blockchain.add(write.getValue());
         }

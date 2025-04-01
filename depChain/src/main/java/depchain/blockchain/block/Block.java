@@ -1,10 +1,8 @@
 package depchain.blockchain.block;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.List;
 import java.util.Map;
+
 import depchain.blockchain.Transaction;
 
 public class Block {
@@ -45,7 +43,7 @@ public class Block {
     public void setState(State state) { this.state = state; }
 
     public List<Transaction> getTransactionList() {
-        return transactions.values().stream().toList();
+        return transactions.values().stream().collect(java.util.stream.Collectors.toList());
     }
     
     public Map<String, Long> getBalances() {
@@ -61,5 +59,14 @@ public class Block {
                 ", transactions=" + transactions +
                 ", state=" + state +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Block) {
+            Block other = (Block) obj;
+            return blockHash.equals(other.blockHash) && previousBlockHash.equals(other.previousBlockHash) && transactions.equals(other.transactions) && state.equals(other.state);
+        }
+        return false;
     }
 }

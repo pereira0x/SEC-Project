@@ -1,7 +1,5 @@
 package depchain.blockchain;
 
-import java.util.ArrayList;
-
 
 
 public class Transaction {

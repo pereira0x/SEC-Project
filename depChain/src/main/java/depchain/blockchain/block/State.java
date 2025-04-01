@@ -31,4 +31,13 @@ public class State {
     return str;
   }
 
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof State) {
+      State other = (State) obj;
+      return balances.equals(other.balances);
+    }
+    return false;
+  }
+
 }
