@@ -7,6 +7,7 @@ import depchain.blockchain.Transaction;
 import depchain.blockchain.block.Block;
 import depchain.network.Message;
 import depchain.network.PerfectLink;
+import depchain.utils.CryptoUtil;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 
@@ -86,7 +87,7 @@ public class ClientLibrary {
                 .setSender(String.valueOf(this.clientId))
                 .setRecipient(String.valueOf(recipientId))
                 .setAmount(amount)
-                .setNonce(nonce)
+                .setNonce(CryptoUtil.generateNonce())
                 .setType(Transaction.TransactionType.TRANSFER_DEPCOIN)
                 .build();
         Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, confirmedTransfers, clientId, clientId)

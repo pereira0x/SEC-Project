@@ -1,10 +1,4 @@
-package depchain.utils;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.web3j.crypto.Hash;
-import org.web3j.utils.Numeric;
+    package depchain.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
@@ -13,6 +7,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import depchain.blockchain.block.Block;
 
@@ -77,7 +74,7 @@ public class EVMUtils {
     }
 
     public static String generateBlockHash(Block block) throws NoSuchAlgorithmException {
-        String data = block.getPreviousBlockHash() + block.getTransactions().toString() + block.getState().toString();
+        String data = block.getPreviousBlockHash() + block.getTransactions().toString() + block.getBlockState().toString();
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(data.getBytes(StandardCharsets.UTF_8));
         

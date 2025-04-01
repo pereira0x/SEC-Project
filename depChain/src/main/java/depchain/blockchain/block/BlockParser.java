@@ -1,23 +1,13 @@
 package depchain.blockchain.block;
 
-import java.nio.file.Paths;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.ArrayList;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import java.util.Comparator;
-import java.util.HashMap;
 
-
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import depchain.blockchain.Transaction;
 
@@ -31,7 +21,7 @@ public class BlockParser {
 
         
         JSONArray transactionsJson = jsonFile.getJSONArray("transactions");
-        Map<Long, Transaction> transactions = new HashMap<>();
+        ArrayList<Transaction> transactions = new ArrayList<>();
 
         // Handle transactions being an array instead of an object
     if (jsonFile.has("transactions")) {
@@ -45,7 +35,7 @@ public class BlockParser {
                         .setSignature(transactionJson.getString("signature"))
                         .setData(transactionJson.getString("data"))
                         .build();
-                transactions.put(Long.parseLong(transactionJson.getString("nonce")), t);
+                transactions.add(t);
             }
         } else {
             throw new IllegalArgumentException("Invalid transactions format");
@@ -59,7 +49,11 @@ public class BlockParser {
             balances.put(accountAddress, balance);
         }
 
-        return new Block(blockHash, previousBlockHash, transactions, balances);
+       /*  return new Block(blockHash, previousBlockHash, transactions, balances); */
+       return new Block.BlockBuilder(transactions, previousBlockHash)
+                .setBlockHash(blockHash)
+                .setBalances(balances)
+                .build();
     }
 
     public static String blockToJson(Block block) {

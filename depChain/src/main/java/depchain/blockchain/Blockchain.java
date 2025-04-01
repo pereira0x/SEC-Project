@@ -1,27 +1,26 @@
 package depchain.blockchain;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.json.JSONObject;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.security.NoSuchAlgorithmException;
 
 import depchain.account.EOAccount;
 import depchain.account.SmartAccount;
 import depchain.blockchain.block.Block;
 import depchain.blockchain.block.BlockParser;
 import depchain.utils.EVMUtils;
-import io.github.cdimascio.dotenv.Dotenv;
-import java.io.IOException;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
+import io.github.cdimascio.dotenv.Dotenv;
 
 
 public class Blockchain {
@@ -151,6 +150,18 @@ public class Blockchain {
 
         System.out.println("EOAccount: " + eoAccount.getAddress() + " Balance: " + eoAccount.getBalance());
         eoAccounts.add(eoAccount);
+    }
+
+    public void addBlock(Block block) {
+        blocks.add(block);
+    }
+
+    public ArrayList<Block> getChain() {
+        return new ArrayList<>(blocks);
+    }
+
+    public Block getMostRecentBlock() {
+        return blocks.get(blocks.size() - 1);
     }
 
 }

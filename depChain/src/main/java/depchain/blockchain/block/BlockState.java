@@ -3,11 +3,11 @@ package depchain.blockchain.block;
 import java.util.Map;
 
 
-public class State {
+public class BlockState {
   private Map<String, Long> balances;
 
 
-  public State(Map<String, Long> balances) {
+  public BlockState(Map<String, Long> balances) {
     this.balances = balances;
   }
 
@@ -33,8 +33,8 @@ public class State {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof State) {
-      State other = (State) obj;
+    if (obj instanceof BlockState) {
+      BlockState other = (BlockState) obj;
       return balances.equals(other.balances);
     }
     return false;
