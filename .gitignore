@@ -24,3 +24,6 @@ report.log
 
 # Java class files
 *.class
+
+.idea/
+.vscode/
