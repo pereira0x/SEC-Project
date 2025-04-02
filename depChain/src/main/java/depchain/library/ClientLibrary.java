@@ -88,7 +88,10 @@ public class ClientLibrary {
         new Thread(() -> {
             waitforTransactionConfirmation(transaction, lock);
         }).start();
-
+        // nonce must be updated after sending the transaction and not after receiving
+        // the confirmation, since we want a client to be able to send multiple
+        // transactions in a single block
+        nonce++;
         return "Transaction Sent: " + transaction.getNonce();
     }
 
@@ -130,7 +133,7 @@ public class ClientLibrary {
             return;
         }
 
-        nonce++;
+        
         Logger.log(LogLevel.INFO, "Transaction Confirmed: " + transaction.getNonce());
     }
 }

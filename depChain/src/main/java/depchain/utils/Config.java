@@ -15,6 +15,9 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.web3j.abi.datatypes.Int;
+
 import java.util.List;
 import java.util.ArrayList;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -169,5 +172,13 @@ public class Config {
         }
 
         return clientKeys;  
+    }
+
+    public static List<Integer> getClientIds() {
+        List<Integer> clientIdsList = new ArrayList<>();
+        for (int clientId : clientIds) {
+            clientIdsList.add(clientId);
+        }
+        return clientIdsList;
     }
 }

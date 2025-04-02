@@ -210,9 +210,16 @@ public class BlockchainMember {
                             if (clientAddr != null) {
                                 // TODO: EPOCH NUMBER MUST BE A NEW ONE
                                 // TODO: IMPLEMENT CLIENT IDS PROPERLY
-                                Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
-                                     memberId, msg.getClientId()).setBlock(decidedBlock).build();
-                                perfectLink.send(msg.getClientId(), reply);
+
+                                // broadcast the reply to all clients
+                                for (int clientId : Config.getClientIds()) {
+                                    Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
+                                     memberId, clientId).setBlock(decidedBlock).build();
+                                    perfectLink.send(clientId, reply);
+                                    
+                                }
+                                
+                                
                             }   
                         } catch (Exception e) {
                             e.printStackTrace();
