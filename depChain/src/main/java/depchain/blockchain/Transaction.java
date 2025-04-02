@@ -16,6 +16,12 @@ public class Transaction implements Serializable {
         SET_BLACKLIST,
     }
 
+    public enum TransactionStatus {
+        PENDING,
+        CONFIRMED,
+        REJECTED,
+    }
+
     private long nonce;
     private String sender;
     private String recipient;
@@ -23,9 +29,10 @@ public class Transaction implements Serializable {
     private String signature;
     private String data;
     private TransactionType type;
+    private TransactionStatus status;
 
     public Transaction(long nonce, String sender, String recipient, double amount, String signature, String data,
-            TransactionType type) {
+            TransactionType type, TransactionStatus status) {
         this.nonce = nonce;
         this.sender = sender;
         this.recipient = recipient;
@@ -33,6 +40,7 @@ public class Transaction implements Serializable {
         this.signature = signature;
         this.data = data;
         this.type = type;
+        this.status = status;
     }
 
     public long getNonce() {
@@ -79,6 +87,7 @@ public class Transaction implements Serializable {
         private String signature;
         private String data;
         private TransactionType type;
+        private TransactionStatus status;
 
         public TransactionBuilder() {
         }
@@ -118,8 +127,13 @@ public class Transaction implements Serializable {
             return this;
         }
 
+        public TransactionBuilder setStatus(TransactionStatus status) {
+            this.status = status;
+            return this;
+        }
+
         public Transaction build() {
-            return new Transaction(nonce, sender, recipient, amount, signature, data, type);
+            return new Transaction(nonce, sender, recipient, amount, signature, data, type, status);
         }
     }
 }

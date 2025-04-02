@@ -69,6 +69,7 @@ public class ClientLibrary {
                 .setAmount(amount)
                 .setNonce(CryptoUtil.generateNonce())
                 .setType(Transaction.TransactionType.TRANSFER_DEPCOIN)
+                .setStatus(Transaction.TransactionStatus.PENDING)
                 .build();
 
         // Create message
