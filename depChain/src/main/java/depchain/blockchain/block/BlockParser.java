@@ -31,7 +31,7 @@ public class BlockParser {
                         .setNonce(Long.parseLong(transactionJson.getString("nonce")))
                         .setSender(transactionJson.getString("sender"))
                         .setRecipient(transactionJson.getString("recipient"))
-                        .setAmount(Double.parseDouble(transactionJson.getString("amount")))
+                        .setAmount(Long.parseLong(transactionJson.getString("amount")))
                         .setSignature(transactionJson.getString("signature"))
                         .setData(transactionJson.getString("data"))
                         .setStatus(Transaction.TransactionStatus.valueOf(transactionJson.getString("status")))

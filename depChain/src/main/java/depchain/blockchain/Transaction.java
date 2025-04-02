@@ -25,13 +25,13 @@ public class Transaction implements Serializable {
     private long nonce;
     private String sender;
     private String recipient;
-    private double amount;
+    private long amount;
     private String signature;
     private String data;
     private TransactionType type;
     private TransactionStatus status;
 
-    public Transaction(long nonce, String sender, String recipient, double amount, String signature, String data,
+    public Transaction(long nonce, String sender, String recipient, long amount, String signature, String data,
             TransactionType type, TransactionStatus status) {
         this.nonce = nonce;
         this.sender = sender;
@@ -47,6 +47,38 @@ public class Transaction implements Serializable {
         return nonce;
     }
 
+    public String getSender() {
+        return sender;
+    }
+
+    public String getRecipient() {
+        return recipient;
+    }
+
+    public long getAmount() {
+        return amount;
+    }
+
+    public String getSignature() {
+        return signature;
+    }
+
+    public String getData() {
+        return data;
+    }
+
+    public TransactionType getType() {
+        return type;
+    }
+
+    public TransactionStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(TransactionStatus status) {
+        this.status = status;
+    }
+
     @Override
     public String toString() {
         return "Transaction{" +
@@ -57,6 +89,7 @@ public class Transaction implements Serializable {
                 ", signature='" + signature + '\'' +
                 ", data='" + data + '\'' +
                 ", type=" + type +
+                ", status=" + status +
                 '}';
     }
 
@@ -83,7 +116,7 @@ public class Transaction implements Serializable {
         private long nonce;
         private String sender;
         private String recipient;
-        private double amount;
+        private long amount;
         private String signature;
         private String data;
         private TransactionType type;
@@ -107,7 +140,7 @@ public class Transaction implements Serializable {
             return this;
         }
 
-        public TransactionBuilder setAmount(double amount) {
+        public TransactionBuilder setAmount(long amount) {
             this.amount = amount;
             return this;
         }

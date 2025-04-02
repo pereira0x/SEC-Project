@@ -1,6 +1,7 @@
 package depchain.blockchain;
 
 import java.io.IOException;
+import java.lang.Thread.State;
 import java.net.InetSocketAddress;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -9,6 +10,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.hyperledger.besu.evm.EVM;
+
+import depchain.blockchain.Transaction.TransactionType;
 import depchain.blockchain.block.Block;
 import depchain.blockchain.block.BlockState;
 import depchain.consensus.ConsensusInstance;
@@ -21,6 +25,7 @@ import depchain.utils.EVMUtils;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 import io.github.cdimascio.dotenv.Dotenv; // Ensure EVMUtils is imported if it exists in your project
+import jnr.ffi.annotations.In;
 
 public class BlockchainMember {
     private final int memberId;
@@ -194,8 +199,11 @@ public class BlockchainMember {
 
                     if (decidedBlock != null) {
                         try {
+                            // Block was decided now we have to process the transactions
+                            Block processedBlock = processBlockTransactions(decidedBlock);
+
                             // Append the decided value to the blockchain.
-                            this.blockchain.addBlock(decidedBlock);
+                            this.blockchain.addBlock(processedBlock);
                             Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain.getHashesChain());
 
                             consensusInstance = null;
@@ -214,7 +222,7 @@ public class BlockchainMember {
                                 // broadcast the reply to all clients
                                 for (int clientId : Config.getClientIds()) {
                                     Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
-                                     memberId, clientId).setBlock(decidedBlock).build();
+                                     memberId, clientId).setBlock(processedBlock).build();
                                     perfectLink.send(clientId, reply);
                                     
                                 }
@@ -253,4 +261,76 @@ public class BlockchainMember {
     public int getMemberId() {
         return this.memberId;
     }
+
+    public Block processBlockTransactions(Block block) {
+        // No need to create a copy, modify the original block directly
+        ArrayList<Transaction> updatedTransactions = new ArrayList<>();
+        
+        // Process transactions in the block
+        for (Transaction transaction : block.getTransactions()) {
+            if (transaction.getType() == TransactionType.TRANSFER_DEPCOIN) {
+                updatedTransactions.add(processDepCoinTransaction(transaction, block));
+            }
+    
+            // TODO: Add other transaction types here if needed
+        }
+    
+        // After processing, set the block's transactions to the updated ones
+        block.setTransactions(updatedTransactions);
+    
+        // Optionally log the processed block state
+        System.out.println("Block transactions: " + block.getTransactions());
+        System.out.println("Block balances: " + block.getBalances());
+    
+        return block;
+    }
+    
+    public Transaction processDepCoinTransaction(Transaction t, Block block) {
+        // Process transactions in the block
+        String sender;
+        String recipient;
+        try {
+            sender = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(t.getSender())));
+            recipient = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(t.getRecipient())));
+        } catch (NoSuchAlgorithmException e) {
+            Logger.log(LogLevel.ERROR, "Failed to get EOAccountAddress: " + e.getMessage());
+            t.setStatus(Transaction.TransactionStatus.REJECTED);
+            return t;
+        }
+
+        Long amount = t.getAmount();
+    
+        // Update sender's balance
+        if (block.getBalances().containsKey(sender) && block.getBalances().get(sender) >= amount
+                && block.getBalances().containsKey(recipient)) {
+            
+            // Subtract from sender's balance
+            Long newSenderBalance = block.getBalances().get(sender) - amount;
+            block.getBalances().put(sender, newSenderBalance);
+    
+            // Add to recipient's balance
+            Long newRecipientBalance = block.getBalances().get(recipient) + amount;
+            block.getBalances().put(recipient, newRecipientBalance);
+    
+            // Mark the transaction as confirmed
+            Logger.log(LogLevel.INFO, "Transaction processed: " + t);
+            t.setStatus(Transaction.TransactionStatus.CONFIRMED);
+        } else {
+            // If transaction fails, mark it as rejected
+            Logger.log(LogLevel.ERROR, "Transaction failed: " + t.getNonce());
+            // print conditions
+            if (!block.getBalances().containsKey(sender)) {
+                Logger.log(LogLevel.ERROR, "Sender not found in balances: " + sender);
+            } else if (block.getBalances().get(sender) < amount) {
+                Logger.log(LogLevel.ERROR, "Insufficient balance for sender: " + sender);
+            } else if (!block.getBalances().containsKey(recipient)) {
+                Logger.log(LogLevel.ERROR, "Recipient not found in balances: " + recipient);
+            }
+            t.setStatus(Transaction.TransactionStatus.REJECTED);
+        }
+    
+        // Return the updated transaction object
+        return t;
+    }
+    
 }
