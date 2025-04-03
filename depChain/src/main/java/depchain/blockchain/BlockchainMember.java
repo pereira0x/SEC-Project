@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import depchain.blockchain.Transaction.TransactionType;
 import depchain.blockchain.block.Block;
-import depchain.blockchain.block.BlockState;
 import depchain.consensus.ConsensusInstance;
 import depchain.consensus.TimestampValuePair;
 import depchain.network.Message;
@@ -125,7 +124,6 @@ public class BlockchainMember {
                     // Get the consensus instance for the respective client
                     ConsensusInstance consensusInstance = consensusInstances.get(msg.getClientId());
 
-                    /* String decidedBlock = null; */
                     Block decidedBlock = null;
                     if (msg.getType() == Message.Type.CLIENT_REQUEST) {
                         
@@ -137,10 +135,8 @@ public class BlockchainMember {
                         if(pendingTransactions.size() >= transactions_threshold) {
     
                             String lastBlockHash = blockchain.getMostRecentBlock().getBlockHash();
-                            BlockState state = blockchain.getMostRecentBlock().getBlockState();
                             ArrayList<Transaction> transactions = new ArrayList<>(pendingTransactions);
                             Block block = new Block.BlockBuilder(transactions, lastBlockHash)
-                                .setBlockState(state)
                                 .build();
                            
                             String blockHash = null;
@@ -163,9 +159,7 @@ public class BlockchainMember {
                                 consensusInstances.put(msg.getClientId(), consensusInstance);
                             }
 
-                            if (memberId == leaderId) {
-
-                                
+                            if (memberId == leaderId) {                                
                                     consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, block));
                                     Logger.log(LogLevel.DEBUG, "Waiting for consensus decision...");
                                     decidedBlock = consensusInstance.decideBlock();
@@ -238,7 +232,7 @@ public class BlockchainMember {
                         }
                     }
 
-                    // print blockchain transactions
+                    // Print blockchain transactions
                     // Logger.log(LogLevel.INFO, "Blockchain transactions: " + this.blockchain.getMostRecentBlock().getTransactions());
                 }).start();
             } catch (InterruptedException e) {
@@ -302,36 +296,38 @@ public class BlockchainMember {
             return t;
         }
 
-        Long amount = t.getAmount();
-    
+        Long amount = t.getAmount();    
     
         // Update sender's balance
-        if (block.getBalances().containsKey(sender) && block.getBalances().get(sender) >= amount
-                && block.getBalances().containsKey(recipient)) {
+        if (blockchain.existsAccount(sender) && blockchain.existsAccount(recipient) &&
+            blockchain.getBalance(sender) >= amount) {
             
             // Subtract from sender's balance
-            Long newSenderBalance = block.getBalances().get(sender) - amount;
-            block.getBalances().put(sender, newSenderBalance);
+            Long newSenderBalance = blockchain.getBalance(sender) - amount;
+            blockchain.updateAccountBalance(sender, newSenderBalance);
     
             // Add to recipient's balance
-            Long newRecipientBalance = block.getBalances().get(recipient) + amount;
-            block.getBalances().put(recipient, newRecipientBalance);
+            Long newRecipientBalance = blockchain.getBalance(recipient) + amount;
+            blockchain.updateAccountBalance(recipient, newRecipientBalance);
     
             // Mark the transaction as confirmed
             Logger.log(LogLevel.INFO, "Transaction processed: " + t);
             t.setStatus(Transaction.TransactionStatus.CONFIRMED);
         } else {
+            t.setStatus(Transaction.TransactionStatus.REJECTED);
+
             // If transaction fails, mark it as rejected
             Logger.log(LogLevel.ERROR, "Transaction failed: " + t.getNonce());
+
             // print conditions
-            if (!block.getBalances().containsKey(sender)) {
-                Logger.log(LogLevel.ERROR, "Sender not found in balances: " + sender);
-            } else if (block.getBalances().get(sender) < amount) {
-                Logger.log(LogLevel.ERROR, "Insufficient balance for sender: " + sender);
-            } else if (!block.getBalances().containsKey(recipient)) {
-                Logger.log(LogLevel.ERROR, "Recipient not found in balances: " + recipient);
+            if (!blockchain.existsAccount(sender)) {
+                Logger.log(LogLevel.ERROR, "Sender not found: " + sender);
+            } else if (!blockchain.existsAccount(recipient)) {
+                Logger.log(LogLevel.ERROR, "Recipient not found: " + recipient);
+            } else if (blockchain.getBalance(sender) < amount) {
+                Logger.log(LogLevel.ERROR, "Insufficient balance for sender: " + sender +
+                            " (Balance: " + blockchain.getBalance(sender) + ", Amount: " + amount + ")");
             }
-            t.setStatus(Transaction.TransactionStatus.REJECTED);
         }
     
         // Return the updated transaction object

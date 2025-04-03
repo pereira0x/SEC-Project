@@ -63,7 +63,6 @@ public class Blockchain {
         String content = new String(Files.readAllBytes(initialBlock));
 
         JSONObject json = new JSONObject(content);
-        /* System.out.println("JSON: " + json.toString()); */
 
         // Create Externally Owned Accounts (EOA)
         JSONObject state = json.getJSONObject("state");
@@ -166,5 +165,30 @@ public class Blockchain {
 
     public Block getMostRecentBlock() {
         return blocks.get(blocks.size() - 1);
+    }
+
+    public Long getBalance(String address) {
+        for (EOAccount account : eoAccounts)
+            if (account.getAddress().equals(address))
+                return account.getBalance();
+        
+        return null;
+    }
+
+    public boolean existsAccount(String address) {
+        for (EOAccount account : eoAccounts)
+            if (account.getAddress().equals(address))
+                return true;
+        
+        return false;
+    }
+
+    public void updateAccountBalance(String address, Long newBalance) {
+        for (EOAccount account : eoAccounts) {
+            if (account.getAddress().equals(address)) {
+                account.setBalance(newBalance);
+                return;
+            }
+        }
     }
 }

@@ -55,7 +55,6 @@ public class BlockParser {
        /*  return new Block(blockHash, previousBlockHash, transactions, balances); */
        return new Block.BlockBuilder(transactions, previousBlockHash)
                 .setBlockHash(blockHash)
-                .setBalances(balances)
                 .build();
     }
 
