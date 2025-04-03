@@ -160,6 +160,14 @@ public class Blockchain {
         return new ArrayList<>(blocks);
     }
 
+    public ArrayList<String> getHashesChain() {
+        ArrayList<String> hashes = new ArrayList<>();
+        for (Block block : blocks) {
+            hashes.add(block.getBlockHash());
+        }
+        return hashes;
+    }
+
     public Block getMostRecentBlock() {
         return blocks.get(blocks.size() - 1);
     }

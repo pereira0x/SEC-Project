@@ -1,11 +1,12 @@
 package depchain.blockchain.block;
 
+import java.io.Serializable;
 import java.util.Map;
+import java.util.Objects;
 
-
-public class BlockState {
+public class BlockState implements Serializable {
+  private static final long serialVersionUID = 1L; // Add a serialVersionUID for version control
   private Map<String, Long> balances;
-
 
   public BlockState(Map<String, Long> balances) {
     this.balances = balances;
@@ -40,4 +41,8 @@ public class BlockState {
     return false;
   }
 
+  @Override
+  public int hashCode() {
+    return Objects.hash(balances);
+  }
 }

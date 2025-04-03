@@ -3,8 +3,6 @@ package depchain.library;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.web3j.crypto.WalletFile.Crypto;
-
 import depchain.blockchain.Transaction;
 import depchain.blockchain.block.Block;
 import depchain.network.Message;
@@ -20,11 +18,11 @@ public class ClientLibrary {
     private final int clientId;
     private int nonce = 0;
     private final int f;
-    private final long timeout = 10000;
+    private final long timeout = 20000;
     private int confirmedTransfers = 0;
 
     // Map to store waiting transactions and their notifier objects
-    private final Map<Long, Object> pendingTransactions = new ConcurrentHashMap<>();
+    private final Map<Long, PendingTransactionStatus> pendingTransactions = new ConcurrentHashMap<>();
 
     public ClientLibrary(PerfectLink perfectLink, int leaderId, List<Integer> nodeIds, int clientId, int f) {
         this.perfectLink = perfectLink;
@@ -48,8 +46,10 @@ public class ClientLibrary {
                         for (Transaction tx : appendedBlock.getTransactions()) {
                             Long txNonce = tx.getNonce();
                             if (pendingTransactions.containsKey(txNonce)) {
-                                synchronized (pendingTransactions.get(txNonce)) {
-                                    pendingTransactions.get(txNonce).notify();
+                                PendingTransactionStatus pendingTx = pendingTransactions.get(txNonce);
+                                synchronized (pendingTx.lock) {
+                                    pendingTx.status = tx.getStatus(); // Update status
+                                    pendingTx.lock.notify();
                                 }
                             }
                         }
@@ -69,6 +69,7 @@ public class ClientLibrary {
                 .setAmount(amount)
                 .setNonce(CryptoUtil.generateNonce())
                 .setType(Transaction.TransactionType.TRANSFER_DEPCOIN)
+                .setStatus(Transaction.TransactionStatus.PENDING)
                 .build();
 
         // Create message
@@ -78,17 +79,19 @@ public class ClientLibrary {
                 .build();
 
         // Register the transaction as pending
-        Object lock = new Object();
-        pendingTransactions.put(transaction.getNonce(), lock);
+        PendingTransactionStatus pendingStatus = new PendingTransactionStatus();
+        pendingTransactions.put(transaction.getNonce(), pendingStatus);
 
         // Send the transaction
         broadcast(reqMsg);
 
-        // Schedule a separate thread to handle confirmations
+        // Start a separate thread to wait for confirmation
         new Thread(() -> {
-            waitforTransactionConfirmation(transaction, lock);
+            waitforTransactionConfirmation(transaction, pendingStatus);
         }).start();
 
+        // nonce must be updated after sending the transaction
+        nonce++;
         return "Transaction Sent: " + transaction.getNonce();
     }
 
@@ -98,11 +101,11 @@ public class ClientLibrary {
         }
     }
 
-    public void waitforTransactionConfirmation(Transaction transaction, Object lock) {
+    public void waitforTransactionConfirmation(Transaction transaction, PendingTransactionStatus pendingStatus) {
         int requiredConfirmations = f + 1;
         int confirmations = 0;
-    
-        synchronized (lock) {
+
+        synchronized (pendingStatus.lock) {
             try {
                 long startTime = System.currentTimeMillis();
                 while (confirmations < requiredConfirmations) {
@@ -111,9 +114,10 @@ public class ClientLibrary {
                         break; // Exit if timeout is reached
                     }
                     
-                    lock.wait(remainingTime);
-    
-                    // Check if this was a real confirmation (i.e., a real notify)
+                    // TODO: ADD A TIMEOUT ??? Do we want that?
+                    pendingStatus.lock.wait();
+
+                    // Check if this was a real confirmation
                     if (pendingTransactions.containsKey(transaction.getNonce())) {
                         confirmations++;
                     }
@@ -122,15 +126,22 @@ public class ClientLibrary {
                 Logger.log(LogLevel.ERROR, "Confirmation thread interrupted: " + e.getMessage());
             }
         }
-    
+
+        // Remove transaction from pending
         pendingTransactions.remove(transaction.getNonce());
-    
+
         if (confirmations < requiredConfirmations) {
             Logger.log(LogLevel.ERROR, "Transaction " + transaction.getNonce() + " not confirmed in time.");
             return;
         }
-        Logger.log(LogLevel.INFO, "Transaction Confirmed: " + transaction.getNonce());
-        Logger.log(LogLevel.INFO, "Confirmations: " + confirmations);
-        Logger.log(LogLevel.INFO, "Required Confirmations: " + requiredConfirmations);
+
+        // Log the final status
+        Logger.log(LogLevel.INFO, "Transaction " + transaction.getNonce() + " final status: " + pendingStatus.status);
+    }
+
+    // Class to store pending transaction status
+    private static class PendingTransactionStatus {
+        private final Object lock = new Object();
+        private Transaction.TransactionStatus status = Transaction.TransactionStatus.PENDING;
     }
 }

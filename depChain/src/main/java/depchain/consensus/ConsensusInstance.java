@@ -325,10 +325,11 @@ public class ConsensusInstance {
             // Now we proceed to decide the value to write
             Map<Block, Integer> count = new HashMap<>();
             for (TimestampValuePair b : writeResponses.values()) {
-                if (count.containsKey(b.getValue())) {
-                    count.put(b.getValue(), count.get(b.getValue()) + 1);
+                Block value = b.getValue();
+                if (count.containsKey(value)) {
+                    count.put(value, count.get(value) + 1);
                 } else {
-                    count.put(b.getValue(), 1);
+                    count.put(value, 1);
                 }
                 numWrites++;
             }
@@ -356,9 +357,9 @@ public class ConsensusInstance {
         } while (numWrites < 3*f+1);
 
         // Print all the writes received
-        Logger.log(LogLevel.INFO, "Writes received: " + writeResponses);
+        Logger.log(LogLevel.DEBUG, "Writes received: " + writeResponses);
 
-        Logger.log(LogLevel.INFO, "Value to write: " + blockToWrite);
+        Logger.log(LogLevel.DEBUG, "Value to write: " + blockToWrite);
         return blockToWrite;
     }
 
@@ -473,7 +474,7 @@ public class ConsensusInstance {
         state.setMostRecentWrite(write);
     }
 
-    public void setblockProposed(Block blockProposed) {
+    public void setBlockProposed(Block blockProposed) {
         this.blockProposed = blockProposed;
     }
 }
