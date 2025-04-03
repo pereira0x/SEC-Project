@@ -29,36 +29,46 @@ public class Blockchain {
     private List<Block> blocks = new ArrayList<>();
     private List<EOAccount> eoAccounts = new ArrayList<>();
     private SmartAccount smartAccount;
+    private final Path serverDir;
 
 
     public Blockchain(int memberId, List<PublicKey> clientPublicKeys) throws IOException {
         this.memberId = memberId;
-/*         this.blocks = new ArrayList<>();
-        this.eoAccount1 = new EOAccount("EOAccount1", "EOAccount1PublicKey", "EOAccount1PrivateKey");
-        this.eoAccount2 = new EOAccount("EOAccount2", "EOAccount2PublicKey", "EOAccount2PrivateKey");
-        this.smartAccount = new SmartAccount("SmartContract1", "SmartContract1PublicKey", "SmartContract1PrivateKey"); */
         
-        // directory path is env variable - Dotenv
-        String genesisPath = Dotenv.load().get("GENESIS_FILE");
-        if (genesisPath == null) {
-            throw new IllegalArgumentException("Environment variable GENESIS_FILE is not set.");
+        // Directory path is env variable - Dotenv
+        String genesisPath = Dotenv.load().get("BLOCKS_FOLDER") + "/genesisBlock.json";
+        if (genesisPath == null)
+            throw new IllegalArgumentException("Environment variable BLOCKS_FOLDER is not set.");
+
+        String serverPath = Dotenv.load().get("BLOCKS_FOLDER") + "/server_" + memberId;
+
+        // We remove the serverPath directory if it exists and then created it again to clean it
+        serverDir = Paths.get(serverPath);
+        if (Files.exists(serverDir)) {
+            try {
+                Files.walk(serverDir)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(file -> file.delete());
+            } catch (IOException e) {
+                throw new RuntimeException("Error deleting server directory: " + serverPath, e);
+            }
         }
+        Files.createDirectories(serverDir);
+        Logger.log(LogLevel.INFO, "Server directory created: " + serverPath);
 
-        String content = null; // Declare content variable here
-
-        // insert genesis block
+        // Insert genesis block
         Logger.log(LogLevel.INFO, "Fetching from genesis block.");
         Path initialBlock = Paths.get(genesisPath);
-        content = new String(Files.readAllBytes(initialBlock));
+        String content = new String(Files.readAllBytes(initialBlock));
 
         JSONObject json = new JSONObject(content);
         /* System.out.println("JSON: " + json.toString()); */
 
         // Create Externally Owned Accounts (EOA)
         JSONObject state = json.getJSONObject("state");
-        for(PublicKey clientKey : clientPublicKeys) {
+        for(PublicKey clientKey : clientPublicKeys)
             createEOAccount(clientKey, state);
-        }
 
         // Create Smart Contract Account (SCA)
         getSmartContractAccount(state);
@@ -67,13 +77,8 @@ public class Blockchain {
         try {
             createInitialBlock(initialBlock);
         } catch (Exception e) {
-            throw new RuntimeException("Error creating blocks", e);
+            throw new RuntimeException("Error creating blocks:", e);
         }
-
-/*         for (Block block : blocks) {
-            System.out.println(block.toString());
-        } */
-
     }
 
     public void createInitialBlock(Path initialBlock) throws IOException, Exception {
@@ -90,12 +95,15 @@ public class Blockchain {
 
         String deploymentBytecode = Dotenv.load().get("RUNTIME_BYTECODE");
         String smartAccountAddress;
+
         try {
             smartAccountAddress = EVMUtils.getSmartAccountAddress(deploymentBytecode);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Error generating smart account address", e);
         }
+
         JSONObject smartContract = state.getJSONObject(smartAccountAddress);
+
         // String smartContractBytecode = smartContract.getString("bytecode");
         Long smartContractBalance = smartContract.getLong("balance");
         JSONObject storage = smartContract.getJSONObject("storage");
@@ -126,7 +134,7 @@ public class Blockchain {
         
         EOAccount eoAccount = new EOAccount(accountAddress, balance);
 
-        System.out.println("EOAccount: " + eoAccount.getAddress() + " Balance: " + eoAccount.getBalance());
+        Logger.log(LogLevel.INFO, "EOAccount: " + eoAccount.getAddress() + " Balance: " + eoAccount.getBalance());
         eoAccounts.add(eoAccount);
     }
 
@@ -149,5 +157,4 @@ public class Blockchain {
     public Block getMostRecentBlock() {
         return blocks.get(blocks.size() - 1);
     }
-
 }

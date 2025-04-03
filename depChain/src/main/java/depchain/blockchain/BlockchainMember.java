@@ -120,8 +120,6 @@ public class BlockchainMember {
                     default:
                         break;
                 }
-
-
                 
                 new Thread(() -> {
                     // Get the consensus instance for the respective client
