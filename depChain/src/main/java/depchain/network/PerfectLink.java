@@ -92,7 +92,7 @@ public class PerfectLink {
                     // Logger.log(LogLevel.INFO, "Session with process " + i + ": " + activeSessionMap.get(i));
                 }
                 else {
-                    Logger.log(LogLevel.ERROR, "Session with process " + i + ": not established");
+                    // Logger.log(LogLevel.WARNING, "Session with process " + i + ": not yet established");
                 }
             }
             Thread.sleep(500);
@@ -109,7 +109,7 @@ public class PerfectLink {
                         // Logger.log(LogLevel.INFO, "Session with process " + i + ": " + activeSessionMap.get(i));
                     }
                     else {
-                        Logger.log(LogLevel.ERROR, "Session with process " + i + ": not established");
+                        // Logger.log(LogLevel.ERROR, "Session with process " + i + ": not yet established");
                     }
                 }
                 Thread.sleep(500);
@@ -130,7 +130,7 @@ public class PerfectLink {
         }
 
         if (activeSessionMap.getOrDefault(destId, false)) {
-            Logger.log(LogLevel.INFO, "Session with process " + destId + " is already active.");
+            Logger.log(LogLevel.WARNING, "Session with process " + destId + " is already active.");
             return;
         }
 
@@ -403,7 +403,7 @@ public class PerfectLink {
             ScheduledFuture<?> future = senderWorkerPool.scheduleAtFixedRate(() -> {
                 if (!activeSessionMap.getOrDefault(destId, false)) {
                     try {
-                        Logger.log(LogLevel.DEBUG, "Resending session initiation to " + destId);
+                        // Logger.log(LogLevel.DEBUG, "Resending session initiation to " + destId);
                         sendMessage(processAddresses.get(destId), msg, false, destId);
                     } catch (Exception e) {
                         Logger.log(LogLevel.ERROR, "Failed to resend session message: " + e.toString());
