@@ -284,6 +284,7 @@ public class BlockchainMember {
         // Process transactions in the block
         String sender;
         String recipient;
+        
         try {
             sender = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(t.getSender())));
             recipient = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(t.getRecipient())));
@@ -297,7 +298,15 @@ public class BlockchainMember {
             return t;
         }
 
+        // cannot send to yourself
+        if (sender.equals(recipient)) {
+            Logger.log(LogLevel.ERROR, "Sender and recipient are the same: " + sender);
+            t.setStatus(Transaction.TransactionStatus.REJECTED);
+            return t;
+        }
+
         Long amount = t.getAmount();
+    
     
         // Update sender's balance
         if (block.getBalances().containsKey(sender) && block.getBalances().get(sender) >= amount
