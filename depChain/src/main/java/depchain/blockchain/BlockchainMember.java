@@ -274,7 +274,6 @@ public class BlockchainMember {
         // After processing, set the block's transactions to the updated ones
         block.setTransactions(updatedTransactions);
     
-    
         return block;
     }
     

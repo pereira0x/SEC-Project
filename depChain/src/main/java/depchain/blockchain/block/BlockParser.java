@@ -10,6 +10,8 @@ import org.json.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import depchain.blockchain.Transaction;
+import depchain.utils.Logger;
+import depchain.utils.Logger.LogLevel;
 
 
 public class BlockParser {
@@ -57,12 +59,16 @@ public class BlockParser {
                 .build();
     }
 
-    public static String blockToJson(Block block) {
-        // Implement the logic to convert a Block object to JSON string
-        ObjectMapper objectMapper = new ObjectMapper();
+    public static JSONObject blockToJson(Block block) {
         try {
-            return objectMapper.writeValueAsString(block);
+            // First convert the Block to a JSON string using Jackson
+            ObjectMapper objectMapper = new ObjectMapper();
+            String blockAsString = objectMapper.writeValueAsString(block);
+            
+            // Then create a JSONObject from the string
+            return new JSONObject(blockAsString);
         } catch (Exception e) {
+            Logger.log(LogLevel.ERROR, "Error converting block to JSON: " + e.getMessage());
             e.printStackTrace();
             return null;
         }

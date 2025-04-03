@@ -140,6 +140,16 @@ public class Blockchain {
 
     public void addBlock(Block block) {
         blocks.add(block);
+
+        // Commit the block to the server directory (a.k.a. "persistent" memory)
+        JSONObject blockJson = BlockParser.blockToJson(block);
+        String blockFileName = serverDir + "/block_" + (blocks.size() - 1) + ".json";
+        try {
+            Files.writeString(Paths.get(blockFileName), blockJson.toString(4));
+        } catch (IOException e) {
+            throw new RuntimeException("Error writing block to file: " + blockFileName, e);
+        }
+        Logger.log(LogLevel.INFO, "Block added to server directory: " + blockFileName);
     }
 
     public ArrayList<Block> getChain() {
