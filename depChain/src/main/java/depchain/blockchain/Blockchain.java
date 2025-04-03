@@ -26,7 +26,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 public class Blockchain {
     
     private int memberId;
-    private List<Block> blocks;
+    private List<Block> blocks = new ArrayList<>();
     private List<EOAccount> eoAccounts = new ArrayList<>();
     private SmartAccount smartAccount;
 
@@ -39,41 +39,20 @@ public class Blockchain {
         this.smartAccount = new SmartAccount("SmartContract1", "SmartContract1PublicKey", "SmartContract1PrivateKey"); */
         
         // directory path is env variable - Dotenv
-        String directoryPath = Dotenv.load().get("BLOCKCHAIN_DIR");
-        
-
-        if (directoryPath == null) {
-            throw new IllegalArgumentException("Environment variable BLOCKCHAIN_DIR is not set.");
+        String genesisPath = Dotenv.load().get("GENESIS_FILE");
+        if (genesisPath == null) {
+            throw new IllegalArgumentException("Environment variable GENESIS_FILE is not set.");
         }
-        // apend /memberId to directory path
-       String  directoryPathMember = directoryPath + "/member" + memberId;
 
-        List<Path> jsonFiles = new ArrayList<>();
         String content = null; // Declare content variable here
-        try {
-            jsonFiles = Files.list(Paths.get(directoryPathMember))
-                    .filter(Files::isRegularFile)
-                    .filter(path -> path.toString().endsWith(".json"))
-                    .sorted(Comparator.comparing(Path::getFileName))
-                    .collect(Collectors.toList());
 
-        } catch (IOException e) {
-            /* throw new RuntimeException("Error reading files from directory: " + directoryPath, e); */
-        }
-
-        if (jsonFiles.isEmpty()) {
-            // insert genesis block
-            System.out.println("No JSON files found in the directory. Fetching from genesis block.");
-            jsonFiles.add(Paths.get(directoryPath + "/genesisBlock.json"));
-            content = new String(Files.readAllBytes(jsonFiles.get(0)));
-        } else{
-            Path lastBlockFile = jsonFiles.get(jsonFiles.size() - 1);
-            content = new String(Files.readAllBytes(lastBlockFile));
-        }
+        // insert genesis block
+        Logger.log(LogLevel.INFO, "Fetching from genesis block.");
+        Path initialBlock = Paths.get(genesisPath);
+        content = new String(Files.readAllBytes(initialBlock));
 
         JSONObject json = new JSONObject(content);
         /* System.out.println("JSON: " + json.toString()); */
-
 
         // Create Externally Owned Accounts (EOA)
         JSONObject state = json.getJSONObject("state");
@@ -84,10 +63,9 @@ public class Blockchain {
         // Create Smart Contract Account (SCA)
         getSmartContractAccount(state);
 
-
-        // Create blocks
+        // Create the initial block
         try {
-            createBlocks(jsonFiles);
+            createInitialBlock(initialBlock);
         } catch (Exception e) {
             throw new RuntimeException("Error creating blocks", e);
         }
@@ -98,14 +76,14 @@ public class Blockchain {
 
     }
 
-    public void createBlocks(List<Path> jsonFiles) throws IOException, Exception {
-        blocks = new ArrayList<>();
-        for (Path jsonFile : jsonFiles) {
-            String content = new String(Files.readAllBytes(jsonFile));
-            JSONObject json = new JSONObject(content);
-            Block block = BlockParser.parseBlock(json);
-            blocks.add(block);
-        }
+    public void createInitialBlock(Path initialBlock) throws IOException, Exception {
+        String content = new String(Files.readAllBytes(initialBlock));
+
+        JSONObject json = new JSONObject(content);
+
+        Block block = BlockParser.parseBlock(json);
+
+        blocks.add(block);
     }
 
     public void getSmartContractAccount(JSONObject state) {

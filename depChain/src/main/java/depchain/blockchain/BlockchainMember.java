@@ -37,7 +37,7 @@ public class BlockchainMember {
 
     private final List<Transaction> pendingTransactions = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-    private final int transactions_treshold = Dotenv.load().get("TRANSACTIONS_TRESHOLD") != null ? Integer.parseInt(Dotenv.load().get("TRANSACTIONS_TRESHOLD")) : 2;
+    private final int transactions_threshold = Dotenv.load().get("TRANSACTIONS_THRESHOLD") != null ? Integer.parseInt(Dotenv.load().get("TRANSACTIONS_THRESHOLD")) : 2;
 
     public BlockchainMember(int memberId, int memberPort, int leaderId, int f) {
         this.memberId = memberId;
@@ -136,7 +136,7 @@ public class BlockchainMember {
                             pendingTransactions.add(msg.getTransaction());
                         }
 
-                        if(pendingTransactions.size() >= transactions_treshold) {
+                        if(pendingTransactions.size() >= transactions_threshold) {
     
                             String lastBlockHash = blockchain.getMostRecentBlock().getBlockHash();
                             BlockState state = blockchain.getMostRecentBlock().getBlockState();
