@@ -184,7 +184,7 @@ public class ConsensusInstance {
                     // Upon COLLECTED, update our local state and send an ACCEPT.
                     stateResponses = msg.getStatesMap();
 
-                    Logger.log(LogLevel.INFO, "Received COLLECTED: " + stateResponses);
+                    /* Logger.log(LogLevel.INFO, "Received COLLECTED: " + stateResponses); */
 
                     // Look at all states and decide the value you want to write (in write messages
                     // )
@@ -284,7 +284,7 @@ public class ConsensusInstance {
             return null;
         }
 
-        Logger.log(LogLevel.INFO, "Decided value: " + tmpVal);
+        /* Logger.log(LogLevel.INFO, "Decided value: " + tmpVal); */
         return tmpVal;
     }
 
@@ -294,7 +294,7 @@ public class ConsensusInstance {
         // check if a quorum has already been reached
         while ((float) stateResponses.size() < quorumSize) {
             Thread.sleep(250);
-            Logger.log(LogLevel.DEBUG, "Still waiting for quorum of state responses...");
+            /* Logger.log(LogLevel.DEBUG, "Still waiting for quorum of state responses..."); */
             Thread.sleep(250);
 
             // Check if the time has exceeded the maximum wait time
@@ -306,7 +306,7 @@ public class ConsensusInstance {
         }
 
         // print all the states received
-        Logger.log(LogLevel.INFO, "States received: " + stateResponses);
+       /*  Logger.log(LogLevel.INFO, "States received: " + stateResponses); */
 
         return true;
     }
@@ -353,13 +353,13 @@ public class ConsensusInstance {
             }
 
             blockToWrite = null;
-            Logger.log(LogLevel.DEBUG, "Still waiting for write responses...");
+            /* Logger.log(LogLevel.DEBUG, "Still waiting for write responses..."); */
         } while (numWrites < 3*f+1);
 
         // Print all the writes received
-        Logger.log(LogLevel.DEBUG, "Writes received: " + writeResponses);
+        /* Logger.log(LogLevel.DEBUG, "Writes received: " + writeResponses);
 
-        Logger.log(LogLevel.DEBUG, "Value to write: " + blockToWrite);
+        Logger.log(LogLevel.DEBUG, "Value to write: " + blockToWrite); */
         return blockToWrite;
     }
 
@@ -404,13 +404,13 @@ public class ConsensusInstance {
             }
 
             blockToAppend = null;
-            Logger.log(LogLevel.DEBUG, "Still waiting for accept responses...");
+           /*  Logger.log(LogLevel.DEBUG, "Still waiting for accept responses..."); */
         } while (numAccepts < 3*f+1);
 
         // Print all the writes received
-        Logger.log(LogLevel.INFO, "Accepts received: " + acceptedValues);
+        /* Logger.log(LogLevel.INFO, "Accepts received: " + acceptedValues);
 
-        Logger.log(LogLevel.INFO, "Value to append: " + blockToAppend);
+        Logger.log(LogLevel.INFO, "Value to append: " + blockToAppend); */
         return blockToAppend;
     }
 

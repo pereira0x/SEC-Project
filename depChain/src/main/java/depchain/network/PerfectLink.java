@@ -74,7 +74,7 @@ public class PerfectLink {
             if(myId >= 5 && i >= 5) {
                 continue; // Skip clients
             }
-            Logger.log(LogLevel.INFO, "Process " + myId + " starting session with process " + i);
+            // Logger.log(LogLevel.INFO, "Process " + myId + " starting session with process " + i);
             startSession(i);
         }
 
@@ -85,14 +85,14 @@ public class PerfectLink {
 
         while (activeSessionMap.size() < processAddresses.size() - 1 ||
                 activeSessionMap.values().stream().anyMatch(value -> value == false)) {
-            Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
+            // Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
             //  print sessions that have been established
             for (int i = 1; i <= processAddresses.size(); i++) {
                 if (activeSessionMap.containsKey(i)) {
-                    Logger.log(LogLevel.INFO, "Session with process " + i + ": " + activeSessionMap.get(i));
+                    // Logger.log(LogLevel.INFO, "Session with process " + i + ": " + activeSessionMap.get(i));
                 }
                 else {
-                    Logger.log(LogLevel.INFO, "Session with process " + i + ": not established");
+                    Logger.log(LogLevel.ERROR, "Session with process " + i + ": not established");
                 }
             }
             Thread.sleep(500);
@@ -102,14 +102,14 @@ public class PerfectLink {
         else {
             while (activeSessionMap.size() < processAddresses.size() - Config.clientIds.size() ||
                     activeSessionMap.values().stream().anyMatch(value -> value == false)) {
-                Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
+                // Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
                 //  print sessions that have been established
                 for (int i = 1; i <= processAddresses.size(); i++) {
                     if (activeSessionMap.containsKey(i)) {
-                        Logger.log(LogLevel.INFO, "Session with process " + i + ": " + activeSessionMap.get(i));
+                        // Logger.log(LogLevel.INFO, "Session with process " + i + ": " + activeSessionMap.get(i));
                     }
                     else {
-                        Logger.log(LogLevel.INFO, "Session with process " + i + ": not established");
+                        Logger.log(LogLevel.ERROR, "Session with process " + i + ": not established");
                     }
                 }
                 Thread.sleep(500);
@@ -183,8 +183,8 @@ public class PerfectLink {
             // TODO: Deal with EOFException
             Message msg = (Message) ois.readObject();
 
-            Logger.log(LogLevel.DEBUG, "Received message of type " + msg.getType() + " from " + msg.getSenderId()
-                    + " with nonce " + msg.getNonce());
+           /*  Logger.log(LogLevel.DEBUG, "Received message of type " + msg.getType() + " from " + msg.getSenderId()
+                    + " with nonce " + msg.getNonce()); */
 
             PublicKey senderKey = publicKeys.get(msg.getSenderId());
             Session session = sessions.get(msg.getSenderId());
@@ -218,8 +218,8 @@ public class PerfectLink {
                             Session newSession = new Session(msg.getSenderId(), processAddresses.get(msg.getSenderId()),
                                     sessionKey);
                             sessions.put(msg.getSenderId(), newSession);
-                            Logger.log(LogLevel.INFO, "MY ID " + myId + " Session established with process "
-                                    + msg.getSenderId() + " session: " + newSession.toString());
+                           /*  Logger.log(LogLevel.INFO, "MY ID " + myId + " Session established with process "
+                                    + msg.getSenderId() + " session: " + newSession.toString()); */
 
                             activeSessionMap.put(msg.getSenderId(), true);
                             ScheduledFuture<?> task = resendTasks.remove(msg.getNonce());
@@ -241,8 +241,8 @@ public class PerfectLink {
 
                             activeSessionMap.put(msg.getSenderId(), true);
 
-                            Logger.log(LogLevel.INFO, "MY ID " + myId + " Session established with process "
-                                    + msg.getSenderId() + " session: " + newSession.toString());
+                            /* Logger.log(LogLevel.INFO, "MY ID " + myId + " Session established with process "
+                                    + msg.getSenderId() + " session: " + newSession.toString()); */
                         }
 
                         // encrypt session key with public key of sender
@@ -360,8 +360,8 @@ public class PerfectLink {
             }
 
             try {
-                Logger.log(LogLevel.DEBUG,
-                        "Sending message to " + destId + " of type " + msg.getType() + " with nonce " + msg.getNonce());
+                /* Logger.log(LogLevel.DEBUG,
+                        "Sending message to " + destId + " of type " + msg.getType() + " with nonce " + msg.getNonce()); */
                 // if not ack, then send as true
                 if (msg.getType() != Message.Type.ACK && msg.getType() != Message.Type.ACK_SESSION
                         && msg.getType() != Message.Type.START_SESSION) {
@@ -429,8 +429,8 @@ public class PerfectLink {
 
                 try {
                     if (msg.getNonce() >= session.getSentCounter()) {
-                        Logger.log(LogLevel.DEBUG, "Resending message to " + destId + " of type " + msg.getType()
-                                + " with nonce " + msg.getNonce());
+                        /* Logger.log(LogLevel.DEBUG, "Resending message to " + destId + " of type " + msg.getType()
+                                + " with nonce " + msg.getNonce()); */
                         sendMessage(processAddresses.get(destId), msg, false, destId);
                     } else {
                         ScheduledFuture<?> task = sessionTasks.remove(msg.getNonce());

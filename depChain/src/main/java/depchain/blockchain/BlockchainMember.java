@@ -278,9 +278,6 @@ public class BlockchainMember {
         // After processing, set the block's transactions to the updated ones
         block.setTransactions(updatedTransactions);
     
-        // Optionally log the processed block state
-        System.out.println("Block transactions: " + block.getTransactions());
-        System.out.println("Block balances: " + block.getBalances());
     
         return block;
     }
