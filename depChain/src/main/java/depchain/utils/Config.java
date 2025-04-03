@@ -1,8 +1,6 @@
 package depchain.utils;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -13,16 +11,14 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.web3j.abi.datatypes.Int;
-
-import java.util.List;
-import java.util.ArrayList;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import depchain.utils.Logger;
+
 import depchain.utils.Logger.LogLevel;
 
 public class Config {
@@ -155,11 +151,20 @@ public class Config {
     }
 
     public static PrivateKey getPrivateKey(int id) {
-        return privateKeys.get(id);
+        try {
+            return privateKeys.get(id);
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting private key for ID " + id, e);
+        }
     }
 
     public static PublicKey getPublicKey(int id) {
-        return publicKeys.get(id);
+        try {
+            return publicKeys.get(id);
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting public key for ID " + id, e);
+        }
+       
     }
 
     public static List<PublicKey> getClientPublicKeys() {

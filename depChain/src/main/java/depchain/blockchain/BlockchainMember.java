@@ -1,7 +1,6 @@
 package depchain.blockchain;
 
 import java.io.IOException;
-import java.lang.Thread.State;
 import java.net.InetSocketAddress;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -9,8 +8,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import org.hyperledger.besu.evm.EVM;
 
 import depchain.blockchain.Transaction.TransactionType;
 import depchain.blockchain.block.Block;
@@ -24,8 +21,7 @@ import depchain.utils.Config;
 import depchain.utils.EVMUtils;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
-import io.github.cdimascio.dotenv.Dotenv; // Ensure EVMUtils is imported if it exists in your project
-import jnr.ffi.annotations.In;
+import io.github.cdimascio.dotenv.Dotenv;
 
 public class BlockchainMember {
     private final int memberId;
@@ -244,6 +240,8 @@ public class BlockchainMember {
                         }
                     }
 
+                    // print blockchain transactions
+                    // Logger.log(LogLevel.INFO, "Blockchain transactions: " + this.blockchain.getMostRecentBlock().getTransactions());
                 }).start();
             } catch (InterruptedException e) {
                 break;
@@ -291,6 +289,10 @@ public class BlockchainMember {
             recipient = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(t.getRecipient())));
         } catch (NoSuchAlgorithmException e) {
             Logger.log(LogLevel.ERROR, "Failed to get EOAccountAddress: " + e.getMessage());
+            t.setStatus(Transaction.TransactionStatus.REJECTED);
+            return t;
+        } catch (RuntimeException e) {
+            Logger.log(LogLevel.ERROR, "Failed to get public key: " + e.getMessage());
             t.setStatus(Transaction.TransactionStatus.REJECTED);
             return t;
         }
