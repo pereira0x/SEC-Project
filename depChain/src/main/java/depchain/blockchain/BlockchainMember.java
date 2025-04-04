@@ -3,6 +3,7 @@ package depchain.blockchain;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -20,6 +21,9 @@ import depchain.utils.Config;
 import depchain.utils.EVMUtils;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
+import depchain.utils.CryptoUtil;
+import depchain.utils.ByteArrayWrapper;
+
 import io.github.cdimascio.dotenv.Dotenv;
 
 public class BlockchainMember {
@@ -126,7 +130,17 @@ public class BlockchainMember {
 
                     Block decidedBlock = null;
                     if (msg.getType() == Message.Type.CLIENT_REQUEST) {
-                        
+                        // Check the signature of the transaction
+                        try {
+                            if (!checkTransactionSignature(msg.getTransaction(), msg.getClientId())) {
+                                Logger.log(LogLevel.ERROR, "Invalid transaction signature.");
+                                return;
+                            }
+                        } catch (Exception e) {
+                            Logger.log(LogLevel.ERROR, "Failed to check transaction signature: " + e.getMessage());
+                            return;
+                        }
+
                         // Add the transaction to the pending transactions list.
                         synchronized (pendingTransactions) {
                             pendingTransactions.add(msg.getTransaction());
@@ -333,5 +347,14 @@ public class BlockchainMember {
         // Return the updated transaction object
         return t;
     }
-    
+
+    public boolean checkTransactionSignature(Transaction transaction, int clientId) throws Exception {
+        // Check if the transaction signature is valid
+        byte[] transactionBytes = transaction.toByteArray();
+        byte[] signature = transaction.getSignature();
+        PublicKey publicKey = Config.getPublicKey(clientId);
+
+        // System.out.println("------------- signature: " + new ByteArrayWrapper(signature));
+        return CryptoUtil.verify(transactionBytes, signature, publicKey);
+    }    
 }

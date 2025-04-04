@@ -98,7 +98,6 @@ public class Transaction implements Serializable {
             oos.writeUTF(sender != null ? sender : "");
             oos.writeUTF(recipient != null ? recipient : "");
             oos.writeLong(amount);
-            oos.write(signature != null ? signature.getData() : new byte[0]);
             oos.writeUTF(data != null ? data : "");
             oos.writeInt(type != null ? type.ordinal() : -1);
             oos.writeInt(status != null ? status.ordinal() : -1);
