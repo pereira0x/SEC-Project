@@ -15,8 +15,6 @@ import depchain.blockchain.block.Block;
 
 public class EVMUtils {
 
-
-
     public static int extractIntegerFromReturnData(ByteArrayOutputStream byteArrayOutputStream) {
         String[] lines = byteArrayOutputStream.toString().split("\\r?\\n");
         JsonObject jsonObject = JsonParser.parseString(lines[lines.length - 1]).getAsJsonObject();
@@ -85,7 +83,7 @@ public class EVMUtils {
         return hexString.toString();
     }
 
-    // account address is an hash pof the onwer's public key
+    // account address is an hash pof the owner's public key
     public static String getEOAccountAddress(PublicKey publicKey) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(publicKey.getEncoded());

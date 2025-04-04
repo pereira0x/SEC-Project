@@ -3,6 +3,11 @@ package depchain.blockchain;
 import java.io.Serializable;
 import java.util.Objects;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+
+import depchain.utils.ByteArrayWrapper;
 
 public class Transaction implements Serializable {
 
@@ -26,12 +31,12 @@ public class Transaction implements Serializable {
     private String sender;
     private String recipient;
     private long amount;
-    private String signature;
+    private ByteArrayWrapper signature;
     private String data;
     private TransactionType type;
     private TransactionStatus status;
 
-    public Transaction(long nonce, String sender, String recipient, long amount, String signature, String data,
+    public Transaction(long nonce, String sender, String recipient, long amount, ByteArrayWrapper signature, String data,
             TransactionType type, TransactionStatus status) {
         this.nonce = nonce;
         this.sender = sender;
@@ -59,8 +64,8 @@ public class Transaction implements Serializable {
         return amount;
     }
 
-    public String getSignature() {
-        return signature;
+    public byte[] getSignature() {
+        return signature.getData();
     }
 
     public String getData() {
@@ -79,6 +84,32 @@ public class Transaction implements Serializable {
         this.status = status;
     }
 
+    public void setSignature(ByteArrayWrapper signature) {
+        this.signature = signature;
+    }
+
+    public byte[] toByteArray() {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            
+            // Write all transaction fields
+            oos.writeLong(nonce);
+            oos.writeUTF(sender != null ? sender : "");
+            oos.writeUTF(recipient != null ? recipient : "");
+            oos.writeLong(amount);
+            oos.write(signature != null ? signature.getData() : new byte[0]);
+            oos.writeUTF(data != null ? data : "");
+            oos.writeInt(type != null ? type.ordinal() : -1);
+            oos.writeInt(status != null ? status.ordinal() : -1);
+            
+            oos.flush();
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Error serializing transaction", e);
+        }
+    }
+
     @Override
     public String toString() {
         return "Transaction{" +
@@ -95,13 +126,16 @@ public class Transaction implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        // TODO: consider signature and data
+        // TODO: consider data
         if (obj instanceof Transaction) {
             Transaction other = (Transaction) obj;
+            // System.out.println("-------------------- sig: " + signature);
+            // System.out.println("-------------------- other sig: " + other.signature);
             return nonce == other.nonce &&
                     sender.equals(other.sender) &&
                     recipient.equals(other.recipient) &&
                     amount == other.amount &&
+                    signature.equals(other.signature) &&
                     type == other.type;
         }
         return false;
@@ -117,7 +151,7 @@ public class Transaction implements Serializable {
         private String sender;
         private String recipient;
         private long amount;
-        private String signature;
+        private ByteArrayWrapper signature;
         private String data;
         private TransactionType type;
         private TransactionStatus status;
@@ -145,7 +179,7 @@ public class Transaction implements Serializable {
             return this;
         }
 
-        public TransactionBuilder setSignature(String signature) {
+        public TransactionBuilder setSignature(ByteArrayWrapper signature) {
             this.signature = signature;
             return this;
         }

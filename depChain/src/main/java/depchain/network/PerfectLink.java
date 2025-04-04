@@ -475,4 +475,7 @@ public class PerfectLink {
         socket.close();
     }
 
+    public PrivateKey getPrivateKey() {
+        return myPrivateKey;
+    }
 }
