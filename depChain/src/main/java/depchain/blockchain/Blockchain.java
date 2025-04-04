@@ -26,98 +26,83 @@ import io.github.cdimascio.dotenv.Dotenv;
 public class Blockchain {
     
     private int memberId;
-    private List<Block> blocks;
+    private List<Block> blocks = new ArrayList<>();
     private List<EOAccount> eoAccounts = new ArrayList<>();
     private SmartAccount smartAccount;
+    private final Path serverDir;
 
 
     public Blockchain(int memberId, List<PublicKey> clientPublicKeys) throws IOException {
         this.memberId = memberId;
-/*         this.blocks = new ArrayList<>();
-        this.eoAccount1 = new EOAccount("EOAccount1", "EOAccount1PublicKey", "EOAccount1PrivateKey");
-        this.eoAccount2 = new EOAccount("EOAccount2", "EOAccount2PublicKey", "EOAccount2PrivateKey");
-        this.smartAccount = new SmartAccount("SmartContract1", "SmartContract1PublicKey", "SmartContract1PrivateKey"); */
         
-        // directory path is env variable - Dotenv
-        String directoryPath = Dotenv.load().get("BLOCKCHAIN_DIR");
-        
+        // Directory path is env variable - Dotenv
+        String genesisPath = Dotenv.load().get("BLOCKS_FOLDER") + "/genesisBlock.json";
+        if (genesisPath == null)
+            throw new IllegalArgumentException("Environment variable BLOCKS_FOLDER is not set.");
 
-        if (directoryPath == null) {
-            throw new IllegalArgumentException("Environment variable BLOCKCHAIN_DIR is not set.");
+        String serverPath = Dotenv.load().get("BLOCKS_FOLDER") + "/server_" + memberId;
+
+        // We remove the serverPath directory if it exists and then created it again to clean it
+        serverDir = Paths.get(serverPath);
+        if (Files.exists(serverDir)) {
+            try {
+                Files.walk(serverDir)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(file -> file.delete());
+            } catch (IOException e) {
+                throw new RuntimeException("Error deleting server directory: " + serverPath, e);
+            }
         }
-        // apend /memberId to directory path
-       String  directoryPathMember = directoryPath + "/member" + memberId;
+        Files.createDirectories(serverDir);
+        Logger.log(LogLevel.INFO, "Server directory created: " + serverPath);
 
-        List<Path> jsonFiles = new ArrayList<>();
-        String content = null; // Declare content variable here
-        try {
-            jsonFiles = Files.list(Paths.get(directoryPathMember))
-                    .filter(Files::isRegularFile)
-                    .filter(path -> path.toString().endsWith(".json"))
-                    .sorted(Comparator.comparing(Path::getFileName))
-                    .collect(Collectors.toList());
-
-        } catch (IOException e) {
-            /* throw new RuntimeException("Error reading files from directory: " + directoryPath, e); */
-        }
-
-        if (jsonFiles.isEmpty()) {
-            // insert genesis block
-            System.out.println("No JSON files found in the directory. Fetching from genesis block.");
-            jsonFiles.add(Paths.get(directoryPath + "/genesisBlock.json"));
-            content = new String(Files.readAllBytes(jsonFiles.get(0)));
-        } else{
-            Path lastBlockFile = jsonFiles.get(jsonFiles.size() - 1);
-            content = new String(Files.readAllBytes(lastBlockFile));
-        }
+        // Insert genesis block
+        Logger.log(LogLevel.INFO, "Fetching from genesis block.");
+        Path initialBlock = Paths.get(genesisPath);
+        String content = new String(Files.readAllBytes(initialBlock));
 
         JSONObject json = new JSONObject(content);
-        /* System.out.println("JSON: " + json.toString()); */
-
 
         // Create Externally Owned Accounts (EOA)
         JSONObject state = json.getJSONObject("state");
-        for(PublicKey clientKey : clientPublicKeys) {
+        for(PublicKey clientKey : clientPublicKeys)
             createEOAccount(clientKey, state);
-        }
 
         // Create Smart Contract Account (SCA)
         getSmartContractAccount(state);
 
-
-        // Create blocks
+        // Create the initial block
         try {
-            createBlocks(jsonFiles);
+            createInitialBlock(initialBlock);
         } catch (Exception e) {
-            throw new RuntimeException("Error creating blocks", e);
+            throw new RuntimeException("Error creating blocks:", e);
         }
-
-/*         for (Block block : blocks) {
-            System.out.println(block.toString());
-        } */
-
     }
 
-    public void createBlocks(List<Path> jsonFiles) throws IOException, Exception {
-        blocks = new ArrayList<>();
-        for (Path jsonFile : jsonFiles) {
-            String content = new String(Files.readAllBytes(jsonFile));
-            JSONObject json = new JSONObject(content);
-            Block block = BlockParser.parseBlock(json);
-            blocks.add(block);
-        }
+    public void createInitialBlock(Path initialBlock) throws IOException, Exception {
+        String content = new String(Files.readAllBytes(initialBlock));
+
+        JSONObject json = new JSONObject(content);
+
+        Block block = BlockParser.parseBlock(json);
+
+        blocks.add(block);
     }
 
     public void getSmartContractAccount(JSONObject state) {
 
         String deploymentBytecode = Dotenv.load().get("RUNTIME_BYTECODE");
         String smartAccountAddress;
+
         try {
             smartAccountAddress = EVMUtils.getSmartAccountAddress(deploymentBytecode);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Error generating smart account address", e);
         }
+
         JSONObject smartContract = state.getJSONObject(smartAccountAddress);
+
         // String smartContractBytecode = smartContract.getString("bytecode");
         Long smartContractBalance = smartContract.getLong("balance");
         JSONObject storage = smartContract.getJSONObject("storage");
@@ -148,12 +133,22 @@ public class Blockchain {
         
         EOAccount eoAccount = new EOAccount(accountAddress, balance);
 
-        System.out.println("EOAccount: " + eoAccount.getAddress() + " Balance: " + eoAccount.getBalance());
+        Logger.log(LogLevel.INFO, "EOAccount: " + eoAccount.getAddress() + " Balance: " + eoAccount.getBalance());
         eoAccounts.add(eoAccount);
     }
 
     public void addBlock(Block block) {
         blocks.add(block);
+
+        // Commit the block to the server directory (a.k.a. "persistent" memory)
+        JSONObject blockJson = BlockParser.blockToJson(block);
+        String blockFileName = serverDir + "/block_" + (blocks.size() - 1) + ".json";
+        try {
+            Files.writeString(Paths.get(blockFileName), blockJson.toString(4));
+        } catch (IOException e) {
+            throw new RuntimeException("Error writing block to file: " + blockFileName, e);
+        }
+        Logger.log(LogLevel.INFO, "Block added to server directory: " + blockFileName);
     }
 
     public ArrayList<Block> getChain() {
@@ -172,4 +167,28 @@ public class Blockchain {
         return blocks.get(blocks.size() - 1);
     }
 
+    public Long getBalance(String address) {
+        for (EOAccount account : eoAccounts)
+            if (account.getAddress().equals(address))
+                return account.getBalance();
+        
+        return null;
+    }
+
+    public boolean existsAccount(String address) {
+        for (EOAccount account : eoAccounts)
+            if (account.getAddress().equals(address))
+                return true;
+        
+        return false;
+    }
+
+    public void updateAccountBalance(String address, Long newBalance) {
+        for (EOAccount account : eoAccounts) {
+            if (account.getAddress().equals(address)) {
+                account.setBalance(newBalance);
+                return;
+            }
+        }
+    }
 }

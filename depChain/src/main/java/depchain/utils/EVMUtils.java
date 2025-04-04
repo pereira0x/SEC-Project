@@ -74,7 +74,7 @@ public class EVMUtils {
     }
 
     public static String generateBlockHash(Block block) throws NoSuchAlgorithmException {
-        String data = block.getPreviousBlockHash() + block.getTransactions().toString() + block.getBlockState().toString();
+        String data = block.getPreviousBlockHash() + block.getTransactions().toString();
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(data.getBytes(StandardCharsets.UTF_8));
         

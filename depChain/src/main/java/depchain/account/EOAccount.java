@@ -17,11 +17,9 @@ public class EOAccount {
     public Long getBalance() {
         return balance;
     }
-    
 
-
-    public void add(Long value) {
-        this.balance += value;
+    public void setBalance(Long value) {
+        this.balance = value;
     }
 
     public void remove(Long value) {
