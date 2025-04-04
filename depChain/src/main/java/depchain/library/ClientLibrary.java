@@ -10,6 +10,8 @@ import depchain.network.PerfectLink;
 import depchain.utils.CryptoUtil;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
+import depchain.utils.CryptoUtil;
+import depchain.utils.ByteArrayWrapper;
 
 public class ClientLibrary {
     private final PerfectLink perfectLink;
@@ -72,6 +74,13 @@ public class ClientLibrary {
                 .setStatus(Transaction.TransactionStatus.PENDING)
                 .build();
 
+        // Convert the transaction to bytes and sign it
+        byte[] transactionBytes = transaction.toByteArray();
+        byte[] signature = CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
+        ByteArrayWrapper sig = new ByteArrayWrapper(signature);
+        transaction.setSignature(sig);
+        // transaction.setSignature(new ByteArrayWrapper(new byte[0]));
+        
         // Create message
         Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, confirmedTransfers, clientId, clientId)
                 .setTransaction(transaction)

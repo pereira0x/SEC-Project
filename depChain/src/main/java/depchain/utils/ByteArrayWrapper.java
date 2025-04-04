@@ -25,6 +25,15 @@ public class ByteArrayWrapper implements Serializable {
         return Arrays.hashCode(data);
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : data) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
+    }
+
     public byte[] getData() {
         return data;
     }

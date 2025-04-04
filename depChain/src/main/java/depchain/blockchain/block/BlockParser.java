@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import depchain.blockchain.Transaction;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
-
+import depchain.utils.ByteArrayWrapper;
 
 public class BlockParser {
     
@@ -29,12 +29,13 @@ public class BlockParser {
     if (jsonFile.has("transactions")) {
             for (int i = 0; i < transactionsJson.length(); i++) {
                 JSONObject transactionJson = transactionsJson.getJSONObject(i);
+                ByteArrayWrapper sig = new ByteArrayWrapper(transactionJson.getString("signature").getBytes());
                 Transaction t = new Transaction.TransactionBuilder()
                         .setNonce(Long.parseLong(transactionJson.getString("nonce")))
                         .setSender(transactionJson.getString("sender"))
                         .setRecipient(transactionJson.getString("recipient"))
                         .setAmount(Long.parseLong(transactionJson.getString("amount")))
-                        .setSignature(transactionJson.getString("signature"))
+                        .setSignature(sig)
                         .setData(transactionJson.getString("data"))
                         .setStatus(Transaction.TransactionStatus.valueOf(transactionJson.getString("status")))
                         .build();
