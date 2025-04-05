@@ -43,10 +43,11 @@ public class SmartAccount {
     private static String deploymentBytecode = Dotenv.load().get("DEPLOYMENT_BYTECODE");
     private static String runtimeBytecode = Dotenv.load().get("RUNTIME_BYTECODE");
 
-    public SmartAccount(String address, Long balance, int owner) {
+    public SmartAccount(String address, Long balance) {
         this.address = address;
         this.balance = balance;
     }
+
 
     public String getAddress() {
         return address;

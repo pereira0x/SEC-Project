@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.hyperledger.besu.datatypes.Address;
 import org.json.JSONObject;
 
 import depchain.account.EOAccount;
@@ -70,7 +71,7 @@ public class Blockchain {
             createEOAccount(clientKey, state);
 
         // Create Smart Contract Account (SCA)
-        getSmartContractAccount(state);
+        this.smartAccount = new SmartAccount();
 
         // Create the initial block
         try {
@@ -99,29 +100,6 @@ public class Blockchain {
         Logger.log(LogLevel.INFO, "Initial block added to server directory: " + blockFileName);
 
         blocks.add(block);
-    }
-
-    public void getSmartContractAccount(JSONObject state) {
-
-        String deploymentBytecode = Dotenv.load().get("DEPLOYMENT_BYTECODE");
-        String smartAccountAddress;
-
-        try {
-            smartAccountAddress = EVMUtils.getSmartAccountAddress(deploymentBytecode);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Error generating smart account address", e);
-        }
-
-        JSONObject smartContract = state.getJSONObject(smartAccountAddress);
-
-        // String smartContractBytecode = smartContract.getString("bytecode");
-        Long smartContractBalance = smartContract.getLong("balance");
-        JSONObject storage = smartContract.getJSONObject("storage");
-        Integer smartContractOwner = storage.getInt("owner");
-
-        smartAccount = new SmartAccount(smartAccountAddress, smartContractBalance, smartContractOwner);
-
-        System.out.println("Smart Contract Account: " + smartAccount.getAddress() + " Balance: " + smartAccount.getBalance() + " Owner: " + smartAccount.getOwner());
     }
 
     public void createEOAccount(PublicKey clientKey, JSONObject state) {

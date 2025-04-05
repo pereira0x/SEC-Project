@@ -21,7 +21,6 @@ public class ClientLibrary {
     private int nonce = 0;
     private final int f;
     private final long timeout = 60000;
-    private int confirmedTransfers = 0;
 
     // Map to store waiting transactions and their notifier objects
     private final Map<Long, PendingTransactionStatus> pendingTransactions = new ConcurrentHashMap<>();
@@ -82,8 +81,9 @@ public class ClientLibrary {
         // transaction.setSignature(new ByteArrayWrapper(new byte[0]));
         
         // Create message
-        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, confirmedTransfers, clientId, clientId)
+        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
                 .setTransaction(transaction)
+                .setRequestType(Message.RequestType.TRANSFER_DEPCOIN)
                 .setNonce(nonce)
                 .build();
 
@@ -103,6 +103,30 @@ public class ClientLibrary {
         nonce++;
         return "Transaction Sent: " + transaction.getNonce();
     }
+
+    public void getDepCoinBalance(int userId) throws Exception {
+       /*  // Create the transaction
+        
+        // Convert the transaction to bytes and sign it
+        byte[] transactionBytes = transaction.toByteArray();
+        byte[] signature = CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
+        ByteArrayWrapper sig = new ByteArrayWrapper(signature);
+        transaction.setSignature(sig);
+
+        // Create message
+        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
+                .setTransaction(transaction)
+                .setNonce(nonce)
+                .build();
+
+        // Send the transaction
+        broadcast(reqMsg);
+
+        // nonce must be updated after sending the transaction
+        nonce++; */
+    }
+
+
 
     public void broadcast(Message msg) throws Exception {
         for (int nodeId : nodeIds) {
