@@ -79,11 +79,12 @@ public class ClientLibrary {
         }
     }
 
-    public String transferDepcoin(int recipientId, Long amount) throws Exception {
+    public String transferDepcoin(String targetAddress, Long amount) throws Exception {
         // Create the transaction
-        Transaction transaction = new Transaction.TransactionBuilder()
+        Transaction transaction =
+            new Transaction.TransactionBuilder()
                 .setSender(String.valueOf(this.clientId))
-                .setRecipient(String.valueOf(recipientId))
+                .setRecipient(String.valueOf(targetAddress))
                 .setAmount(amount)
                 .setNonce(CryptoUtil.generateNonce())
                 .setType(Transaction.TransactionType.TRANSFER_DEPCOIN)

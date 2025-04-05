@@ -15,17 +15,16 @@ public class TransferDepCommand implements Command {
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
-        if (args.length != 2 || !args[0].matches("\\d+") || !args[1].matches("\\d+")) {
+        if (args.length != 2) {
             Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
-        int recipientId = Integer.parseInt(args[0]);
-        long amount = Long.parseLong(args[1]);
-
         Logger.log(LogLevel.INFO, "Client sending transfer DepCoin request...");
         try {
-            clientLib.transferDepcoin(recipientId, amount);
+            String targetAddress = args[0];
+            long amount = Long.parseLong(args[1]);
+            clientLib.transferDepcoin(targetAddress, amount);
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to transfer DepCoin: " + e.getMessage());
         }

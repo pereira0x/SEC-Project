@@ -293,11 +293,17 @@ public class BlockchainMember {
 
         // Process transactions in the block
         for (Transaction transaction : block.getTransactions()) {
-            if (transaction.getType() == TransactionType.TRANSFER_DEPCOIN) {
-                updatedTransactions.add(processDepCoinTransaction(transaction, block));
+            switch (transaction.getType()) {
+                case TRANSFER_DEPCOIN:
+                  updatedTransactions.add(processBlockOperation(
+                      transaction, TransactionType.TRANSFER_DEPCOIN));
+                  break;
+                case TRANSFER_IST_COIN:
+                    updatedTransactions.add(processBlockOperation(transaction, TransactionType.TRANSFER_IST_COIN));
+                default:
+                    Logger.log(LogLevel.WARNING, "Unsupported transaction type: " + transaction.getType());
+                    break;
             }
-
-            // TODO: Add other transaction types here if needed
 
         }
 
@@ -307,67 +313,105 @@ public class BlockchainMember {
         return block;
     }
 
-    public Transaction processDepCoinTransaction(Transaction t, Block block) {
-        // Process transactions in the block
-        String sender;
-        String recipient;
-
-        try {
-            sender = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(t.getSender())));
-            recipient = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(t.getRecipient())));
-        } catch (NoSuchAlgorithmException e) {
-            Logger.log(LogLevel.ERROR, "Failed to get EOAccountAddress: " + e.getMessage());
-            t.setStatus(Transaction.TransactionStatus.REJECTED);
-            return t;
-        } catch (RuntimeException e) {
-            Logger.log(LogLevel.ERROR, "Failed to get public key: " + e.getMessage());
-            t.setStatus(Transaction.TransactionStatus.REJECTED);
-            return t;
-        }
+    public Transaction processDepCoinTransaction(Transaction t,
+                                                 String senderAddress, String targetAddress) {
 
         // cannot send to yourself
-        if (sender.equals(recipient)) {
-            Logger.log(LogLevel.ERROR, "Sender and recipient are the same: " + sender);
-            t.setStatus(Transaction.TransactionStatus.REJECTED);
-            return t;
+        if (senderAddress.equals(targetAddress)) {
+          Logger.log(LogLevel.ERROR,
+                     "Sender and recipient are the same: " + senderAddress);
+          t.setStatus(Transaction.TransactionStatus.REJECTED);
+          return t;
         }
 
         Long amount = t.getAmount();
 
+        // Amount must be positive
+        if (amount <= 0) {
+          Logger.log(LogLevel.ERROR,
+                     "Invalid amount: " + amount);
+          t.setStatus(Transaction.TransactionStatus.REJECTED);
+          return t;
+        }
+
         // Update sender's balance
-        if (blockchain.existsAccount(sender) && blockchain.existsAccount(recipient) &&
-                blockchain.getBalance(sender) >= amount) {
+        if (blockchain.existsAccount(senderAddress) &&
+            blockchain.existsAccount(targetAddress) &&
+            blockchain.getBalance(senderAddress) >= amount) {
 
-            // Subtract from sender's balance
-            Long newSenderBalance = blockchain.getBalance(sender) - amount;
-            blockchain.updateAccountBalance(sender, newSenderBalance);
+          // Subtract from sender's balance
+          Long newSenderBalance = blockchain.getBalance(senderAddress) - amount;
+          blockchain.updateAccountBalance(senderAddress, newSenderBalance);
 
-            // Add to recipient's balance
-            Long newRecipientBalance = blockchain.getBalance(recipient) + amount;
-            blockchain.updateAccountBalance(recipient, newRecipientBalance);
+          // Add to recipient's balance
+          Long newRecipientBalance =
+              blockchain.getBalance(targetAddress) + amount;
+          blockchain.updateAccountBalance(targetAddress, newRecipientBalance);
 
-            // Mark the transaction as confirmed
-            Logger.log(LogLevel.INFO, "Transaction processed: " + t);
-            t.setStatus(Transaction.TransactionStatus.CONFIRMED);
+          // Mark the transaction as confirmed
+          Logger.log(LogLevel.INFO, "Transaction processed: " + t);
+          t.setStatus(Transaction.TransactionStatus.CONFIRMED);
         } else {
-            t.setStatus(Transaction.TransactionStatus.REJECTED);
+          t.setStatus(Transaction.TransactionStatus.REJECTED);
 
-            // If transaction fails, mark it as rejected
-            Logger.log(LogLevel.ERROR, "Transaction failed: " + t.getNonce());
+          // If transaction fails, mark it as rejected
+          Logger.log(LogLevel.ERROR, "Transaction failed: " + t.getNonce());
 
-            // print conditions
-            if (!blockchain.existsAccount(sender)) {
-                Logger.log(LogLevel.ERROR, "Sender not found: " + sender);
-            } else if (!blockchain.existsAccount(recipient)) {
-                Logger.log(LogLevel.ERROR, "Recipient not found: " + recipient);
-            } else if (blockchain.getBalance(sender) < amount) {
-                Logger.log(LogLevel.ERROR, "Insufficient balance for sender: " + sender +
-                        " (Balance: " + blockchain.getBalance(sender) + ", Amount: " + amount + ")");
-            }
+          // print conditions
+          if (!blockchain.existsAccount(senderAddress)) {
+            Logger.log(LogLevel.ERROR, "Sender not found: " + senderAddress);
+          } else if (!blockchain.existsAccount(targetAddress)) {
+            Logger.log(LogLevel.ERROR, "Recipient not found: " + targetAddress);
+          } else if (blockchain.getBalance(senderAddress) < amount) {
+            Logger.log(
+                LogLevel.ERROR,
+                "Insufficient balance for sender: " + senderAddress +
+                    " (Balance: " + blockchain.getBalance(senderAddress) +
+                    ", Amount: " + amount + ")");
+          }
         }
 
         // Return the updated transaction object
         return t;
+    }
+
+    public Transaction processBlockOperation(Transaction t,
+                                             TransactionType type) {
+      // Process transactions in the block
+      String senderAddress;
+      String targetAddress;
+
+      try {
+        senderAddress = EVMUtils.getEOAccountAddress(
+            Config.getPublicKey(Integer.parseInt(t.getSender())));
+        targetAddress = t.getRecipient();
+      } catch (NoSuchAlgorithmException e) {
+        Logger.log(LogLevel.ERROR,
+                   "Failed to get EOAccountAddress: " + e.getMessage());
+        t.setStatus(Transaction.TransactionStatus.REJECTED);
+        return t;
+      } catch (RuntimeException e) {
+        Logger.log(LogLevel.ERROR,
+                   "Failed to get public key: " + e.getMessage());
+        t.setStatus(Transaction.TransactionStatus.REJECTED);
+        return t;
+      }
+
+      switch (type) {
+        case TRANSFER_DEPCOIN:
+          t = processDepCoinTransaction(t, senderAddress, targetAddress);
+          break;
+        case TRANSFER_IST_COIN:
+            break;
+        default:
+            Logger.log(LogLevel.ERROR,
+                         "Unsupported transaction type: " + type);
+            t.setStatus(Transaction.TransactionStatus.REJECTED);
+            break;
+
+      }
+      
+      return t;
     }
 
     public void processReadOperation(Message msg) {
