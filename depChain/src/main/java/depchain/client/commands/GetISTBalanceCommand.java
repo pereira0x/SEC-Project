@@ -15,11 +15,10 @@ public class GetISTBalanceCommand implements Command {
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
-        if (args.length != 0 || !args[0].matches("\\d+") || !args[1].matches("\\d+")) {
+        if (args.length != 0) {
             Logger.log(LogLevel.ERROR, "Usage: getISTBal");
             return;
         }
-
 
         Logger.log(LogLevel.INFO, "Client sending get ISTCoin balance request...");
         try {

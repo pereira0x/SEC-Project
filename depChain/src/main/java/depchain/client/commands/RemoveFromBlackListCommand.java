@@ -14,7 +14,7 @@ public class RemoveFromBlackListCommand implements Command {
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
-        if (args.length != 1 || !args[0].matches("\\d+") || !args[1].matches("\\d+")) {
+        if (args.length != 1 || !args[0].matches("\\d+")) {
             Logger.log(LogLevel.ERROR, "Usage: removeBlackList <userId>");
             return;
         }
