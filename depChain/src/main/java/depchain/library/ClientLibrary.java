@@ -85,6 +85,12 @@ public class ClientLibrary {
                                    targetAddress);
     }
 
+    public String approve(String targetAddress, Long amount) throws Exception {
+        return performBlockOperation(Transaction.TransactionType.APPROVE,
+                                     Message.RequestType.APPROVE, amount,
+                                     targetAddress);
+    }
+
     public String transferDepcoin(String targetAddress, Long amount) throws Exception {
       return performBlockOperation(Transaction.TransactionType.TRANSFER_DEPCOIN, Message.RequestType.TRANSFER_DEPCOIN, amount, targetAddress);
     }

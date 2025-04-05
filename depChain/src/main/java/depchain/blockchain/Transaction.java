@@ -22,6 +22,7 @@ public class Transaction implements Serializable {
       ADD_BLACKLIST,
       GET_ISTCOIN_BALANCE,
       IS_BLACKLISTED,
+      APPROVE,
       ALLOWANCE
     }
 

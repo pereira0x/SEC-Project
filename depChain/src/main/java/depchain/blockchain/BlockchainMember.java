@@ -147,6 +147,7 @@ public class BlockchainMember {
             case TRANSFER_ISTCOIN:
             case TRANSFER_DEPCOIN:
             case ADD_BLACKLIST:
+            case APPROVE:
               ConsensusInstanceAndBlock result =
                   verifyTransactionAndAddOrProposeBlock(msg, consensusInstance,
                                                        decidedBlock);
@@ -339,17 +340,12 @@ public class BlockchainMember {
     // Process transactions in the block
     for (Transaction transaction : block.getTransactions()) {
       switch (transaction.getType()) {
-      case TRANSFER_DEPCOIN:
-        updatedTransactions.add(processBlockOperation(
-            transaction, TransactionType.TRANSFER_DEPCOIN));
-        break;
-      case TRANSFER_IST_COIN:
-        updatedTransactions.add(processBlockOperation(
-            transaction, TransactionType.TRANSFER_IST_COIN));
-      case ADD_BLACKLIST:
-        updatedTransactions.add(processBlockOperation(
-            transaction, TransactionType.ADD_BLACKLIST));
-        break;
+        case TRANSFER_DEPCOIN:
+        case TRANSFER_IST_COIN:
+        case APPROVE:
+        case ADD_BLACKLIST:
+          updatedTransactions.add(processBlockOperation(transaction, transaction.getType()));
+          break;
       default:
         Logger.log(LogLevel.WARNING,
                    "Unsupported transaction type: " + transaction.getType());
@@ -467,6 +463,18 @@ public class BlockchainMember {
       boolean isBlacklisted = smartAccount.addToBlacklist(
           senderAddress, targetAddress);
       if (isBlacklisted) {
+        t.setStatus(Transaction.TransactionStatus.CONFIRMED);
+        Logger.log(LogLevel.INFO, "Transaction processed: " + t);
+      } else {
+        t.setStatus(Transaction.TransactionStatus.REJECTED);
+        Logger.log(LogLevel.ERROR, "Transaction failed: " + t);
+      }
+      break;
+    case APPROVE:
+      // Approve transaction
+      boolean approved = smartAccount.approve(
+          senderAddress, targetAddress, BigInteger.valueOf(t.getAmount()));
+      if (approved) {
         t.setStatus(Transaction.TransactionStatus.CONFIRMED);
         Logger.log(LogLevel.INFO, "Transaction processed: " + t);
       } else {

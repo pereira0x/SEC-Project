@@ -200,7 +200,11 @@ public class SmartAccount {
         String paddedAmount = padHexStringTo256Bit(amount.toString(16));
         executor.callData(Bytes.fromHexString("095ea7b3" + paddedAddress + paddedAmount)); // approve(address,uint256)
         executor.execute();
-        return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
+        try {
+            return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
+        } catch (Exception e) {
+            return false;
+        }
     }
     
     public boolean transferFrom(String senderAddress, String sourceAddress, String recipientAddress, BigInteger amount) {
