@@ -20,8 +20,6 @@ public class GetDepBalanceCommand implements Command {
             return;
         }
 
-        int recipientId = Integer.parseInt(args[0]);
-        long amount = Long.parseLong(args[1]);
 
         Logger.log(LogLevel.INFO, "Client sending get DepCoin balance request...");
         try {
