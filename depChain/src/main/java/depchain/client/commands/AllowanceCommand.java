@@ -15,21 +15,19 @@ public class AllowanceCommand implements Command {
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
-        if (args.length != 2 || !args[0].matches("\\d+") || !args[1].matches("\\d+") || !args[2].matches("\\d+")) {
+        if (args.length != 2) {
             Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
-
-        int spender = Integer.parseInt(args[0]);
-        long source = Long.parseLong(args[1]);
-        long amount = Long.parseLong(args[2]);
-        
-
         // How much can the spender spend on behalf of the source
-
         Logger.log(LogLevel.INFO, "Client sending allowance request...");
         try {
-            // TODO: Implement the allowTransferFrom method in ClientLibrary
+          String source = args[0];
+          String spender = args[1];
+          String allowance = clientLib.allowance(source, spender);
+            Logger.log(LogLevel.INFO,
+                    "Allowance for spender " + spender + " on source " + source + ": " + allowance);
+
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to allowance request: " + e.getMessage());
         }
@@ -37,6 +35,6 @@ public class AllowanceCommand implements Command {
 
     @Override
     public String getUsage() {
-        return "Usage: allow <spender> <source> <amount>";
+        return "Usage: allowance <source> <spender>";
     }
 }

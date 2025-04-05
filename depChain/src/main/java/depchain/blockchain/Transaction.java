@@ -20,7 +20,8 @@ public class Transaction implements Serializable {
       TRANSFER_FROM_IST_COIN,
       SET_BLACKLIST,
       GET_ISTCOIN_BALANCE,
-      IS_BLACKLISTED
+      IS_BLACKLISTED,
+      ALLOWANCE
     }
 
     public enum TransactionStatus {
@@ -38,8 +39,11 @@ public class Transaction implements Serializable {
     private TransactionType type;
     private TransactionStatus status;
 
+    // optional
+    private String spender;
+
     public Transaction(long nonce, String sender, String recipient, long amount, ByteArrayWrapper signature, String data,
-            TransactionType type, TransactionStatus status) {
+            TransactionType type, TransactionStatus status, String spender) {
         this.nonce = nonce;
         this.sender = sender;
         this.recipient = recipient;
@@ -48,6 +52,9 @@ public class Transaction implements Serializable {
         this.data = data;
         this.type = type;
         this.status = status;
+
+        // optional
+        this.spender = spender;
     }
 
     public long getNonce() {
@@ -80,6 +87,10 @@ public class Transaction implements Serializable {
 
     public TransactionStatus getStatus() {
         return status;
+    }
+
+    public String getSpender() {
+        return spender;
     }
 
     public void setStatus(TransactionStatus status) {
@@ -157,6 +168,9 @@ public class Transaction implements Serializable {
         private TransactionType type;
         private TransactionStatus status;
 
+        // optional
+        private String spender;
+
         public TransactionBuilder() {
         }
 
@@ -200,8 +214,13 @@ public class Transaction implements Serializable {
             return this;
         }
 
+        public TransactionBuilder setSpender(String spender) {
+          this.spender = spender;
+          return this;
+        }
+
         public Transaction build() {
-            return new Transaction(nonce, sender, recipient, amount, signature, data, type, status);
+            return new Transaction(nonce, sender, recipient, amount, signature, data, type, status, spender);
         }
     }
 }

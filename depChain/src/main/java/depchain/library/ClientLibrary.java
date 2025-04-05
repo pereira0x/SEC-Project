@@ -149,52 +149,70 @@ public class ClientLibrary {
     }
 
     public String isBlacklisted(String targetAddress) throws Exception {
-        return performReadOperation(targetAddress, Transaction.TransactionType.IS_BLACKLISTED, Message.RequestType.IS_BLACKLISTED);
+      return performReadOperation(
+          Transaction.TransactionType.IS_BLACKLISTED,
+          Message.RequestType.IS_BLACKLISTED, targetAddress);
     }
 
     public String getISTCoinBalance(String targetAddress) throws Exception {
-      return performReadOperation(targetAddress, Transaction.TransactionType.GET_ISTCOIN_BALANCE, Message.RequestType.GET_ISTCOIN_BALANCE);
+      return performReadOperation(Transaction.TransactionType.GET_ISTCOIN_BALANCE, Message.RequestType.GET_ISTCOIN_BALANCE, targetAddress);
     }
 
-    public String performReadOperation(String targetAddress, Transaction.TransactionType transactionType, Message.RequestType requestType) throws Exception {
-        Transaction transaction =
-            new Transaction.TransactionBuilder()
-                .setSender(String.valueOf(this.clientId))
-                .setRecipient(String.valueOf(targetAddress))
-                .setAmount(0L)
-                .setNonce(CryptoUtil.generateNonce())
-                .setType(transactionType)
-                .setStatus(Transaction.TransactionStatus.PENDING)
-                .build();
-        // Convert the transaction to bytes and sign it
-        byte[] transactionBytes = transaction.toByteArray();
-        byte[] signature = CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
-        ByteArrayWrapper sig = new ByteArrayWrapper(signature);
-        transaction.setSignature(sig);
-        // Create message
-        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
-                .setTransaction(transaction)
-                .setRequestType(requestType)
-                .setNonce(nonce)
-                .build();
-        // Register the transaction as pending
-        PendingTransactionStatus pendingStatus = new PendingTransactionStatus();
-        pendingTransactions.put(transaction.getNonce(), pendingStatus);
-        // Send the transaction
-        broadcast(reqMsg);
-        // Wait for the reply
-        nonce++;
-        synchronized (pendingReadRequestLock) {
-          try {
-            pendingReadRequestLock.wait(timeout);
+    public String allowance(String source, String spender) throws Exception {
+        return performReadOperation(Transaction.TransactionType.ALLOWANCE, Message.RequestType.ALLOWANCE, source, spender);
+    }
 
-          } catch (InterruptedException e) {
-            this.readValue = null; // Reset readValue on interruption
-            Logger.log(LogLevel.ERROR,
-                       "Error waiting for reply: " + e.getMessage());
-          }
+    public String
+    performReadOperation(Transaction.TransactionType transactionType,
+                         Message.RequestType requestType,
+                         String ... args) throws Exception {
+        String targetAddress = args[0];
+        String spender = null;
+        if (args.length > 1) {
+            spender = args[1];
         }
-        return readValue;
+      Transaction transaction =
+          new Transaction.TransactionBuilder()
+              .setSender(String.valueOf(this.clientId))
+              .setRecipient(String.valueOf(targetAddress))
+              .setAmount(0L)
+              .setNonce(CryptoUtil.generateNonce())
+              .setType(transactionType)
+              .setStatus(Transaction.TransactionStatus.PENDING)
+              .setSpender(spender) // null if not needed
+              .build();
+      // Convert the transaction to bytes and sign it
+      byte[] transactionBytes = transaction.toByteArray();
+      byte[] signature =
+          CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
+      ByteArrayWrapper sig = new ByteArrayWrapper(signature);
+      transaction.setSignature(sig);
+      // Create message
+      Message reqMsg = new Message
+                           .MessageBuilder(Message.Type.CLIENT_REQUEST, 0,
+                                           clientId, clientId)
+                           .setTransaction(transaction)
+                           .setRequestType(requestType)
+                           .setNonce(nonce)
+                           .build();
+      // Register the transaction as pending
+      PendingTransactionStatus pendingStatus = new PendingTransactionStatus();
+      pendingTransactions.put(transaction.getNonce(), pendingStatus);
+      // Send the transaction
+      broadcast(reqMsg);
+      // Wait for the reply
+      nonce++;
+      synchronized (pendingReadRequestLock) {
+        try {
+          pendingReadRequestLock.wait(timeout);
+
+        } catch (InterruptedException e) {
+          this.readValue = null; // Reset readValue on interruption
+          Logger.log(LogLevel.ERROR,
+                     "Error waiting for reply: " + e.getMessage());
+        }
+      }
+      return readValue;
     }
 
     public void broadcast(Message msg) throws Exception {

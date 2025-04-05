@@ -193,6 +193,7 @@ public class BlockchainMember {
                                 break;
                             // this cases are empty and without break -> all will be processReadOperation
                             case GET_ISTCOIN_BALANCE:
+                            case ALLOWANCE:
                             case IS_BLACKLISTED:
                                 processReadOperation(msg);
                                 break;
@@ -390,6 +391,13 @@ public class BlockchainMember {
                 case IS_BLACKLISTED:
                     boolean isBlacklisted = smartAccount.isBlacklisted(senderAddress, targetAddress);
                     replyValue = Boolean.toString(isBlacklisted);
+                    break;
+                
+                case ALLOWANCE:
+                    // Check if the spender is allowed to spend on behalf of the source
+                    String spender = tx.getSpender();
+                    BigInteger allowance = smartAccount.allowance(senderAddress, targetAddress, spender);
+                    replyValue = allowance.toString();
                     break;
 
                 default:
