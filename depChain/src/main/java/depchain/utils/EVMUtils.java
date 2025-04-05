@@ -108,7 +108,7 @@ public class EVMUtils {
         for (byte b : hash) {
             hexString.append(String.format("%02x", b));
         }
-        return hexString.toString();
+        return hexString.toString().substring(0, 32);
     }
 
     // account address is an hash pof the owner's public key
@@ -120,7 +120,7 @@ public class EVMUtils {
         for (byte b : hash) {
             hexString.append(String.format("%02x", b));
         }
-        return hexString.toString();
+        return hexString.toString().substring(0, 32);
     }
 
     public static String getSmartAccountAddress(String bytecode) throws NoSuchAlgorithmException {
@@ -132,8 +132,7 @@ public class EVMUtils {
         for (byte b : hash) {
             hexString.append(String.format("%02x", b));
         }
-        return hexString.toString();
+        return hexString.toString().substring(0, 32);
     }
 
-    
 }

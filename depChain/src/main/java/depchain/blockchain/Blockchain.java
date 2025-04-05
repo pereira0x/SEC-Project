@@ -103,7 +103,7 @@ public class Blockchain {
 
     public void getSmartContractAccount(JSONObject state) {
 
-        String deploymentBytecode = Dotenv.load().get("RUNTIME_BYTECODE");
+        String deploymentBytecode = Dotenv.load().get("DEPLOYMENT_BYTECODE");
         String smartAccountAddress;
 
         try {
