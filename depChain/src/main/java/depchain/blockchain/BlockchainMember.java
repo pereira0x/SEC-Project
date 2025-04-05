@@ -33,7 +33,7 @@ public class BlockchainMember {
     private String behavior;
     private final List<Integer> allProcessIds;  // All node IDs (no clients).
     private PerfectLink perfectLink;
-    private ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>();
     private final int f;                        // Maximum number of Byzantine faults allowed.
     private int epochNumber = 0;
     private Blockchain blockchain;
@@ -126,13 +126,13 @@ public class BlockchainMember {
                 
                 new Thread(() -> {
                     // Get the consensus instance for the respective client
-                    ConsensusInstance consensusInstance = consensusInstances.get(msg.getClientId());
+                    ConsensusInstance consensusInstance = consensusInstances.get(msg.getBlockHash());
 
                     Block decidedBlock = null;
                     if (msg.getType() == Message.Type.CLIENT_REQUEST) {
                         // Check the signature of the transaction
                         try {
-                            if (!checkTransactionSignature(msg.getTransaction(), msg.getClientId())) {
+                            if (!checkTransactionSignature(msg.getTransaction(), msg.getSenderId())) {
                                 Logger.log(LogLevel.ERROR, "Invalid transaction signature.");
                                 return;
                             }
@@ -162,15 +162,13 @@ public class BlockchainMember {
                                 Logger.log(LogLevel.ERROR, "Failed to generate block hash: " + e.getMessage());
                                 return;
                             }
-
-
                             
                             if (consensusInstance != null) {
                                 consensusInstance.setBlockProposed(block);
                             } else {
                                 consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                        epochNumber++, f, block, msg.getClientId());
-                                consensusInstances.put(msg.getClientId(), consensusInstance);
+                                        epochNumber++, f, block);
+                                consensusInstances.put(blockHash, consensusInstance);
                             }
 
                             if (memberId == leaderId) {                                
@@ -179,9 +177,7 @@ public class BlockchainMember {
                                     decidedBlock = consensusInstance.decideBlock();
                                 }
                                 
-                        }
-
-                        else {
+                        } else {
                             Logger.log(LogLevel.DEBUG, "Added transaction to pending transactions.");
                         }
                     
@@ -190,8 +186,8 @@ public class BlockchainMember {
                         if (consensusInstance == null) {
                             // instantiate a new consensus instance
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds,
-                                    perfectLink, msg.getEpoch(), f, null, msg.getClientId());
-                            consensusInstances.put(msg.getClientId(), consensusInstance);
+                                    perfectLink, msg.getEpoch(), f, msg.getBlock());
+                            consensusInstances.put(msg.getBlockHash(), consensusInstance);
                         }
 
                         consensusInstance.processMessage(msg);
@@ -209,28 +205,20 @@ public class BlockchainMember {
                             Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain.getHashesChain());
 
                             consensusInstance = null;
-                            consensusInstances.remove(msg.getClientId());
+                            consensusInstances.remove(msg.getBlockHash());
                             synchronized (pendingTransactions) {
                                 pendingTransactions.clear();
                             }
 
-                            // Send CLIENT_REPLY to the client.
-                            InetSocketAddress clientAddr = Config.processAddresses.get(msg.getClientId());
-
-                            if (clientAddr != null) {
-                                // TODO: EPOCH NUMBER MUST BE A NEW ONE
-                                // TODO: IMPLEMENT CLIENT IDS PROPERLY
-
-                                // broadcast the reply to all clients
-                                for (int clientId : Config.getClientIds()) {
-                                    Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
-                                     memberId, clientId).setBlock(processedBlock).build();
+                            // Send CLIENT_REPLY to all the clients
+                            for (Transaction tx : processedBlock.getTransactions()) {
+                                Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
+                                                                    memberId)
+                                        .setTransaction(tx)
+                                        .build();
+                                for (int clientId : Config.getClientIds())
                                     perfectLink.send(clientId, reply);
-                                    
-                                }
-                                
-                                
-                            }   
+                            }
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -240,7 +228,7 @@ public class BlockchainMember {
                     if (consensusInstance != null && consensusInstance.isAborted()) {
                         Logger.log(LogLevel.ERROR, "Consensus aborted.");
                         consensusInstance = null;
-                        consensusInstances.remove(msg.getClientId());
+                        consensusInstances.remove(msg.getBlockHash());
                         synchronized (pendingTransactions) {
                             pendingTransactions.clear();
                         }

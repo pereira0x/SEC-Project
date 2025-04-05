@@ -20,7 +20,6 @@ public class ClientLibrary {
     private final int clientId;
     private int nonce = 0;
     private final int f;
-    private final long timeout = 60000;
     private int confirmedTransfers = 0;
 
     // Map to store waiting transactions and their notifier objects
@@ -42,17 +41,15 @@ public class ClientLibrary {
             try {
                 Message reply = perfectLink.deliver();
                 if (reply.getType() == Message.Type.CLIENT_REPLY) {
-                    System.out.println("Received reply: " + reply);
-                    Block appendedBlock = reply.getBlock();
-                    if (appendedBlock != null) {
-                        for (Transaction tx : appendedBlock.getTransactions()) {
-                            Long txNonce = tx.getNonce();
-                            if (pendingTransactions.containsKey(txNonce)) {
-                                PendingTransactionStatus pendingTx = pendingTransactions.get(txNonce);
-                                synchronized (pendingTx.lock) {
-                                    pendingTx.status = tx.getStatus(); // Update status
-                                    pendingTx.lock.notify();
-                                }
+                    Transaction tr = reply.getTransaction();
+                    if (tr != null) {
+                        Long txNonce = tr.getNonce();
+                        Logger.log(LogLevel.DEBUG, "Received reply for transaction: " + txNonce);
+                        if (pendingTransactions.containsKey(txNonce)) {
+                            PendingTransactionStatus pendingTx = pendingTransactions.get(txNonce);
+                            synchronized (pendingTx.lock) {
+                                pendingTx.status.add(tr.getStatus());
+                                pendingTx.lock.notify();
                             }
                         }
                     }
@@ -82,7 +79,7 @@ public class ClientLibrary {
         // transaction.setSignature(new ByteArrayWrapper(new byte[0]));
         
         // Create message
-        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, confirmedTransfers, clientId, clientId)
+        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, confirmedTransfers, clientId)
                 .setTransaction(transaction)
                 .setNonce(nonce)
                 .build();
@@ -111,46 +108,53 @@ public class ClientLibrary {
     }
 
     public void waitforTransactionConfirmation(Transaction transaction, PendingTransactionStatus pendingStatus) {
-        int requiredConfirmations = f + 1;
-        int confirmations = 0;
+        final int requiredResponses = f + 1;
+        int replies = 0;
 
         synchronized (pendingStatus.lock) {
             try {
-                long startTime = System.currentTimeMillis();
-                while (confirmations < requiredConfirmations) {
-                    long remainingTime = timeout - (System.currentTimeMillis() - startTime);
-                    if (remainingTime <= 0) {
-                        break; // Exit if timeout is reached
-                    }
-                    
-                    // TODO: ADD A TIMEOUT ??? Do we want that?
+                while (replies < 3*f + 1) {
+                    // TODO: ADD A TIMEOUT ??? Do we want that? No
                     pendingStatus.lock.wait();
+                    replies++;
 
                     // Check if this was a real confirmation
                     if (pendingTransactions.containsKey(transaction.getNonce())) {
-                        confirmations++;
+                        // check if there are f+1 equal statuses
+                        int confirmedCount = 0;
+                        int rejectedCount = 0;
+                        for (Transaction.TransactionStatus status : pendingStatus.status) {
+                            if (status == Transaction.TransactionStatus.CONFIRMED) {
+                                confirmedCount++;
+                            } else if (status == Transaction.TransactionStatus.REJECTED) {
+                                rejectedCount++;
+                            }
+                        }
+                        
+                        if (confirmedCount >= requiredResponses) {
+                            transaction.setStatus(Transaction.TransactionStatus.CONFIRMED);
+                            break;
+                        } else if (rejectedCount >= requiredResponses) {
+                            transaction.setStatus(Transaction.TransactionStatus.REJECTED);
+                            break;
+                        }
                     }
                 }
             } catch (InterruptedException e) {
-                Logger.log(LogLevel.ERROR, "Confirmation thread interrupted: " + e.getMessage());
+                Logger.log(LogLevel.WARNING, "Confirmation thread interrupted: " + e.getMessage());
             }
         }
 
         // Remove transaction from pending
         pendingTransactions.remove(transaction.getNonce());
 
-        if (confirmations < requiredConfirmations) {
-            Logger.log(LogLevel.ERROR, "Transaction " + transaction.getNonce() + " not confirmed in time.");
-            return;
-        }
-
         // Log the final status
-        Logger.log(LogLevel.INFO, "Transaction " + transaction.getNonce() + " final status: " + pendingStatus.status);
+        Logger.log(LogLevel.INFO, "Transaction " + transaction.getNonce() + " final status: " + transaction.getStatus());
     }
 
     // Class to store pending transaction status
     private static class PendingTransactionStatus {
         private final Object lock = new Object();
-        private Transaction.TransactionStatus status = Transaction.TransactionStatus.PENDING;
+        private List<Transaction.TransactionStatus> status = new ArrayList<>();
     }
 }

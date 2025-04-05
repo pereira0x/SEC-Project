@@ -96,6 +96,12 @@ public class Message implements Serializable {
         return block;
     }
 
+    public String getBlockHash() {
+        if (block != null) {
+            return block.getBlockHash();
+        }
+        return "";
+    }
 
     // Returns a string representation of the content to be signed.
     public String getSignableContent() {
@@ -116,7 +122,7 @@ public class Message implements Serializable {
         private final Type type;
         private final int epoch;
         private final int senderId;
-        private final int clientId;
+        private int clientId;
         private byte[] signature;
         private ByteArrayWrapper sessionKey;
         private State state;
@@ -126,11 +132,10 @@ public class Message implements Serializable {
         private Transaction transaction;
         private Block block;
 
-        public MessageBuilder(Type type, int epoch, int senderId, int clientId) {
+        public MessageBuilder(Type type, int epoch, int senderId) {
             this.type = type;
             this.epoch = epoch;
             this.senderId = senderId;
-            this.clientId = clientId;
             this.signature = null;
             this.sessionKey = null;
             this.nonce = -1;
