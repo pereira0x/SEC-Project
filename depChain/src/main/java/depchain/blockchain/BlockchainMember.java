@@ -191,11 +191,10 @@ public class BlockchainMember {
                                     Logger.log(LogLevel.DEBUG, "Added transaction to pending transactions.");
                                 }
                                 break;
+                            // this cases are empty and without break -> all will be processReadOperation
                             case GET_ISTCOIN_BALANCE:
-                                processGetISTBalance(msg);
-                                break;
                             case IS_BLACKLISTED:
-                                proccessIsBlacklisted(msg);
+                                processReadOperation(msg);
                                 break;
                                 
                             default:
@@ -369,65 +368,45 @@ public class BlockchainMember {
         return t;
     }
 
-    public void processGetISTBalance(Message msg) {
-      SmartAccount smartAccount = this.blockchain.getSmartAccount();
-      Transaction tx = msg.getTransaction();
-      BigInteger amount = BigInteger.valueOf(0);
-      Logger.log(LogLevel.DEBUG, "Transaction: " + tx);
-      try {
-        String senderAddress = EVMUtils.getEOAccountAddress(
-            Config.getPublicKey(Integer.parseInt(tx.getSender())));
-        String targetAddress = tx.getRecipient();
-        amount = smartAccount.balanceOf(senderAddress, targetAddress);
-      } catch (NoSuchAlgorithmException e) {
-        Logger.log(LogLevel.ERROR,
-                   "Failed to get EOAccountAddress: " + e.getMessage());
-      }
-
-      // Send CLIENT_REPLY to the client.
-      String amountStr = amount.toString();
-      System.out.println("Amount: " + amountStr);
-      Message reply = new Message
-                          .MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
-                                          memberId, msg.getClientId())
-                          .setBlock(null)
-                          .setReplyType(ReplyType.VALUE)
-                          .setReplyValue(amountStr)
-                          .build();
-      try {
-        perfectLink.send(msg.getSenderId(), reply);
-      } catch (Exception e) {
-        Logger.log(LogLevel.ERROR, "Failed to send reply: " + e.getMessage());
-      }
-    }
-
-    public void proccessIsBlacklisted(Message msg) {
+    public void processReadOperation(Message msg) {
         SmartAccount smartAccount = this.blockchain.getSmartAccount();
         Transaction tx = msg.getTransaction();
         String senderAddress;
-        boolean isBlacklisted = false;
+        String targetAddress;
+        String replyValue = "";
+        ReplyType replyType = ReplyType.VALUE;
+
         try {
             senderAddress = EVMUtils.getEOAccountAddress(
                     Config.getPublicKey(Integer.parseInt(tx.getSender())));
-                    String targetAddress = tx.getRecipient();
-                    isBlacklisted = smartAccount.isBlacklisted(
-                        senderAddress, targetAddress);
+            targetAddress = tx.getRecipient();
 
+            switch (msg.getRequestType()) {
+                case GET_ISTCOIN_BALANCE:
+                    BigInteger balance = smartAccount.balanceOf(senderAddress, targetAddress);
+                    replyValue = balance.toString();
+                    break;
+
+                case IS_BLACKLISTED:
+                    boolean isBlacklisted = smartAccount.isBlacklisted(senderAddress, targetAddress);
+                    replyValue = Boolean.toString(isBlacklisted);
+                    break;
+
+                default:
+                    Logger.log(LogLevel.ERROR, "Unknown read operation request type: " + msg.getRequestType());
+                    return;
+            }
         } catch (NoSuchAlgorithmException e) {
-            Logger.log(LogLevel.ERROR,
-                    "Failed to get EOAccountAddress: " + e.getMessage());
+            Logger.log(LogLevel.ERROR, "Failed to process read operation: " + e.getMessage());
             return;
         }
 
-        String isBlacklistedStr = Boolean.toString(isBlacklisted);
-
         // Send CLIENT_REPLY to the client.
         Message reply = new Message
-                .MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
-                        memberId, msg.getClientId())
+                .MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(), memberId, msg.getClientId())
                 .setBlock(null)
-                .setReplyType(ReplyType.VALUE)
-                .setReplyValue(isBlacklistedStr)
+                .setReplyType(replyType)
+                .setReplyValue(replyValue)
                 .build();
         try {
             Logger.log(LogLevel.DEBUG, "Reply: " + reply);
