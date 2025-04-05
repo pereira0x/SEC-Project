@@ -25,8 +25,9 @@ public class CommandManager {
         register("getISTBal", new GetISTBalanceCommand(client));
         register("addBlackList", new AddToBlackListCommand(client));
         register("removeBlackList", new RemoveFromBlackListCommand(client));
-        register("getBlackList", new GetBlackListCommand(client));
-        register("allowTransferFrom", new AllowTransferFromCommand(client));
+        register("isBlackListed", new IsBlackListedCommand(client));
+        register("allow", new AllowanceCommand(client));
+        register("approve", new ApproveCommand(client));
         register("transferFrom", new TransferFromCommand(client));
 
         register("help", new HelpCommand(this));

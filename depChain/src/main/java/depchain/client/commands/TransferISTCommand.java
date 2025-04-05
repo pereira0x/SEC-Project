@@ -25,7 +25,7 @@ public class TransferISTCommand implements Command {
 
         Logger.log(LogLevel.INFO, "Client sending transfer ISTCoin request...");
         try {
-            clientLib.transferDepcoin(recipientId, amount);
+            // TODO: Implement the transferISTCoin method in ClientLibrary
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to transfer IST Coin: " + e.getMessage());
         }

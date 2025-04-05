@@ -25,7 +25,7 @@ public class TransferDepCommand implements Command {
 
         Logger.log(LogLevel.INFO, "Client sending transfer DepCoin request...");
         try {
-            // TODO: Implement the transferDepcoin method in ClientLibrary
+            clientLib.transferDepcoin(recipientId, amount);
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to transfer DepCoin: " + e.getMessage());
         }
