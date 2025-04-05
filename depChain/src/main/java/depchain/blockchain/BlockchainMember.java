@@ -190,36 +190,16 @@ public class BlockchainMember {
                                 else {
                                     Logger.log(LogLevel.DEBUG, "Added transaction to pending transactions.");
                                 }
-                            case GET_ISTCOIN_BALANCE:
-                                
-                                SmartAccount smartAccount = this.blockchain.getSmartAccount();
-                                Transaction tx =  msg.getTransaction();
-                                BigInteger amount = BigInteger.valueOf(0);
-                                try {
-                                    String senderAddress = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(tx.getSender())));
-                                    String recipientAddress = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(tx.getRecipient())));
-                                    amount = smartAccount.balanceOf(senderAddress, recipientAddress);
-                                } catch (NoSuchAlgorithmException e) {
-                                    Logger.log(LogLevel.ERROR, "Failed to get EOAccountAddress: " + e.getMessage());
-                                }
-
-                                // Send CLIENT_REPLY to the client.
-                                String amountStr = amount.toString();
-                                System.out.println("Amount: " + amountStr);
-                                /* InetSocketAddress clientAddr = Config.processAddresses.get(msg.getSenderId()); */
-                                Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
-                                        memberId, msg.getClientId()).setBlock(null)
-                                        .setReplyType(ReplyType.BLOCK).setReplyType(ReplyType.VALUE)
-                                        .setReplyValue(amountStr).build();
-                                try {
-                                    perfectLink.send(msg.getSenderId(), reply);
-                                } catch (Exception e) {
-                                    Logger.log(LogLevel.ERROR, "Failed to send reply: " + e.getMessage());
-                                }
-
                                 break;
-                            
+                            case GET_ISTCOIN_BALANCE:
+                                processGetISTBalance(msg);
+                                break;
+                            case IS_BLACKLISTED:
+                                proccessIsBlacklisted(msg);
+                                break;
+                                
                             default:
+                            
                                 Logger.log(LogLevel.ERROR, "Unknown request type: " + msg.getRequestType());
                                 break;
                         }
@@ -389,6 +369,74 @@ public class BlockchainMember {
         return t;
     }
 
+    public void processGetISTBalance(Message msg) {
+      SmartAccount smartAccount = this.blockchain.getSmartAccount();
+      Transaction tx = msg.getTransaction();
+      BigInteger amount = BigInteger.valueOf(0);
+      Logger.log(LogLevel.DEBUG, "Transaction: " + tx);
+      try {
+        String senderAddress = EVMUtils.getEOAccountAddress(
+            Config.getPublicKey(Integer.parseInt(tx.getSender())));
+        String targetAddress = tx.getRecipient();
+        amount = smartAccount.balanceOf(senderAddress, targetAddress);
+      } catch (NoSuchAlgorithmException e) {
+        Logger.log(LogLevel.ERROR,
+                   "Failed to get EOAccountAddress: " + e.getMessage());
+      }
+
+      // Send CLIENT_REPLY to the client.
+      String amountStr = amount.toString();
+      System.out.println("Amount: " + amountStr);
+      Message reply = new Message
+                          .MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
+                                          memberId, msg.getClientId())
+                          .setBlock(null)
+                          .setReplyType(ReplyType.VALUE)
+                          .setReplyValue(amountStr)
+                          .build();
+      try {
+        perfectLink.send(msg.getSenderId(), reply);
+      } catch (Exception e) {
+        Logger.log(LogLevel.ERROR, "Failed to send reply: " + e.getMessage());
+      }
+    }
+
+    public void proccessIsBlacklisted(Message msg) {
+        SmartAccount smartAccount = this.blockchain.getSmartAccount();
+        Transaction tx = msg.getTransaction();
+        String senderAddress;
+        boolean isBlacklisted = false;
+        try {
+            senderAddress = EVMUtils.getEOAccountAddress(
+                    Config.getPublicKey(Integer.parseInt(tx.getSender())));
+                    String targetAddress = tx.getRecipient();
+                    isBlacklisted = smartAccount.isBlacklisted(
+                        senderAddress, targetAddress);
+
+        } catch (NoSuchAlgorithmException e) {
+            Logger.log(LogLevel.ERROR,
+                    "Failed to get EOAccountAddress: " + e.getMessage());
+            return;
+        }
+
+        String isBlacklistedStr = Boolean.toString(isBlacklisted);
+
+        // Send CLIENT_REPLY to the client.
+        Message reply = new Message
+                .MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
+                        memberId, msg.getClientId())
+                .setBlock(null)
+                .setReplyType(ReplyType.VALUE)
+                .setReplyValue(isBlacklistedStr)
+                .build();
+        try {
+            Logger.log(LogLevel.DEBUG, "Reply: " + reply);
+            perfectLink.send(msg.getSenderId(), reply);
+        } catch (Exception e) {
+            Logger.log(LogLevel.ERROR, "Failed to send reply: " + e.getMessage());
+        }
+    }
+    
     public boolean checkTransactionSignature(Transaction transaction, int clientId) throws Exception {
         // Check if the transaction signature is valid
         byte[] transactionBytes = transaction.toByteArray();

@@ -15,10 +15,12 @@ public class Transaction implements Serializable {
 
     // enum
     public enum TransactionType {
-        TRANSFER_DEPCOIN,
-        TRANSFER_IST_COIN,
-        TRANSFER_FROM_IST_COIN,
-        SET_BLACKLIST,
+      TRANSFER_DEPCOIN,
+      TRANSFER_IST_COIN,
+      TRANSFER_FROM_IST_COIN,
+      SET_BLACKLIST,
+      GET_ISTCOIN_BALANCE,
+      IS_BLACKLISTED
     }
 
     public enum TransactionStatus {

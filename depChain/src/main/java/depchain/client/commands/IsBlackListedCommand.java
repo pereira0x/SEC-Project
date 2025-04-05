@@ -15,18 +15,17 @@ public class IsBlackListedCommand implements Command {
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
-        if (args.length != 0 || !args[0].matches("\\d+")) {
+        if (args.length !=1) {
             Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
-        int userId = Integer.parseInt(args[0]);
-
-        // Check if the user is blacklisted
-
         Logger.log(LogLevel.INFO, "Client sending get black list request...");
         try {
-            // TODO: Implement the getBlackList method in ClientLibrary
+            String targetAddress = args[0];
+            String blackListStatus = clientLib.isBlacklisted(targetAddress);
+            Logger.log(LogLevel.INFO,
+                    "Target " + targetAddress + " is blacklisted: " + blackListStatus);
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to get black list: " + e.getMessage());
         }
@@ -34,6 +33,6 @@ public class IsBlackListedCommand implements Command {
 
     @Override
     public String getUsage() {
-        return "Usage: isBlackListed <userId>";
+        return "Usage: isBlackListed <targetAddress>";
     }
 }
