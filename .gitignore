@@ -28,4 +28,3 @@ report.log
 .idea/
 .vscode/
 
-/depChain/src/main/java/resources/blocks/*
