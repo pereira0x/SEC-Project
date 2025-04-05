@@ -20,7 +20,7 @@ public class ClientLibrary {
     private final int clientId;
     private int nonce = 0;
     private final int f;
-    private final long timeout = 20000;
+    private final long timeout = 60000;
     private int confirmedTransfers = 0;
 
     // Map to store waiting transactions and their notifier objects

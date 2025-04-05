@@ -1,0 +1,38 @@
+package depchain.client.commands;
+
+import depchain.client.DepChainClient;
+import depchain.library.ClientLibrary;
+import depchain.utils.Logger;
+import depchain.utils.Logger.LogLevel;
+
+public class TransferFromCommand implements Command{
+     private final DepChainClient client;
+
+    public TransferFromCommand(DepChainClient client) {
+        this.client = client;
+    }
+
+    @Override
+    public void execute(String[] args, ClientLibrary clientLib) {
+        if (args.length != 3 || !args[0].matches("\\d+") || !args[1].matches("\\d+") || !args[2].matches("\\d+")) {
+            Logger.log(LogLevel.ERROR, getUsage());
+            return;
+        }
+
+        int sourceUserId = Integer.parseInt(args[0]);
+        int recipientUserId = Integer.parseInt(args[1]);
+        long amount = Long.parseLong(args[2]);
+
+        Logger.log(LogLevel.INFO, "Client sending transfer from request...");
+        try {
+            // TODO: Implement the transferFrom method in ClientLibrary
+        } catch (Exception e) {
+            Logger.log(LogLevel.ERROR, "Failed to transfer from: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String getUsage() {
+        return "Usage: transferFrom <sourceUserID> <recipientUserId> <amount>";
+    }
+}

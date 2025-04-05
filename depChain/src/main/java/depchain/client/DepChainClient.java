@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
+import depchain.client.commands.CommandManager;
+import depchain.client.commands.TransferDepCommand;
 import depchain.library.ClientLibrary;
 import depchain.network.PerfectLink;
 import depchain.utils.Config;
@@ -59,79 +61,33 @@ public class DepChainClient {
             Logger.log(LogLevel.ERROR, "Usage: DepChainClient <clientId> <clientPort>");
             return;
         }
-
+    
         int clientId = Integer.parseInt(args[0]);
         int clientPort = Integer.parseInt(args[1]);
-
+    
         DepChainClient client = new DepChainClient(clientId, clientPort, 1);
+    
+        CommandManager commandManager = new CommandManager(client.clientLib);
+        commandManager.registerAllCommands(client);
+        
+        Logger.log(LogLevel.INFO, "Client started. Type 'help' for a list of commands.");
 
-        final Scanner scanner = new Scanner(System.in);
 
+        Scanner scanner = new Scanner(System.in);
         String line = "";
         while (!line.equals("exit")) {
-            System.out.flush();
             System.out.print("> ");
-
             line = scanner.nextLine();
-
-            // empty line
-            if (line.isEmpty()) {
-                continue;
-            }
-
-            // command is first word, rest is arguments
-            String[] parts = line.split(" ");
-            String command = parts[0];
-            switch (command) {
-                /* case "append":
-                    if (parts.length < 2 || parts.length > 2) {
-                        Logger.log(LogLevel.ERROR, "Usage: append <message>");
-                    }
-                    client.append(parts[1]);
-                    break; */
-                case "transfer":
-                    if (parts.length < 3 || parts.length > 3 || !parts[1].matches("\\d+") || !parts[2].matches("\\d+")) {
-                        // Check if the second and third arguments are integers
-                        Logger.log(LogLevel.ERROR, "Usage: transfer <recipientId> <amount>");
-                    }
-                    client.transferDepcoin(Integer.parseInt(parts[1]), Long.parseLong(parts[2]));
-                    break;
-                case "exit":
-                    break;
-                default:
-                    Logger.log(LogLevel.ERROR, "Unknown command: " + command);
-                    break;
-            }
+    
+            if (line.equals("exit")) break;
+            if (line.isEmpty()) continue;
+    
+            commandManager.executeCommand(line);
         }
+    
         Logger.log(LogLevel.INFO, "Exiting...");
         scanner.close();
-        // stop the client
         System.exit(0);
     }
 
-   /*  // Now you can access clientLib in other methods
-    public String append(String message) {
-        Logger.log(LogLevel.INFO, "Client sending append request...");
-        try {
-            String response = clientLib.append(message);
-            Logger.log(LogLevel.INFO, "Client received response from f+1: " + response);
-            return response;
-        } catch (Exception e) {
-            Logger.log(LogLevel.ERROR, "Failed to append message: " + e.getMessage());
-            return null;
-        }
-    } */
-
-
-    public String transferDepcoin(int recipientId, Long amount) {
-        Logger.log(LogLevel.INFO, "Client sending transfer request...");
-        try {
-            String response = clientLib.transferDepcoin(recipientId, amount);
-            Logger.log(LogLevel.INFO, "Client received response from f+1: " + response);
-            return response;
-        } catch (Exception e) {
-            Logger.log(LogLevel.ERROR, "Failed to transfer Depcoin: " + e.getMessage());
-            return null;
-        }
-    }
 }
