@@ -23,6 +23,8 @@ public class CommandManager {
         register("transferIST", new TransferISTCommand(client));
         register("getDepBal", new GetDepBalanceCommand(client));
         register("getISTBal", new GetISTBalanceCommand(client));
+        register("addBlackList", new AddToBlackListCommand(client));
+        register("removeBlackList", new RemoveFromBlackListCommand(client));
         // Register other commands here
     }
 
