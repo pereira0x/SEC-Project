@@ -5,21 +5,24 @@ import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 import depchain.library.ClientLibrary;
 
-public class GetBlackListCommand implements Command {
+public class IsBlackListedCommand implements Command {
 
     private final DepChainClient client;
 
-    public GetBlackListCommand(DepChainClient client) {
+    public IsBlackListedCommand(DepChainClient client) {
         this.client = client;
     }
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
-        if (args.length != 0) {
+        if (args.length != 0 || !args[0].matches("\\d+")) {
             Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
+        int userId = Integer.parseInt(args[0]);
+
+        // Check if the user is blacklisted
 
         Logger.log(LogLevel.INFO, "Client sending get black list request...");
         try {
@@ -31,6 +34,6 @@ public class GetBlackListCommand implements Command {
 
     @Override
     public String getUsage() {
-        return "Usage: getBlackList";
+        return "Usage: isBlackListed <userId>";
     }
 }
