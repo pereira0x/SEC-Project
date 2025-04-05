@@ -17,16 +17,17 @@ public class AddToBlackListCommand implements Command {
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
-        if (args.length != 1 || !args[0].matches("\\d+") || !args[1].matches("\\d+")) {
+        if (args.length != 1 ) {
             Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
-        int userId = Integer.parseInt(args[0]);
-
         Logger.log(LogLevel.INFO, "Client sending add to black list request...");
         try {
-            // TODO: Implement the addToBlackList method in ClientLibrary
+            String targetAddress = args[0];
+            clientLib.addToBlackList(targetAddress);
+            Logger.log(LogLevel.INFO, "Successfully proposed to add " + targetAddress + " to the black list");
+            
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to add to black list: " + e.getMessage());
         }
@@ -34,6 +35,6 @@ public class AddToBlackListCommand implements Command {
 
     @Override
     public String getUsage() {
-        return "Usage: addBlackList <userId>";  
+        return "Usage: addBlackList <targetAddress>";  
     }
 }

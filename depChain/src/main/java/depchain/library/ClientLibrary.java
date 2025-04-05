@@ -79,50 +79,62 @@ public class ClientLibrary {
         }
     }
 
-    public String transferDepcoin(String targetAddress, Long amount) throws Exception {
-        // Create the transaction
-        Transaction transaction =
-            new Transaction.TransactionBuilder()
-                .setSender(String.valueOf(this.clientId))
-                .setRecipient(String.valueOf(targetAddress))
-                .setAmount(amount)
-                .setNonce(CryptoUtil.generateNonce())
-                .setType(Transaction.TransactionType.TRANSFER_DEPCOIN)
-                .setStatus(Transaction.TransactionStatus.PENDING)
-                .build();
+    public String addToBlackList(String targetAddress) throws Exception {
+      return performBlockOperation(Transaction.TransactionType.ADD_BLACKLIST,
+                                   Message.RequestType.ADD_BLACKLIST, 0L,
+                                   targetAddress);
+    }
 
+    public String transferDepcoin(String targetAddress, Long amount) throws Exception {
+      return performBlockOperation(Transaction.TransactionType.TRANSFER_DEPCOIN, Message.RequestType.TRANSFER_DEPCOIN, amount, targetAddress);
+    }
+
+    public String transferISTCoin(String targetAddress, Long amount) throws Exception {
+      return performBlockOperation(Transaction.TransactionType.TRANSFER_IST_COIN, Message.RequestType.TRANSFER_ISTCOIN, amount, targetAddress);
+    }
+
+    public String performBlockOperation(Transaction.TransactionType transactionType,
+                             Message.RequestType requestType, Long amount, String... args)
+            throws Exception {
+        String targetAddress = args[0];
+        Transaction transaction =
+                new Transaction.TransactionBuilder()
+                        .setSender(String.valueOf(this.clientId))
+                        .setRecipient(String.valueOf(targetAddress))
+                        .setAmount(amount)
+                        .setNonce(CryptoUtil.generateNonce())
+                        .setType(transactionType)
+                        .setStatus(Transaction.TransactionStatus.PENDING)
+                        .build();
         // Convert the transaction to bytes and sign it
         byte[] transactionBytes = transaction.toByteArray();
-        byte[] signature = CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
+        byte[] signature =
+                CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
         ByteArrayWrapper sig = new ByteArrayWrapper(signature);
         transaction.setSignature(sig);
-        // transaction.setSignature(new ByteArrayWrapper(new byte[0]));
-
         // Create message
-        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
+        Message reqMsg = new Message
+                .MessageBuilder(Message.Type.CLIENT_REQUEST, 0,
+                clientId, clientId)
                 .setTransaction(transaction)
-                .setRequestType(Message.RequestType.TRANSFER_DEPCOIN)
+                .setRequestType(requestType)
                 .setNonce(nonce)
                 .build();
-
         // Register the transaction as pending
         PendingTransactionStatus pendingStatus = new PendingTransactionStatus();
         pendingTransactions.put(transaction.getNonce(), pendingStatus);
-
         // Send the transaction
         broadcast(reqMsg);
-
         // Start a separate thread to wait for confirmation
         new Thread(() -> {
             waitforTransactionConfirmation(transaction, pendingStatus);
         }).start();
-
         // nonce must be updated after sending the transaction
         nonce++;
         return "Transaction Sent: " + transaction.getNonce();
     }
 
-    public String getDepCoinBalance(String targetAddress) throws Exception {
+      public String getDepCoinBalance(String targetAddress) throws Exception {
         return performReadOperation(Transaction.TransactionType.GET_DEPCOIN_BALANCE, Message.RequestType.GET_DEPCOIN_BALANCE, targetAddress);        
     }
 
@@ -140,15 +152,16 @@ public class ClientLibrary {
         return performReadOperation(Transaction.TransactionType.ALLOWANCE, Message.RequestType.ALLOWANCE, source, spender);
     }
 
+
     public String
-    performReadOperation(Transaction.TransactionType transactionType,
-                         Message.RequestType requestType,
-                         String ... args) throws Exception {
-        String targetAddress = args[0];
-        String spender = null;
-        if (args.length > 1) {
-            spender = args[1];
-        }
+        performReadOperation(Transaction.TransactionType transactionType,
+                             Message.RequestType requestType, String... args)
+            throws Exception {
+      String targetAddress = args[0];
+      String spender = null;
+      if (args.length > 1) {
+        spender = args[1];
+      }
       Transaction transaction =
           new Transaction.TransactionBuilder()
               .setSender(String.valueOf(this.clientId))
@@ -242,4 +255,4 @@ public class ClientLibrary {
         private final Object lock = new Object();
         private Transaction.TransactionStatus status = Transaction.TransactionStatus.PENDING;
     }
-}
+    }

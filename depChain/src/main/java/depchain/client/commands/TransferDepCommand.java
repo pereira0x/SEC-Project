@@ -25,6 +25,7 @@ public class TransferDepCommand implements Command {
             String targetAddress = args[0];
             long amount = Long.parseLong(args[1]);
             clientLib.transferDepcoin(targetAddress, amount);
+            Logger.log(LogLevel.INFO, "Successfully proposed to transfer " + amount + " Dep Coin to " + targetAddress);
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to transfer DepCoin: " + e.getMessage());
         }
