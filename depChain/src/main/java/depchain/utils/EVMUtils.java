@@ -28,8 +28,23 @@ public class EVMUtils {
         return Integer.decode("0x" + returnData);
     }
 
+    public static BigInteger extractBigIntegerFromReturnData(ByteArrayOutputStream byteArrayOutputStream) {
+        String[] lines = byteArrayOutputStream.toString().split("\\r?\\n");
+        JsonObject jsonObject = JsonParser.parseString(lines[lines.length - 1]).getAsJsonObject();
+
+        String memory = jsonObject.get("memory").getAsString();
+        JsonArray stack = jsonObject.get("stack").getAsJsonArray();
+        int offset = Integer.decode(stack.get(stack.size() - 1).getAsString());
+        int size = Integer.decode(stack.get(stack.size() - 2).getAsString());
+
+        String returnData = memory.substring(2 + offset * 2, 2 + offset * 2 + size * 2);
+        return new BigInteger(returnData, 16);
+    }
+
     public static String convertIntegerToHex256Bit(int number) {
-        return String.format("%064x", BigInteger.valueOf(number));
+        BigInteger bigInt = BigInteger.valueOf(number);
+
+        return String.format("%064x", bigInt);
     }
 
     public static byte[] hexStringToByteArray(String hexString) {
@@ -62,6 +77,19 @@ public class EVMUtils {
         String hexString = returnData.substring(stringOffset * 2 + 32 * 2, stringOffset * 2 + 32 * 2 + stringLength * 2);
 
         return new String(hexStringToByteArray(hexString), StandardCharsets.UTF_8);
+    }
+
+    public static String extractAddressFromReturnData(ByteArrayOutputStream byteArrayOutputStream) {
+        String[] lines = byteArrayOutputStream.toString().split("\\r?\\n");
+        JsonObject jsonObject = JsonParser.parseString(lines[lines.length - 1]).getAsJsonObject();
+
+        String memory = jsonObject.get("memory").getAsString();
+        JsonArray stack = jsonObject.get("stack").getAsJsonArray();
+        int offset = Integer.decode(stack.get(stack.size() - 1).getAsString());
+        int size = Integer.decode(stack.get(stack.size() - 2).getAsString());
+
+        String returnData = memory.substring(2 + offset * 2, 2 + offset * 2 + size * 2);
+        return "0x" + returnData.substring(24);
     }
 
     public static String padHexStringTo256Bit(String hexString) {
@@ -106,4 +134,6 @@ public class EVMUtils {
         }
         return hexString.toString();
     }
+
+    
 }
