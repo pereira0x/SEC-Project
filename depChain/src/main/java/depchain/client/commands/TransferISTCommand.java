@@ -5,29 +5,29 @@ import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 import depchain.library.ClientLibrary;
 
-public class TransferDepCommand implements Command {
+public class TransferISTCommand implements Command {
 
     private final DepChainClient client;
 
-    public TransferDepCommand(DepChainClient client) {
+    public TransferISTCommand(DepChainClient client) {
         this.client = client;
     }
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
         if (args.length != 2 || !args[0].matches("\\d+") || !args[1].matches("\\d+")) {
-            Logger.log(LogLevel.ERROR, "Usage: transferDep <recipientId> <amount>");
+            Logger.log(LogLevel.ERROR, "Usage: transferIST <recipientId> <amount>");
             return;
         }
 
         int recipientId = Integer.parseInt(args[0]);
         long amount = Long.parseLong(args[1]);
 
-        Logger.log(LogLevel.INFO, "Client sending transfer DepCoin request...");
+        Logger.log(LogLevel.INFO, "Client sending transfer ISTCoin request...");
         try {
-            // TODO: Implement the transferDepcoin method in ClientLibrary
+            clientLib.transferDepcoin(recipientId, amount);
         } catch (Exception e) {
-            Logger.log(LogLevel.ERROR, "Failed to transfer DepCoin: " + e.getMessage());
+            Logger.log(LogLevel.ERROR, "Failed to transfer IST Coin: " + e.getMessage());
         }
     }
 }

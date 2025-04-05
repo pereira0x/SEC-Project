@@ -20,6 +20,7 @@ public class CommandManager {
 
     public void registerAllCommands(DepChainClient client) {
         register("transferDep", new TransferDepCommand(client));
+        register("transferIST", new TransferISTCommand(client));
         // Register other commands here
     }
 
