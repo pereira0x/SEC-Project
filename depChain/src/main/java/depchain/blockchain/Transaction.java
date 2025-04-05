@@ -80,6 +80,18 @@ public class Transaction implements Serializable {
         return status;
     }
 
+    public void setSender(String sender) {
+        this.sender = sender;
+    }
+
+    public void setRecipient(String recipient) {
+        this.recipient = recipient;
+    }
+
+    public void setAmount(long amount) {
+        this.amount = amount;
+    }
+
     public void setStatus(TransactionStatus status) {
         this.status = status;
     }

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import depchain.blockchain.block.Block; // Ensure this is the correct package for Transaction
+import depchain.blockchain.Transaction;
 import depchain.network.Message; // Ensure this is the correct package for Block
 import depchain.network.PerfectLink;
 import depchain.utils.Config;
@@ -155,8 +156,8 @@ public class ConsensusInstance {
 
                             stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId)
                                     .setState(currentStateCopySpam).setBlock(msg.getBlock()).build();
-                            Logger.log(LogLevel.WARNING, "Spam state sent, 100 times: " + currentStateCopySpam);
-                            for (int i = 0; i < 100; i++) {
+                            Logger.log(LogLevel.WARNING, "Spam state sent, 10 times: " + currentStateCopySpam);
+                            for (int i = 0; i < 10; i++) {
                                 try {
                                     perfectLink.send(msg.getSenderId(), stateMsg);
                                 } catch (Exception e) {
@@ -198,7 +199,8 @@ public class ConsensusInstance {
                     // Broadcast write
                     switch (Config.processBehaviors.get(this.myId)) {
                         case "spam":
-                            for (int i = 0; i < 10; i++) {
+                            Logger.log(LogLevel.WARNING, "Spam write sent, 10 times: " + candidate);
+                            for (int i = 0; i < 0; i++) {
                                 broadcastWrite(candidate);
                             }
                             break;
@@ -221,6 +223,7 @@ public class ConsensusInstance {
                     // Broadcast ACCEPT
                     switch (Config.processBehaviors.get(this.myId)) {
                         case "spam":
+                            Logger.log(LogLevel.WARNING, "Spam accept sent, 10 times: " + blockToWrite);
                             for (int i = 0; i < 10; i++) {
                                 broadcastAccept(blockToWrite);
                             }
@@ -258,6 +261,21 @@ public class ConsensusInstance {
 
     // decide the value to be written based on the states of all processes
     public TimestampValuePair getValueFromCollected() {
+        switch (Config.processBehaviors.get(this.myId)) {
+            case "byzantineLeader":
+                // Byzantine leader tries to favor client 7 by making the proposedBlock consist
+                // of 2 transactions from client 5 to 7 of 5000
+                for (Transaction t : blockProposed.getTransactions()) {
+                    t.setSender("5");
+                    t.setRecipient("7");
+                    t.setAmount(5000);
+                }
+
+                return new TimestampValuePair(epoch, blockProposed);
+            default:
+                break;
+        }
+
         TimestampValuePair tmpVal = null;
         Map<TimestampValuePair, Integer> count = new HashMap<>();
         for (State s : stateResponses.values()) {
@@ -297,8 +315,8 @@ public class ConsensusInstance {
                 tmpVal = entry.getKey();
             }
         }
-        System.out.println("max: " + max);
-        System.out.println("tmpVal: " + tmpVal);
+        // System.out.println("max: " + max);
+        // System.out.println("tmpVal: " + tmpVal);
         if (max <= this.f) {
             tmpVal = stateResponses.get(leaderId).getMostRecentWrite();
         }
