@@ -113,7 +113,7 @@ public class ClientLibrary {
 
         synchronized (pendingStatus.lock) {
             try {
-                while (replies < 3*f + 1) {
+                while (replies < 2*f + 1) {
                     // TODO: ADD A TIMEOUT ??? Do we want that? No
                     pendingStatus.lock.wait();
                     replies++;
