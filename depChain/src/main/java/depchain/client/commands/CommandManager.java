@@ -21,8 +21,8 @@ public class CommandManager {
     public void registerAllCommands(DepChainClient client) {
         register("transferDep", new TransferDepCommand(client));
         register("transferIST", new TransferISTCommand(client));
-        register("getDepBalance", new GetDepBalanceCommand(client));
-        register("getISTBalance", new GetISTBalanceCommand(client));
+        register("getDepBal", new GetDepBalanceCommand(client));
+        register("getISTBal", new GetISTBalanceCommand(client));
         // Register other commands here
     }
 
