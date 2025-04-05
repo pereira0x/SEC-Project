@@ -1,6 +1,7 @@
 package depchain.blockchain;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -10,11 +11,13 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import depchain.account.SmartAccount;
 import depchain.blockchain.Transaction.TransactionType;
 import depchain.blockchain.block.Block;
 import depchain.consensus.ConsensusInstance;
 import depchain.consensus.TimestampValuePair;
 import depchain.network.Message;
+import depchain.network.Message.ReplyType;
 import depchain.network.Message.Type;
 import depchain.network.PerfectLink;
 import depchain.utils.Config;
@@ -29,18 +32,20 @@ import io.github.cdimascio.dotenv.Dotenv;
 public class BlockchainMember {
     private final int memberId;
     private final int memberPort;
-    private final int leaderId;                 // Static leader ID.
+    private final int leaderId; // Static leader ID.
     private String behavior;
-    private final List<Integer> allProcessIds;  // All node IDs (no clients).
+    private final List<Integer> allProcessIds; // All node IDs (no clients).
     private PerfectLink perfectLink;
     private ConcurrentMap<Integer, ConsensusInstance> consensusInstances = new ConcurrentHashMap<>();
-    private final int f;                        // Maximum number of Byzantine faults allowed.
+    private final int f; // Maximum number of Byzantine faults allowed.
     private int epochNumber = 0;
     private Blockchain blockchain;
 
     private final List<Transaction> pendingTransactions = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-    private final int transactions_threshold = Dotenv.load().get("TRANSACTIONS_THRESHOLD") != null ? Integer.parseInt(Dotenv.load().get("TRANSACTIONS_THRESHOLD")) : 2;
+    private final int transactions_threshold = Dotenv.load().get("TRANSACTIONS_THRESHOLD") != null
+            ? Integer.parseInt(Dotenv.load().get("TRANSACTIONS_THRESHOLD"))
+            : 2;
 
     public BlockchainMember(int memberId, int memberPort, int leaderId, int f) {
         this.memberId = memberId;
@@ -68,9 +73,8 @@ public class BlockchainMember {
         String behavior = Config.processBehaviors.get(memberId);
         this.behavior = behavior != null ? behavior : "correct";
 
-
         try {
-           this.blockchain = new Blockchain(this.memberId, Config.getClientPublicKeys());
+            this.blockchain = new Blockchain(this.memberId, Config.getClientPublicKeys());
         } catch (IOException e) {
             Logger.log(LogLevel.ERROR, "Failed to initialize Blockchain: " + e.getMessage());
         }
@@ -87,7 +91,6 @@ public class BlockchainMember {
 
         startMessageHandler();
 
-        
     }
 
     public static void main(String[] args) throws Exception {
@@ -123,68 +126,104 @@ public class BlockchainMember {
                     default:
                         break;
                 }
-                
+
                 new Thread(() -> {
                     // Get the consensus instance for the respective client
                     ConsensusInstance consensusInstance = consensusInstances.get(msg.getClientId());
 
                     Block decidedBlock = null;
                     if (msg.getType() == Message.Type.CLIENT_REQUEST) {
-                        // Check the signature of the transaction
-                        try {
-                            if (!checkTransactionSignature(msg.getTransaction(), msg.getClientId())) {
-                                Logger.log(LogLevel.ERROR, "Invalid transaction signature.");
-                                return;
-                            }
-                        } catch (Exception e) {
-                            Logger.log(LogLevel.ERROR, "Failed to check transaction signature: " + e.getMessage());
-                            return;
-                        }
-
-                        // Add the transaction to the pending transactions list.
-                        synchronized (pendingTransactions) {
-                            pendingTransactions.add(msg.getTransaction());
-                        }
-
-                        if(pendingTransactions.size() >= transactions_threshold) {
-    
-                            String lastBlockHash = blockchain.getMostRecentBlock().getBlockHash();
-                            ArrayList<Transaction> transactions = new ArrayList<>(pendingTransactions);
-                            Block block = new Block.BlockBuilder(transactions, lastBlockHash)
-                                .build();
-                           
-                            String blockHash = null;
-                            try {
-                                blockHash = EVMUtils.generateBlockHash(block);
-                                block.setBlockHash(blockHash);
-                                
-                            } catch (NoSuchAlgorithmException e) {
-                                Logger.log(LogLevel.ERROR, "Failed to generate block hash: " + e.getMessage());
-                                return;
-                            }
-
-
-                            
-                            if (consensusInstance != null) {
-                                consensusInstance.setBlockProposed(block);
-                            } else {
-                                consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
-                                        epochNumber++, f, block, msg.getClientId());
-                                consensusInstances.put(msg.getClientId(), consensusInstance);
-                            }
-
-                            if (memberId == leaderId) {                                
-                                    consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, block));
-                                    Logger.log(LogLevel.DEBUG, "Waiting for consensus decision...");
-                                    decidedBlock = consensusInstance.decideBlock();
+                        switch (msg.getRequestType()) {
+                            case TRANSFER_DEPCOIN:
+                                // Check the signature of the transaction
+                                try {
+                                    if (!checkTransactionSignature(msg.getTransaction(), msg.getClientId())) {
+                                        Logger.log(LogLevel.ERROR, "Invalid transaction signature.");
+                                        return;
+                                    }
+                                } catch (Exception e) {
+                                    Logger.log(LogLevel.ERROR,
+                                            "Failed to check transaction signature: " + e.getMessage());
+                                    return;
                                 }
+
+                                // Add the transaction to the pending transactions list.
+                                synchronized (pendingTransactions) {
+                                    pendingTransactions.add(msg.getTransaction());
+                                }
+
+                                if (pendingTransactions.size() >= transactions_threshold) {
+
+                                    String lastBlockHash = blockchain.getMostRecentBlock().getBlockHash();
+                                    ArrayList<Transaction> transactions = new ArrayList<>(pendingTransactions);
+                                    Block block = new Block.BlockBuilder(transactions, lastBlockHash)
+                                            .build();
+
+                                    String blockHash = null;
+                                    try {
+                                        blockHash = EVMUtils.generateBlockHash(block);
+                                        block.setBlockHash(blockHash);
+
+                                    } catch (NoSuchAlgorithmException e) {
+                                        Logger.log(LogLevel.ERROR, "Failed to generate block hash: " + e.getMessage());
+                                        return;
+                                    }
+
+                                    if (consensusInstance != null) {
+                                        consensusInstance.setBlockProposed(block);
+                                    } else {
+                                        consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds,
+                                                perfectLink,
+                                                epochNumber++, f, block, msg.getClientId());
+                                        consensusInstances.put(msg.getClientId(), consensusInstance);
+                                    }
+
+                                    if (memberId == leaderId) {
+                                        consensusInstance
+                                                .setBlockchainMostRecentWrite(new TimestampValuePair(0, block));
+                                        Logger.log(LogLevel.DEBUG, "Waiting for consensus decision...");
+                                        decidedBlock = consensusInstance.decideBlock();
+                                    }
+
+                                }
+
+                                else {
+                                    Logger.log(LogLevel.DEBUG, "Added transaction to pending transactions.");
+                                }
+                            case GET_ISTCOIN_BALANCE:
                                 
+                                SmartAccount smartAccount = this.blockchain.getSmartAccount();
+                                Transaction tx =  msg.getTransaction();
+                                BigInteger amount = BigInteger.valueOf(0);
+                                try {
+                                    String senderAddress = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(tx.getSender())));
+                                    String recipientAddress = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(tx.getRecipient())));
+                                    amount = smartAccount.balanceOf(senderAddress, recipientAddress);
+                                } catch (NoSuchAlgorithmException e) {
+                                    Logger.log(LogLevel.ERROR, "Failed to get EOAccountAddress: " + e.getMessage());
+                                }
+
+                                // Send CLIENT_REPLY to the client.
+                                String amountStr = amount.toString();
+                                System.out.println("Amount: " + amountStr);
+                                /* InetSocketAddress clientAddr = Config.processAddresses.get(msg.getSenderId()); */
+                                Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
+                                        memberId, msg.getClientId()).setBlock(null)
+                                        .setReplyType(ReplyType.BLOCK).setReplyType(ReplyType.VALUE)
+                                        .setReplyValue(amountStr).build();
+                                try {
+                                    perfectLink.send(msg.getSenderId(), reply);
+                                } catch (Exception e) {
+                                    Logger.log(LogLevel.ERROR, "Failed to send reply: " + e.getMessage());
+                                }
+
+                                break;
+                            
+                            default:
+                                Logger.log(LogLevel.ERROR, "Unknown request type: " + msg.getRequestType());
+                                break;
                         }
 
-                        else {
-                            Logger.log(LogLevel.DEBUG, "Added transaction to pending transactions.");
-                        }
-                    
                     } else {
                         // For consensus messages, dispatch to the corresponding consensus instance.
                         if (consensusInstance == null) {
@@ -195,7 +234,7 @@ public class BlockchainMember {
                         }
 
                         consensusInstance.processMessage(msg);
-                        
+
                         decidedBlock = consensusInstance.getDecidedBlock();
                     }
 
@@ -224,13 +263,13 @@ public class BlockchainMember {
                                 // broadcast the reply to all clients
                                 for (int clientId : Config.getClientIds()) {
                                     Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
-                                     memberId, clientId).setBlock(processedBlock).build();
+                                            memberId, clientId).setBlock(processedBlock).setReplyType(ReplyType.BLOCK)
+                                            .build();
                                     perfectLink.send(clientId, reply);
-                                    
+
                                 }
-                                
-                                
-                            }   
+
+                            }
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -247,14 +286,15 @@ public class BlockchainMember {
                     }
 
                     // Print blockchain transactions
-                    // Logger.log(LogLevel.INFO, "Blockchain transactions: " + this.blockchain.getMostRecentBlock().getTransactions());
+                    // Logger.log(LogLevel.INFO, "Blockchain transactions: " +
+                    // this.blockchain.getMostRecentBlock().getTransactions());
                 }).start();
             } catch (InterruptedException e) {
                 break;
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            
+
         }
     }
 
@@ -269,28 +309,28 @@ public class BlockchainMember {
     public Block processBlockTransactions(Block block) {
         // No need to create a copy, modify the original block directly
         ArrayList<Transaction> updatedTransactions = new ArrayList<>();
-        
+
         // Process transactions in the block
         for (Transaction transaction : block.getTransactions()) {
             if (transaction.getType() == TransactionType.TRANSFER_DEPCOIN) {
                 updatedTransactions.add(processDepCoinTransaction(transaction, block));
             }
-    
+
             // TODO: Add other transaction types here if needed
-            
+
         }
-    
+
         // After processing, set the block's transactions to the updated ones
         block.setTransactions(updatedTransactions);
-    
+
         return block;
     }
-    
+
     public Transaction processDepCoinTransaction(Transaction t, Block block) {
         // Process transactions in the block
         String sender;
         String recipient;
-        
+
         try {
             sender = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(t.getSender())));
             recipient = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(t.getRecipient())));
@@ -311,20 +351,20 @@ public class BlockchainMember {
             return t;
         }
 
-        Long amount = t.getAmount();    
-    
+        Long amount = t.getAmount();
+
         // Update sender's balance
         if (blockchain.existsAccount(sender) && blockchain.existsAccount(recipient) &&
-            blockchain.getBalance(sender) >= amount) {
-            
+                blockchain.getBalance(sender) >= amount) {
+
             // Subtract from sender's balance
             Long newSenderBalance = blockchain.getBalance(sender) - amount;
             blockchain.updateAccountBalance(sender, newSenderBalance);
-    
+
             // Add to recipient's balance
             Long newRecipientBalance = blockchain.getBalance(recipient) + amount;
             blockchain.updateAccountBalance(recipient, newRecipientBalance);
-    
+
             // Mark the transaction as confirmed
             Logger.log(LogLevel.INFO, "Transaction processed: " + t);
             t.setStatus(Transaction.TransactionStatus.CONFIRMED);
@@ -341,10 +381,10 @@ public class BlockchainMember {
                 Logger.log(LogLevel.ERROR, "Recipient not found: " + recipient);
             } else if (blockchain.getBalance(sender) < amount) {
                 Logger.log(LogLevel.ERROR, "Insufficient balance for sender: " + sender +
-                            " (Balance: " + blockchain.getBalance(sender) + ", Amount: " + amount + ")");
+                        " (Balance: " + blockchain.getBalance(sender) + ", Amount: " + amount + ")");
             }
         }
-    
+
         // Return the updated transaction object
         return t;
     }
@@ -355,7 +395,8 @@ public class BlockchainMember {
         byte[] signature = transaction.getSignature();
         PublicKey publicKey = Config.getPublicKey(clientId);
 
-        // System.out.println("------------- signature: " + new ByteArrayWrapper(signature));
+        // System.out.println("------------- signature: " + new
+        // ByteArrayWrapper(signature));
         return CryptoUtil.verify(transactionBytes, signature, publicKey);
-    }    
+    }
 }

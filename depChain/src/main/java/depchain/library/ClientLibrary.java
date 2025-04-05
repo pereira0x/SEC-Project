@@ -25,6 +25,12 @@ public class ClientLibrary {
     // Map to store waiting transactions and their notifier objects
     private final Map<Long, PendingTransactionStatus> pendingTransactions = new ConcurrentHashMap<>();
 
+
+    // I want to have a pendingReqadRequest that stores 1 request at a time
+    // Single pending read request
+    private final Object pendingReadRequestLock = new Object();
+    private String readValue;
+
     public ClientLibrary(PerfectLink perfectLink, int leaderId, List<Integer> nodeIds, int clientId, int f) {
         this.perfectLink = perfectLink;
         this.leaderId = leaderId;
@@ -41,19 +47,28 @@ public class ClientLibrary {
             try {
                 Message reply = perfectLink.deliver();
                 if (reply.getType() == Message.Type.CLIENT_REPLY) {
-                    System.out.println("Received reply: " + reply);
-                    Block appendedBlock = reply.getBlock();
-                    if (appendedBlock != null) {
-                        for (Transaction tx : appendedBlock.getTransactions()) {
-                            Long txNonce = tx.getNonce();
-                            if (pendingTransactions.containsKey(txNonce)) {
-                                PendingTransactionStatus pendingTx = pendingTransactions.get(txNonce);
-                                synchronized (pendingTx.lock) {
-                                    pendingTx.status = tx.getStatus(); // Update status
-                                    pendingTx.lock.notify();
+                    if(reply.getReplyType() == Message.ReplyType.BLOCK) {
+
+                        System.out.println("Received reply: " + reply);
+                        Block appendedBlock = reply.getBlock();
+                        if (appendedBlock != null) {
+                            for (Transaction tx : appendedBlock.getTransactions()) {
+                                Long txNonce = tx.getNonce();
+                                if (pendingTransactions.containsKey(txNonce)) {
+                                    PendingTransactionStatus pendingTx = pendingTransactions.get(txNonce);
+                                    synchronized (pendingTx.lock) {
+                                        pendingTx.status = tx.getStatus(); // Update status
+                                        pendingTx.lock.notify();
+                                    }
                                 }
                             }
                         }
+                    }
+                    else if (reply.getReplyType() == Message.ReplyType.VALUE) {
+                        this.readValue = reply.getReplyValue();
+                        pendingReadRequestLock.notify(); // Notify the waiting thread
+                       
+
                     }
                 }
             } catch (Exception e) {
@@ -79,7 +94,7 @@ public class ClientLibrary {
         ByteArrayWrapper sig = new ByteArrayWrapper(signature);
         transaction.setSignature(sig);
         // transaction.setSignature(new ByteArrayWrapper(new byte[0]));
-        
+
         // Create message
         Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
                 .setTransaction(transaction)
@@ -104,29 +119,32 @@ public class ClientLibrary {
         return "Transaction Sent: " + transaction.getNonce();
     }
 
-    public void getDepCoinBalance(int userId) throws Exception {
-       /*  // Create the transaction
-        
-        // Convert the transaction to bytes and sign it
-        byte[] transactionBytes = transaction.toByteArray();
-        byte[] signature = CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
-        ByteArrayWrapper sig = new ByteArrayWrapper(signature);
-        transaction.setSignature(sig);
-
-        // Create message
+    public String getDepCoinBalance(int userId) throws Exception {
+        // Create the message
         Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
-                .setTransaction(transaction)
+                .setRequestType(Message.RequestType.GET_DEPCOIN_BALANCE)
                 .setNonce(nonce)
                 .build();
 
-        // Send the transaction
+        // Send the message
         broadcast(reqMsg);
 
         // nonce must be updated after sending the transaction
-        nonce++; */
+        nonce++;
+
+        // Wait for the reply
+        synchronized (pendingReadRequestLock) {
+            try {
+                pendingReadRequestLock.wait(timeout);
+
+            } catch (InterruptedException e) {
+                this.readValue = null; // Reset readValue on interruption
+                Logger.log(LogLevel.ERROR, "Error waiting for reply: " + e.getMessage());
+            }
+        }
+        return readValue;
+
     }
-
-
 
     public void broadcast(Message msg) throws Exception {
         for (int nodeId : nodeIds) {
@@ -146,7 +164,7 @@ public class ClientLibrary {
                     if (remainingTime <= 0) {
                         break; // Exit if timeout is reached
                     }
-                    
+
                     // TODO: ADD A TIMEOUT ??? Do we want that?
                     pendingStatus.lock.wait();
 

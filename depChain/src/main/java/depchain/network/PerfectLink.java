@@ -373,6 +373,12 @@ public class PerfectLink {
                             msg.getSenderId(), msg.getClientId()).setSignature(sig).setNonce(msg.getNonce())
                             .setBlock(msg.getBlock()).setTransaction(msg.getTransaction())
                             .setRequestType(msg.getRequestType()).build();
+
+                } else if (msg.getType() == Message.Type.CLIENT_REPLY) {
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(),
+                            msg.getSenderId(), msg.getClientId()).setSignature(sig).setNonce(msg.getNonce())
+                            .setBlock(msg.getBlock()).setTransaction(msg.getTransaction()).setReplyType(msg.getReplyType()).setReplyValue(msg.getReplyValue()).build();
+
                 } else {
 
                     signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(),

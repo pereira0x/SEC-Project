@@ -15,7 +15,7 @@ public class GetISTBalanceCommand implements Command {
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
-        if (args.length != 0) {
+        if (args.length != 1 || !args[0].matches("\\d+")) {
             Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
@@ -30,6 +30,6 @@ public class GetISTBalanceCommand implements Command {
 
     @Override
     public String getUsage() {
-        return "Usage: getISTBal";
+        return "Usage: getISTBal" + " <userId>";
     }
 }

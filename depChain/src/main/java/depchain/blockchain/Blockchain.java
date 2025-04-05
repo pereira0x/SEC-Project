@@ -180,4 +180,8 @@ public class Blockchain {
             }
         }
     }
+
+    public SmartAccount getSmartAccount() {
+        return smartAccount;
+    }
 }

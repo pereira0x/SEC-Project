@@ -22,6 +22,10 @@ public class Message implements Serializable {
         APPROVE, ALLOWANCE, TRANSFER_FROM
     }
 
+    public enum ReplyType {
+        BLOCK, VALUE
+    }
+
     private final Type type;
     private final int epoch; // For our design, epoch doubles as the consensus instance ID.
     private final int senderId; // The sender's ID (for clients, use a distinct range).
@@ -30,6 +34,7 @@ public class Message implements Serializable {
     private int nonce; // nonce for the message (computed by sender).
     private Transaction transaction;
     private Block block;
+    
 
     // Optional fields
     private ByteArrayWrapper sessionKey; // session key for the message (computed by sender).
@@ -37,6 +42,8 @@ public class Message implements Serializable {
     private final Map<Integer, State> statesMap;
     private final TimestampValuePair write;
     private final RequestType requestType;  // Request type for client requests.
+    private final String replyValue;
+    private final ReplyType replyType; // Reply type for client replies.
 
     private Message(MessageBuilder builder) {
         this.type = builder.type;
@@ -52,6 +59,8 @@ public class Message implements Serializable {
         this.nonce = builder.nonce;
         this.transaction = builder.transaction;
         this.block = builder.block;
+        this.replyValue = builder.replyValue;
+        this.replyType = builder.replyType;
     }
 
     public Type getType() {
@@ -110,6 +119,14 @@ public class Message implements Serializable {
         return requestType;
     }
 
+    public String getReplyValue() {
+        return replyValue;
+    }
+
+    public ReplyType getReplyType() {
+        return replyType;
+    }
+
 
     // Returns a string representation of the content to be signed.
     public String getSignableContent() {
@@ -140,6 +157,8 @@ public class Message implements Serializable {
         private Transaction transaction;
         private Block block;
         private RequestType requestType;
+        private String replyValue;
+        private ReplyType replyType;
 
         public MessageBuilder(Type type, int epoch, int senderId, int clientId) {
             this.type = type;
@@ -193,6 +212,16 @@ public class Message implements Serializable {
 
         public MessageBuilder setRequestType(RequestType requestType) {
             this.requestType = requestType;
+            return this;
+        }
+
+        public MessageBuilder setReplyValue(String replyValue) {
+            this.replyValue = replyValue;
+            return this;
+        }
+
+        public MessageBuilder setReplyType(ReplyType replyType) {
+            this.replyType = replyType;
             return this;
         }
 
