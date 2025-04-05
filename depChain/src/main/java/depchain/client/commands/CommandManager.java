@@ -26,7 +26,7 @@ public class CommandManager {
         register("addBlackList", new AddToBlackListCommand(client));
         register("removeBlackList", new RemoveFromBlackListCommand(client));
         register("isBlackListed", new IsBlackListedCommand(client));
-        register("allow", new AllowanceCommand(client));
+        register("allowance", new AllowanceCommand(client));
         register("approve", new ApproveCommand(client));
         register("transferFrom", new TransferFromCommand(client));
 

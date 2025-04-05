@@ -121,31 +121,8 @@ public class ClientLibrary {
         return "Transaction Sent: " + transaction.getNonce();
     }
 
-    public String getDepCoinBalance(int userId) throws Exception {
-        // Create the message
-        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
-                .setRequestType(Message.RequestType.GET_DEPCOIN_BALANCE)
-                .setNonce(nonce)
-                .build();
-
-        // Send the message
-        broadcast(reqMsg);
-
-        // nonce must be updated after sending the transaction
-        nonce++;
-
-        // Wait for the reply
-        synchronized (pendingReadRequestLock) {
-            try {
-                pendingReadRequestLock.wait(timeout);
-
-            } catch (InterruptedException e) {
-                this.readValue = null; // Reset readValue on interruption
-                Logger.log(LogLevel.ERROR, "Error waiting for reply: " + e.getMessage());
-            }
-        }
-        return readValue;
-
+    public String getDepCoinBalance(String targetAddress) throws Exception {
+        return performReadOperation(Transaction.TransactionType.GET_DEPCOIN_BALANCE, Message.RequestType.GET_DEPCOIN_BALANCE, targetAddress);        
     }
 
     public String isBlacklisted(String targetAddress) throws Exception {

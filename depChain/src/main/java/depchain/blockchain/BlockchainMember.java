@@ -192,6 +192,7 @@ public class BlockchainMember {
                                 }
                                 break;
                             // this cases are empty and without break -> all will be processReadOperation
+                            case GET_DEPCOIN_BALANCE:
                             case GET_ISTCOIN_BALANCE:
                             case ALLOWANCE:
                             case IS_BLACKLISTED:
@@ -383,9 +384,14 @@ public class BlockchainMember {
             targetAddress = tx.getRecipient();
 
             switch (msg.getRequestType()) {
+                case GET_DEPCOIN_BALANCE:
+                    // Get the balance of the sender
+                    Long balanceDep = blockchain.getBalance(senderAddress);
+                    replyValue = balanceDep.toString();
+                    break;
                 case GET_ISTCOIN_BALANCE:
-                    BigInteger balance = smartAccount.balanceOf(senderAddress, targetAddress);
-                    replyValue = balance.toString();
+                    BigInteger balanceIST = smartAccount.balanceOf(senderAddress, targetAddress);
+                    replyValue = balanceIST.toString();
                     break;
 
                 case IS_BLACKLISTED:

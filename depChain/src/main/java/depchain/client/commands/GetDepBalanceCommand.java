@@ -15,7 +15,7 @@ public class GetDepBalanceCommand implements Command {
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
-        if (args.length != 0) {
+        if (args.length != 1) {
             Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
@@ -23,7 +23,9 @@ public class GetDepBalanceCommand implements Command {
 
         Logger.log(LogLevel.INFO, "Client sending get DepCoin balance request...");
         try {
-            // TODO: Implement the getDepBalance method in ClientLibrary
+            String targetAddress = args[0];
+            String balance = clientLib.getDepCoinBalance(targetAddress);
+            Logger.log(LogLevel.INFO, "DepCoin balance for address " + targetAddress + ": " + balance);
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to get DepCoin balance: " + e.getMessage());
         }
@@ -31,6 +33,6 @@ public class GetDepBalanceCommand implements Command {
 
     @Override
     public String getUsage() {
-        return "Usage: getDepBal";
+        return "Usage: getDepBal <targetAddress>";
     }
 }
