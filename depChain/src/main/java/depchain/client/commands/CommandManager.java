@@ -26,6 +26,7 @@ public class CommandManager {
         register("addBlackList", new AddToBlackListCommand(client));
         register("removeBlackList", new RemoveFromBlackListCommand(client));
         register("allowTransferFrom", new AllowTransferFromCommand(client));
+        register("transferFrom", new TransferFromCommand(client));
         // Register other commands here
     }
 
