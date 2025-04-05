@@ -18,10 +18,11 @@ public class AddToBlackListCommand implements Command {
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
         if (args.length != 1 || !args[0].matches("\\d+") || !args[1].matches("\\d+")) {
-            Logger.log(LogLevel.ERROR, "Usage: addBlackList <userId>");
+            Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
+        int userId = Integer.parseInt(args[0]);
 
         Logger.log(LogLevel.INFO, "Client sending add to black list request...");
         try {
@@ -29,5 +30,10 @@ public class AddToBlackListCommand implements Command {
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to add to black list: " + e.getMessage());
         }
+    }
+
+    @Override
+    public String getUsage() {
+        return "Usage: addBlackList <userId>";  
     }
 }

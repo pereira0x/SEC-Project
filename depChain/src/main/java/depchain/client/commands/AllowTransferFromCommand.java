@@ -16,10 +16,12 @@ public class AllowTransferFromCommand implements Command {
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
         if (args.length != 2 || !args[0].matches("\\d+") || !args[1].matches("\\d+")) {
-            Logger.log(LogLevel.ERROR, "Usage: allowTransferFrom <userId> <amount>");
+            Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
+        int userId = Integer.parseInt(args[0]);
+        long amount = Long.parseLong(args[1]);
 
         Logger.log(LogLevel.INFO, "Client sending allow transfer from request...");
         try {
@@ -27,5 +29,10 @@ public class AllowTransferFromCommand implements Command {
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to allow transfer from: " + e.getMessage());
         }
+    }
+
+    @Override
+    public String getUsage() {
+        return "Usage: allowTransferFrom <userId> <amount>";
     }
 }

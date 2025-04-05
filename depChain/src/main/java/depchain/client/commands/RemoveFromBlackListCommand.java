@@ -15,10 +15,11 @@ public class RemoveFromBlackListCommand implements Command {
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
         if (args.length != 1 || !args[0].matches("\\d+")) {
-            Logger.log(LogLevel.ERROR, "Usage: removeBlackList <userId>");
+            Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
+        int userId = Integer.parseInt(args[0]);
 
         Logger.log(LogLevel.INFO, "Client sending remove from black list request...");
         try {
@@ -26,5 +27,10 @@ public class RemoveFromBlackListCommand implements Command {
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to remove from black list: " + e.getMessage());
         }
+    }
+
+    @Override
+    public String getUsage() {
+        return "Usage: removeBlackList <userId>";
     }
 }

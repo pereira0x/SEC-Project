@@ -69,7 +69,10 @@ public class DepChainClient {
     
         CommandManager commandManager = new CommandManager(client.clientLib);
         commandManager.registerAllCommands(client);
-    
+        
+        Logger.log(LogLevel.INFO, "Client started. Type 'help' for a list of commands.");
+
+
         Scanner scanner = new Scanner(System.in);
         String line = "";
         while (!line.equals("exit")) {

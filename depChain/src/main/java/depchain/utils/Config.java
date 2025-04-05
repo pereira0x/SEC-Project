@@ -68,14 +68,12 @@ public class Config {
 
             processAddresses.put(id, address);
         }
-      /*   for (int clientId : clientIds) {
-            Logger.log(LogLevel.DEBUG, "Client ID: " + clientId);
-        } */
+
     }
 
     private static void loadKeys(String resourcesFolder) throws Exception {
         final int totalServers = processAddresses.size() - clientIds.size();
-        System.out.println("Total servers: " + totalServers);
+
         for (int serverId = 1; serverId <= totalServers; serverId++) {
             String privKeyPath = resourcesFolder + "/priv_key_" + serverId + ".pem";
             String pubKeyPath = resourcesFolder + "/pub_key_" + serverId + ".pem";

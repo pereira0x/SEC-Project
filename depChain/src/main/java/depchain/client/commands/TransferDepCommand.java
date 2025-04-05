@@ -16,7 +16,7 @@ public class TransferDepCommand implements Command {
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
         if (args.length != 2 || !args[0].matches("\\d+") || !args[1].matches("\\d+")) {
-            Logger.log(LogLevel.ERROR, "Usage: transferDep <recipientId> <amount>");
+            Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
@@ -29,5 +29,10 @@ public class TransferDepCommand implements Command {
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to transfer DepCoin: " + e.getMessage());
         }
+    }
+
+    @Override
+    public String getUsage() {
+        return "Usage: transferDep <recipientId> <amount>";
     }
 }

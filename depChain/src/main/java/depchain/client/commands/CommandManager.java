@@ -28,6 +28,8 @@ public class CommandManager {
         register("getBlackList", new GetBlackListCommand(client));
         register("allowTransferFrom", new AllowTransferFromCommand(client));
         register("transferFrom", new TransferFromCommand(client));
+
+        register("help", new HelpCommand(this));
         // Register other commands here
     }
 
@@ -40,6 +42,7 @@ public class CommandManager {
 
         if (command == null) {
             System.out.println("Unknown command: " + commandName);
+            System.out.println("Type 'help' to see available commands.");
             return;
         }
 
@@ -47,4 +50,15 @@ public class CommandManager {
         System.arraycopy(parts, 1, args, 0, args.length);
         command.execute(args, this.clientLib);
     }
+
+    public void printAllCommands() {
+        System.out.println("Available commands:");
+        for (Map.Entry<String, Command> entry : commands.entrySet()) {
+            String name = entry.getKey();
+            String usage = entry.getValue().getUsage();
+            System.out.printf("  %-20s%s%n", name, usage);
+        }
+    }
+
+
 }

@@ -16,7 +16,7 @@ public class TransferISTCommand implements Command {
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
         if (args.length != 2 || !args[0].matches("\\d+") || !args[1].matches("\\d+")) {
-            Logger.log(LogLevel.ERROR, "Usage: transferIST <recipientId> <amount>");
+            Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
@@ -29,5 +29,10 @@ public class TransferISTCommand implements Command {
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to transfer IST Coin: " + e.getMessage());
         }
+    }
+
+    @Override
+    public String getUsage() {
+        return "Usage: transferIST <recipientId> <amount>";
     }
 }

@@ -15,10 +15,13 @@ public class TransferFromCommand implements Command{
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
         if (args.length != 3 || !args[0].matches("\\d+") || !args[1].matches("\\d+") || !args[2].matches("\\d+")) {
-            Logger.log(LogLevel.ERROR, "Usage: transferFrom <sourceUserID> <recipientUserId> <amount>");
+            Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
+        int sourceUserId = Integer.parseInt(args[0]);
+        int recipientUserId = Integer.parseInt(args[1]);
+        long amount = Long.parseLong(args[2]);
 
         Logger.log(LogLevel.INFO, "Client sending transfer from request...");
         try {
@@ -26,5 +29,10 @@ public class TransferFromCommand implements Command{
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to transfer from: " + e.getMessage());
         }
+    }
+
+    @Override
+    public String getUsage() {
+        return "Usage: transferFrom <sourceUserID> <recipientUserId> <amount>";
     }
 }

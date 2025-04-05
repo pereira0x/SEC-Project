@@ -16,7 +16,7 @@ public class GetISTBalanceCommand implements Command {
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
         if (args.length != 0) {
-            Logger.log(LogLevel.ERROR, "Usage: getISTBal");
+            Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
@@ -26,5 +26,10 @@ public class GetISTBalanceCommand implements Command {
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to get ISTCoin balance: " + e.getMessage());
         }
+    }
+
+    @Override
+    public String getUsage() {
+        return "Usage: getISTBal";
     }
 }
