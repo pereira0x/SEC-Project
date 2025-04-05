@@ -87,6 +87,17 @@ public class Blockchain {
 
         Block block = BlockParser.parseBlock(json);
 
+        // do not persist the state in the genesis block
+        json.remove("state");
+        // Persist the initial block in each server directory
+        String blockFileName = serverDir + "/block_0.json";
+        try {
+            Files.writeString(Paths.get(blockFileName), json.toString(4));
+        } catch (IOException e) {
+            throw new RuntimeException("Error writing block to file: " + blockFileName, e);
+        }
+        Logger.log(LogLevel.INFO, "Initial block added to server directory: " + blockFileName);
+
         blocks.add(block);
     }
 
