@@ -150,6 +150,9 @@ public class BlockchainMember {
     
                             String lastBlockHash = blockchain.getMostRecentBlock().getBlockHash();
                             ArrayList<Transaction> transactions = new ArrayList<>(pendingTransactions);
+                            synchronized (pendingTransactions) {
+                                pendingTransactions.clear();
+                            }
                             Block block = new Block.BlockBuilder(transactions, lastBlockHash)
                                 .build();
                            
@@ -206,9 +209,9 @@ public class BlockchainMember {
 
                             consensusInstance = null;
                             consensusInstances.remove(msg.getBlockHash());
-                            synchronized (pendingTransactions) {
-                                pendingTransactions.clear();
-                            }
+                            // synchronized (pendingTransactions) {
+                            //     pendingTransactions.clear();
+                            // }
 
                             // Send CLIENT_REPLY to all the clients
                             for (Transaction tx : processedBlock.getTransactions()) {
@@ -229,9 +232,9 @@ public class BlockchainMember {
                         Logger.log(LogLevel.ERROR, "Consensus aborted.");
                         consensusInstance = null;
                         consensusInstances.remove(msg.getBlockHash());
-                        synchronized (pendingTransactions) {
-                            pendingTransactions.clear();
-                        }
+                        // synchronized (pendingTransactions) {
+                        //     pendingTransactions.clear();
+                        // }
                     }
 
                     // Print blockchain transactions
