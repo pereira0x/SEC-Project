@@ -195,15 +195,36 @@ public class ClientLibrary {
     }
 
     private String waitForReadResponse() {
+        int requiredResponses = f + 1;
+        int replies = 0;
+        Map<String, Integer> responseCounts = new HashMap<>();
+
         synchronized (pendingReadRequestLock) {
             try {
-                pendingReadRequestLock.wait(timeout);
-                return readValue;
+                while (replies < 2 * f + 1) {
+                    pendingReadRequestLock.wait(timeout);
+
+                    if (readValue != null) {
+                        replies++;
+                        responseCounts.put(readValue, responseCounts.getOrDefault(readValue, 0) + 1);
+
+                    }
+                }
+                if (responseCounts.get(readValue) >= requiredResponses) {
+                    // print the reponse counts
+                    /* for (Map.Entry<String, Integer> entry : responseCounts.entrySet()) {
+                        Logger.log(LogLevel.INFO, "Response: " + entry.getKey() + ", Count: " + entry.getValue());
+                    } */
+                    return readValue;
+                }
             } catch (InterruptedException e) {
                 Logger.log(LogLevel.ERROR, "Error waiting for reply: " + e.getMessage());
-                return null;
             }
         }
+
+
+        Logger.log(LogLevel.WARNING, "Failed to get consistent response within timeout");
+        return null;
     }
 
     private void startConfirmationThread(Transaction transaction, PendingTransactionStatus pendingStatus) {
