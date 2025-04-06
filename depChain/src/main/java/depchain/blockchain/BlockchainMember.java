@@ -9,7 +9,6 @@ import depchain.network.Message;
 import depchain.network.Message.ReplyType;
 import depchain.network.Message.Type;
 import depchain.network.PerfectLink;
-import depchain.utils.ByteArrayWrapper;
 import depchain.utils.Config;
 import depchain.utils.CryptoUtil;
 import depchain.utils.EVMUtils;

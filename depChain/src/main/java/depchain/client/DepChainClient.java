@@ -53,7 +53,7 @@ public class DepChainClient {
             return;
         }
 
-        this.clientLib = new ClientLibrary(pl, 1, processIds, clientId, f);
+        this.clientLib = new ClientLibrary(pl, processIds, clientId, f);
     }
 
     public static void main(String[] args) throws Exception {

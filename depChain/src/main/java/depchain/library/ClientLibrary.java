@@ -12,13 +12,13 @@ import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 import depchain.utils.CryptoUtil;
 import depchain.utils.ByteArrayWrapper;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClientLibrary {
     private final PerfectLink perfectLink;
-    private final int leaderId;
     private final List<Integer> nodeIds;
     private final int clientId;
-    private int nonce = 0;
+    private AtomicInteger nonce = new AtomicInteger(0);
     private final int f;
     private final long timeout = 60000;
 
@@ -30,9 +30,8 @@ public class ClientLibrary {
     private final Object pendingReadRequestLock = new Object();
     private String readValue;
 
-    public ClientLibrary(PerfectLink perfectLink, int leaderId, List<Integer> nodeIds, int clientId, int f) {
+    public ClientLibrary(PerfectLink perfectLink, List<Integer> nodeIds, int clientId, int f) {
         this.perfectLink = perfectLink;
-        this.leaderId = leaderId;
         this.nodeIds = nodeIds;
         this.clientId = clientId;
         this.f = f;
@@ -124,7 +123,7 @@ public class ClientLibrary {
         transaction.setSignature(sig);
         // Create message
         Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
-                .setTransaction(transaction).setRequestType(requestType).setNonce(nonce).build();
+                .setTransaction(transaction).setRequestType(requestType).setNonce(nonce.get()).build();
         // Register the transaction as pending
         PendingTransactionStatus pendingStatus = new PendingTransactionStatus();
         pendingTransactions.put(transaction.getNonce(), pendingStatus);
@@ -135,7 +134,7 @@ public class ClientLibrary {
             waitforTransactionConfirmation(transaction, pendingStatus);
         }).start();
         // nonce must be updated after sending the transaction
-        nonce++;
+        nonce.incrementAndGet();
         return "Transaction Sent: " + transaction.getNonce();
     }
 
@@ -180,14 +179,14 @@ public class ClientLibrary {
         transaction.setSignature(sig);
         // Create message
         Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
-                .setTransaction(transaction).setRequestType(requestType).setNonce(nonce).build();
+                .setTransaction(transaction).setRequestType(requestType).setNonce(nonce.get()).build();
         // Register the transaction as pending
         PendingTransactionStatus pendingStatus = new PendingTransactionStatus();
         pendingTransactions.put(transaction.getNonce(), pendingStatus);
         // Send the transaction
         broadcast(reqMsg);
         // Wait for the reply
-        nonce++;
+        nonce.incrementAndGet();
         synchronized (pendingReadRequestLock) {
             try {
                 pendingReadRequestLock.wait(timeout);

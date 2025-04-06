@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.hyperledger.besu.datatypes.Address;
 import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
 
@@ -25,8 +24,6 @@ public class SmartContractsTest {
         SmartAccount smartAccount = new SmartAccount();
         // creates owner account
         String genesisPath = Dotenv.load().get("BLOCKS_FOLDER") + "/genesisBlock.json";
-        if (genesisPath == null)
-            throw new IllegalArgumentException("Environment variable BLOCKS_FOLDER is not set.");
 
         Path path = Paths.get(genesisPath);
         String content = null;

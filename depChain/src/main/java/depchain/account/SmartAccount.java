@@ -4,11 +4,9 @@ import static depchain.utils.EVMUtils.*;
 
 import org.apache.tuweni.bytes.Bytes;
 
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.*;
-import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.fluent.EVMExecutor;
 import org.hyperledger.besu.evm.fluent.SimpleWorld;
 import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
@@ -17,11 +15,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.math.BigInteger;
 
-import org.web3j.crypto.Hash;
-import org.web3j.utils.Numeric;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonArray;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -79,8 +74,6 @@ public class SmartAccount {
 
         // creates owner account
         String genesisPath = Dotenv.load().get("BLOCKS_FOLDER") + "/genesisBlock.json";
-        if (genesisPath == null)
-            throw new IllegalArgumentException("Environment variable BLOCKS_FOLDER is not set.");
 
         Path path = Paths.get(genesisPath);
         String content = null;
@@ -101,11 +94,6 @@ public class SmartAccount {
         // and contract account
         this.contractAddress = Address.fromHexString(contractAddressKey);
         simpleWorld.createAccount(contractAddress, 0, Wei.fromEth(0));
-        MutableAccount contractAccount = (MutableAccount) simpleWorld.get(contractAddress);
-        String paddedAddress = padHexStringTo256Bit(ownerAddress.toHexString());
-        String stateVariableIndex = convertIntegerToHex256Bit(1);
-        String storageSlotMapping = Numeric
-                .toHexStringNoPrefix(Hash.sha3(Numeric.hexStringToByteArray(paddedAddress + stateVariableIndex)));
 
         this.byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(byteArrayOutputStream);
