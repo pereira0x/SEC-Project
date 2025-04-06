@@ -500,7 +500,7 @@ public class BlockchainMember {
             switch (msg.getRequestType()) {
                 case GET_DEPCOIN_BALANCE:
                     // Get the balance of the sender
-                    Long balanceDep = blockchain.getBalance(senderAddress);
+                    Long balanceDep = blockchain.getBalance(targetAddress);
                     replyValue = balanceDep.toString();
                     break;
                 case GET_ISTCOIN_BALANCE:
