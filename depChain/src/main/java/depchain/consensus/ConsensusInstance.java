@@ -193,18 +193,6 @@ public class ConsensusInstance {
                     }
 
                     // Broadcast write
-                    switch (Config.processBehaviors.get(this.myId)) {
-                        case "spam":
-                            Logger.log(LogLevel.WARNING, "Spam write sent, 10 times: " + candidate);
-                            for (int i = 0; i < 10; i++) {
-                                broadcastWrite(candidate);
-                            }
-                            break;
-
-                        default:
-                            break;
-                    }
-
                     broadcastWrite(candidate);
 
                     // Wait for writes
