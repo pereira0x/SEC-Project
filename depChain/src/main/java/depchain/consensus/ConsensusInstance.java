@@ -154,8 +154,8 @@ public class ConsensusInstance {
 
                             stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId)
                                     .setState(currentStateCopySpam).setBlock(msg.getBlock()).build();
-                            Logger.log(LogLevel.WARNING, "Spam state sent, 100 times: " + currentStateCopySpam);
-                            for (int i = 0; i < 100; i++) {
+                            Logger.log(LogLevel.WARNING, "Spam state sent, 10 times: " + currentStateCopySpam);
+                            for (int i = 0; i < 10; i++) {
                                 try {
                                     perfectLink.send(msg.getSenderId(), stateMsg);
                                 } catch (Exception e) {
@@ -197,6 +197,7 @@ public class ConsensusInstance {
                     // Broadcast write
                     switch (Config.processBehaviors.get(this.myId)) {
                         case "spam":
+                            Logger.log(LogLevel.WARNING, "Spam write sent, 10 times: " + candidate);
                             for (int i = 0; i < 10; i++) {
                                 broadcastWrite(candidate);
                             }
@@ -220,6 +221,7 @@ public class ConsensusInstance {
                     // Broadcast ACCEPT
                     switch (Config.processBehaviors.get(this.myId)) {
                         case "spam":
+                            Logger.log(LogLevel.WARNING, "Spam accept sent, 10 times: " + blockToWrite);
                             for (int i = 0; i < 10; i++) {
                                 broadcastAccept(blockToWrite);
                             }

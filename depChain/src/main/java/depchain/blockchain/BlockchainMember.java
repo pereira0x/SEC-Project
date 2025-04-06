@@ -39,6 +39,7 @@ public class BlockchainMember {
     private Blockchain blockchain;
 
     private final List<Transaction> pendingTransactions = new java.util.concurrent.CopyOnWriteArrayList<>();
+    private final Object processBlockLock = new Object();
 
     private final int transactions_threshold = Dotenv.load().get("TRANSACTIONS_THRESHOLD") != null
             ? Integer.parseInt(Dotenv.load().get("TRANSACTIONS_THRESHOLD"))
@@ -175,16 +176,20 @@ public class BlockchainMember {
 
                     if (decidedBlock != null) {
                         try {
-                            // Block was decided now we have to process the transactions
-                            Block processedBlock = processBlockTransactions(decidedBlock);
+                            Block processedBlock = null;
+                            synchronized (processBlockLock) {
+                                // Block was decided now we have to process the transactions
+                                processedBlock = processBlockTransactions(decidedBlock);
 
-                            // Append the decided value to the blockchain.
-                            this.blockchain.addBlock(processedBlock);
-                            Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain.getHashesChain());
+                                // Append the decided value to the blockchain.
+                                processedBlock.setPreviousBlockHash(this.blockchain.getMostRecentBlock()
+                                        .getBlockHash());
+                                this.blockchain.addBlock(processedBlock);
+                                Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain.getHashesChain());
 
-                            consensusInstances.remove(consensusInstance.getBlockHash());
-                            consensusInstance = null;
-
+                                consensusInstances.remove(consensusInstance.getBlockHash());
+                                consensusInstance = null;
+                            }
                             // broadcast the reply to all clients
                             for (int clientId : Config.getClientIds()) {
                                 Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
