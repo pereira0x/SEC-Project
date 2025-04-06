@@ -83,7 +83,17 @@ public class DepChainClient {
             if (line.isEmpty())
                 continue;
 
-            commandManager.executeCommand(line);
+            switch (Config.processBehaviors.get(clientId)) {
+                case "byzantineClient":
+                    Logger.log(LogLevel.WARNING, "Sending 100 commands to the nodes...");
+                    for (int i = 0; i < 100; i++) {
+                        commandManager.executeCommand(line);
+                    }
+                default:
+                    break;
+            }
+
+            commandManager.executeCommand(line);	
         }
 
         Logger.log(LogLevel.INFO, "Exiting...");
