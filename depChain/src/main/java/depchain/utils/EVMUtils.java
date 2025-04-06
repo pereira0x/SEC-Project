@@ -60,7 +60,6 @@ public class EVMUtils {
     }
 
     public static String extractStringFromReturnData(ByteArrayOutputStream byteArrayOutputStream) {
-        /* System.out.println(byteArrayOutputStream.toString()); */
         String[] lines = byteArrayOutputStream.toString().split("\\r?\\n");
         JsonObject jsonObject = JsonParser.parseString(lines[lines.length - 1]).getAsJsonObject();
 
@@ -112,7 +111,7 @@ public class EVMUtils {
         return hexString.toString().substring(0, 32);
     }
 
-    // account address is an hash pof the owner's public key
+    // Account address is an hash pof the owner's public key
     public static String getEOAccountAddress(PublicKey publicKey) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(publicKey.getEncoded());
@@ -136,7 +135,7 @@ public class EVMUtils {
         return hexString.toString().substring(0, 32);
     }
 
-    // method to check if an address only contains hex characters
+    // Method to check if an address only contains hex characters
     public static boolean isHexAddress(String address) {
         if (address.startsWith("0x")) {
             address = address.substring(2);

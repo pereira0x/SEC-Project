@@ -14,7 +14,9 @@ import depchain.utils.CryptoUtil;
 import depchain.utils.EVMUtils;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
+
 import io.github.cdimascio.dotenv.Dotenv;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -115,8 +117,6 @@ public class BlockchainMember {
                 Message msg = perfectLink.deliver(); // waits for new elements to be added to the
                                                      // linked blocking queue
 
-                // If a CLIENT_REQUEST is received and this node is leader,
-
                 switch (this.behavior) {
                     case "ignoreMessages":
                         // Byzantine behavior: ignore all messages
@@ -146,8 +146,6 @@ public class BlockchainMember {
 
                                 break;
 
-                            // this cases are empty and without break -> all will be
-                            // processReadOperation
                             case GET_DEPCOIN_BALANCE:
                             case GET_ISTCOIN_BALANCE:
                             case ALLOWANCE:
@@ -162,8 +160,7 @@ public class BlockchainMember {
                         }
 
                     } else {
-                        // For consensus messages, dispatch to the corresponding consensus
-                        // instance.
+                        // For consensus messages, dispatch to the corresponding consensus instance.
                         if (consensusInstance == null) {
                             // instantiate a new consensus instance
                             consensusInstance = new ConsensusInstance(memberId, leaderId, allProcessIds, perfectLink,
@@ -193,6 +190,7 @@ public class BlockchainMember {
                                 consensusInstances.remove(consensusInstance.getBlockHash());
                                 consensusInstance = null;
                             }
+
                             // broadcast the reply to all clients
                             for (int clientId : Config.getClientIds()) {
                                 Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
@@ -212,10 +210,6 @@ public class BlockchainMember {
                         consensusInstances.remove(consensusInstance.getBlockHash());
                         consensusInstance = null;
                     }
-
-                    // Print blockchain transactions
-                    // Logger.log(LogLevel.INFO, "Blockchain transactions: " +
-                    // this.blockchain.getMostRecentBlock().getTransactions());
                 }).start();
             } catch (InterruptedException e) {
                 break;
@@ -274,8 +268,8 @@ public class BlockchainMember {
             if (memberId == leaderId) {
                 switch (Config.processBehaviors.get(this.memberId)) {
                     case "byzantineLeader":
-                        // Byzantine leader tries to favor client 7 by making the proposedBlock consist
-                        // of 2 transactions from client 5 to 7 of 5000
+                        // Byzantine leader tries to favor client 7 by making the
+                        // proposedBlock consist of 2 transactions from client 5 to 7 of 5000
                         for (Transaction t : block.getTransactions()) {
                             t.setSender("5");
                             t.setRecipient("7");
@@ -321,7 +315,6 @@ public class BlockchainMember {
     }
 
     public Block processBlockTransactions(Block block) {
-        // No need to create a copy, modify the original block directly
         ArrayList<Transaction> updatedTransactions = new ArrayList<>();
 
         // Process transactions in the block
@@ -421,8 +414,8 @@ public class BlockchainMember {
             return t;
         }
 
-        // target adress is hexadecimal string
-        // only for DepCoin related operations as contract address are padded with 0s
+        // Target address is hexadecimal string only for DepCoin related
+        // operations as contract address are padded with 0s
         if (type == TransactionType.TRANSFER_DEPCOIN &&
                 !EVMUtils.isHexAddress(targetAddress)) {
             Logger.log(LogLevel.ERROR, "Invalid target address: " + targetAddress);
@@ -516,12 +509,12 @@ public class BlockchainMember {
             senderAddress = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(tx.getSender())));
             targetAddress = tx.getRecipient();
 
-            // check if target address is a valid address
-            // target adress is hexadecimal string
-            // only for DepCoin related operations as contract address are padded with 0s
+            // check if target address is a valid address only for DepCoin
+            // related operations as contract address are padded with 0s
             if (msg.getRequestType() == Message.RequestType.GET_DEPCOIN_BALANCE &&
                     !EVMUtils.isHexAddress(targetAddress)) {
                 Logger.log(LogLevel.ERROR, "Invalid target address: " + targetAddress);
+
                 // Send CLIENT_REPLY to the client.
                 Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(), memberId)
                         .setBlock(null).setReplyType(replyType).setTransaction(tx).setReplyValue(null).build();
@@ -536,7 +529,7 @@ public class BlockchainMember {
 
             switch (msg.getRequestType()) {
                 case GET_DEPCOIN_BALANCE:
-                    // check if targetAddress exists
+                    // Check if targetAddress exists
                     if (!blockchain.existsAccount(targetAddress)) {
                         Logger.log(LogLevel.ERROR, "Target address not found: " + targetAddress);
                         replyValue = null;
@@ -544,7 +537,6 @@ public class BlockchainMember {
                     }
 
                     // Get the balance of the sender
-
                     Long balanceDep = blockchain.getBalance(targetAddress);
                     replyValue = balanceDep.toString();
                     break;
@@ -591,8 +583,6 @@ public class BlockchainMember {
         byte[] signature = transaction.getSignature();
         PublicKey publicKey = Config.getPublicKey(clientId);
 
-        // System.out.println("------------- signature: " + new
-        // ByteArrayWrapper(signature));
         return CryptoUtil.verify(transactionBytes, signature, publicKey);
     }
 }

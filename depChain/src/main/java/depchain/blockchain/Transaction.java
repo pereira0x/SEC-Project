@@ -10,10 +10,8 @@ import java.io.ObjectOutputStream;
 import depchain.utils.ByteArrayWrapper;
 
 public class Transaction implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
-    // enum
     public enum TransactionType {
         TRANSFER_DEPCOIN, TRANSFER_IST_COIN, TRANSFER_FROM_IST_COIN, GET_DEPCOIN_BALANCE, ADD_BLACKLIST,
         REMOVE_BLACKLIST, GET_ISTCOIN_BALANCE, IS_BLACKLISTED, APPROVE, ALLOWANCE

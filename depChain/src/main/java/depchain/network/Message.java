@@ -27,8 +27,8 @@ public class Message implements Serializable {
 
     private final Type type;
     private final int epoch; // For our design, epoch doubles as the consensus instance ID.
-    private final int senderId; // The sender's ID (for clients, use a distinct range).
-    private final byte[] signature; // Signature over the message content (computed by sender).
+    private final int senderId; // The sender's ID.
+    private final byte[] signature; // MAC over the message content (computed by sender).
     private int nonce; // nonce for the message (computed by sender).
     private Transaction transaction;
     private Block block;

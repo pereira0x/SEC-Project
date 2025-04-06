@@ -45,7 +45,6 @@ public class ConsensusInstance {
 
     }
 
-    // Leader sends READ messages to all.
     private void broadcastRead() {
         Message readMsg = new Message.MessageBuilder(Message.Type.READ, epoch, myId).setBlock(blockProposed).build();
 
@@ -86,7 +85,7 @@ public class ConsensusInstance {
         Message writeMsg = new Message.MessageBuilder(Message.Type.WRITE, epoch, myId).setBlock(blockProposed).setWrite(candidate)
                 .build();
 
-        // append to the writeset of my state the candidate
+        // Append to the writeset of my state the candidate
         state.addToWriteSet(candidate);
 
         writeResponses.put(myId, candidate);
@@ -102,7 +101,7 @@ public class ConsensusInstance {
     }
 
     private void broadcastAccept(Block candidate) {
-        // update my state's most recent write
+        // Update my state's most recent write
         state.setMostRecentWrite(new TimestampValuePair(epoch, candidate));
 
         acceptedValues.add(candidate);
@@ -138,8 +137,8 @@ public class ConsensusInstance {
                             Logger.log(LogLevel.WARNING, "Byzantine state sent: " + currentStateCopy);
                             break;
                         case "impersonate":
-                            // Send a state message impersonating another process - signature check should
-                            // fail
+                            // Send a state message impersonating another process
+                            // - signature check should fail
                             int otherProcessId = myId == 3 ? 2 : 3;
                             stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, otherProcessId)
                                     .setState(state).setBlock(msg.getBlock()).build();
@@ -177,14 +176,8 @@ public class ConsensusInstance {
                     writeResponses.put(msg.getSenderId(), msg.getWrite());
                     break;
                 case COLLECTED:
-                    // Upon COLLECTED, update our local state and send an ACCEPT.
                     stateResponses = msg.getStatesMap();
 
-                    /* Logger.log(LogLevel.INFO, "Received COLLECTED: " + stateResponses); */
-
-                    // Look at all states and decide the value you want to write (in write messages
-                    // )
-                    // pick the value to write
                     TimestampValuePair candidate = getValueFromCollected();
 
                     if (candidate == null) {
@@ -243,13 +236,13 @@ public class ConsensusInstance {
         }
     }
 
-    // decide the value to be written based on the states of all processes
     public TimestampValuePair getValueFromCollected() {
+        // Decide the value to be written based on the states of all processes
         TimestampValuePair tmpVal = null;
         Map<TimestampValuePair, Integer> count = new HashMap<>();
+
         for (State s : stateResponses.values()) {
             TimestampValuePair mostRecentWrite = s.getMostRecentWrite();
-            // System.out.println("mostrecentwrite: " + mostRecentWrite);
 
            // check if the most recent write is null - the member has not seen any writes
            if(mostRecentWrite.getValue().getBlockHash() == null){
@@ -259,10 +252,8 @@ public class ConsensusInstance {
            if(!count.containsKey(mostRecentWrite)) {
                 count.put(mostRecentWrite, 0);
             }
-
-           // [ws1: 0 ws2: 0 ws3: 0]
         }
-        // System.out.println("count: " + count);
+
         // check if the tmpVal appears in the write set of more than f processes
        for (Map.Entry<TimestampValuePair, Integer> entry : count.entrySet()) {
             int updatedValue = entry.getValue();
@@ -274,7 +265,7 @@ public class ConsensusInstance {
             count.put(entry.getKey(), updatedValue);
         }
 
-         // we do this to prevent a Byzantine member from being able to send
+         // We do this to prevent a Byzantine member from being able to send
          // a state with a mostRecentWrite with a timestamp abnormally high
          // preventing the real mostRecentWrite from being chosen
         int max = 0;
@@ -284,8 +275,7 @@ public class ConsensusInstance {
                 tmpVal = entry.getKey();
             }
         }
-        // System.out.println("max: " + max);
-        // System.out.println("tmpVal: " + tmpVal);
+
         if (max <= this.f) {
             tmpVal = stateResponses.get(leaderId).getMostRecentWrite();
         }
@@ -295,7 +285,6 @@ public class ConsensusInstance {
             return null;
         }
 
-        /* Logger.log(LogLevel.INFO, "Decided value: " + tmpVal); */
         return tmpVal;
     }
 
@@ -303,10 +292,10 @@ public class ConsensusInstance {
     public boolean waitForStates() throws InterruptedException, ExecutionException {
         // Start a counter to keep track of the time
         long startTime = System.currentTimeMillis();
-        // check if a quorum has already been reached
+
+        // Check if a quorum has already been reached
         while ((float) stateResponses.size() < quorumSize) {
             Thread.sleep(250);
-            /* Logger.log(LogLevel.DEBUG, "Still waiting for quorum of state responses..."); */
             Thread.sleep(250);
 
             // Check if the time has exceeded the maximum wait time
@@ -317,9 +306,6 @@ public class ConsensusInstance {
             }
         }
 
-        // print all the states received
-        /* Logger.log(LogLevel.INFO, "States received: " + stateResponses); */
-
         return true;
     }
 
@@ -328,7 +314,7 @@ public class ConsensusInstance {
         long startTime = System.currentTimeMillis();
         Block blockToWrite = null;
 
-        // check if a quorum has already been reached
+        // Check if a quorum has already been reached
         int numWrites;
         do {
             numWrites = 0;
@@ -365,14 +351,8 @@ public class ConsensusInstance {
             }
 
             blockToWrite = null;
-            /* Logger.log(LogLevel.DEBUG, "Still waiting for write responses..."); */
-        } while (numWrites < 3 * f + 1);
+        } while (numWrites < 3*f + 1);
 
-        // Print all the writes received
-        /*
-         * Logger.log(LogLevel.DEBUG, "Writes received: " + writeResponses); Logger.log(LogLevel.DEBUG,
-         * "Value to write: " + blockToWrite);
-         */
         return blockToWrite;
     }
 
@@ -381,7 +361,7 @@ public class ConsensusInstance {
         long startTime = System.currentTimeMillis();
         Block blockToAppend = null;
 
-        // check if a quorum has already been reached
+        // Check if a quorum has already been reached
         int numAccepts;
         do {
             numAccepts = 0;
@@ -417,14 +397,8 @@ public class ConsensusInstance {
             }
 
             blockToAppend = null;
-            /* Logger.log(LogLevel.DEBUG, "Still waiting for accept responses..."); */
         } while (numAccepts < 3 * f + 1);
 
-        // Print all the writes received
-        /*
-         * Logger.log(LogLevel.INFO, "Accepts received: " + acceptedValues); Logger.log(LogLevel.INFO,
-         * "Value to append: " + blockToAppend);
-         */
         return blockToAppend;
     }
 
@@ -432,6 +406,7 @@ public class ConsensusInstance {
         try {
             // Read Phase
             broadcastRead();
+
             // Wait for states
             // Check if it was aborted
             if (!waitForStates()) {
@@ -441,11 +416,12 @@ public class ConsensusInstance {
             // Broadcast collected
             broadcastCollected();
 
-            // pick value to write
+            // Pick value to write
             TimestampValuePair candidate = getValueFromCollected();
 
             // Broadcast write
             broadcastWrite(candidate);
+            
             // Wait for writes
             Block blockToWrite = waitForWrites(candidate.getValue());
 

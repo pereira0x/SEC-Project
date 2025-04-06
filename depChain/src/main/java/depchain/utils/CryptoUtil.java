@@ -61,7 +61,7 @@ public class CryptoUtil {
     }
 
     public static int generateNonce() {
-        // generate int random number
+        // Generate int random number
         SecureRandom random = new SecureRandom();
         return random.nextInt();
     }
@@ -99,7 +99,6 @@ public class CryptoUtil {
     public static SecretKey decryptSecretKey(byte[] encryptedSecretKey, PrivateKey privateKey) {
         try {
             // Create a cipher instance for the specified algorithm
-
             Cipher cipher = Cipher.getInstance("RSA");
 
             cipher.init(Cipher.UNWRAP_MODE, privateKey);

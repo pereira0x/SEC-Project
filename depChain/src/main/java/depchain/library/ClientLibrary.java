@@ -8,6 +8,7 @@ import depchain.utils.ByteArrayWrapper;
 import depchain.utils.CryptoUtil;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,9 +24,8 @@ public class ClientLibrary {
     // Thread-safe storage for pending transactions
     private final Map<Long, PendingTransactionStatus> pendingTransactions = new ConcurrentHashMap<>();
 
-    private final Map<Long, PendingReadRequestValues> pendingReadRequests = new ConcurrentHashMap<>();
-
     // Thread-safe handling of read requests
+    private final Map<Long, PendingReadRequestValues> pendingReadRequests = new ConcurrentHashMap<>();
 
     public ClientLibrary(PerfectLink perfectLink, List<Integer> nodeIds, int clientId, int f) {
         this.perfectLink = perfectLink;
@@ -83,10 +83,9 @@ public class ClientLibrary {
     }
 
     private void handleValueReply(Message reply) {
-        /* this.readValue = reply.getReplyValue(); */
-
         String replyValue = reply.getReplyValue();
-        // check which transaction it belongs to
+        
+        // Check which transaction it belongs to
         Long txNonce = reply.getTransaction().getNonce();
         PendingReadRequestValues pendingReadRequest = pendingReadRequests.get(txNonce);
         if (pendingReadRequest == null) {
@@ -229,12 +228,7 @@ public class ClientLibrary {
             // Decide based on counts
             String mostFreqValue = Collections.max(responseCounts.entrySet(), Map.Entry.comparingByValue()).getKey();
             if (responseCounts.get(mostFreqValue) >= requiredResponses) {
-                decidedValue = mostFreqValue;
-                
-    
-                /* for (Map.Entry<String, Integer> entry : responseCounts.entrySet()) {
-                    Logger.log(LogLevel.INFO, "Value: " + entry.getKey() + ", Count: " + entry.getValue());
-                } */
+                decidedValue = mostFreqValue;    
             }
         }
     
@@ -271,7 +265,8 @@ public class ClientLibrary {
 
                     if (pendingTransactions.containsKey(transaction.getNonce())) {
                         replies++;
-                        // check if there are f+1 equal statuses
+
+                        // Check if there are f+1 equal statuses
                         int confirmedCount = 0;
                         int rejectedCount = 0;
                         for (Transaction.TransactionStatus status : pendingStatus.status) {

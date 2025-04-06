@@ -1,12 +1,12 @@
 package depchain.network;
 
 import java.net.InetSocketAddress;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 import javax.crypto.SecretKey;
 
 import depchain.utils.CryptoUtil;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 
 public class Session {
     private final int destId;

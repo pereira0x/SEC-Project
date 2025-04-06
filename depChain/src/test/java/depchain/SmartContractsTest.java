@@ -7,14 +7,14 @@ import java.nio.file.Paths;
 
 import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Test;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import depchain.account.SmartAccount;
-import io.github.cdimascio.dotenv.Dotenv;
 
-import org.junit.jupiter.api.Test;
+import io.github.cdimascio.dotenv.Dotenv;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SmartContractsTest {

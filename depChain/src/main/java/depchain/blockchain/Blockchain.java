@@ -19,10 +19,10 @@ import depchain.blockchain.block.BlockParser;
 import depchain.utils.EVMUtils;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
+
 import io.github.cdimascio.dotenv.Dotenv;
 
 public class Blockchain {
-
     private int memberId;
     private List<Block> blocks = new ArrayList<>();
     private List<EOAccount> eoAccounts = new ArrayList<>();
