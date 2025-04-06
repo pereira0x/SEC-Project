@@ -197,7 +197,7 @@ public class BlockchainMember {
                             for (int clientId : Config.getClientIds()) {
                                 Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(),
                                         memberId).setBlock(processedBlock).setReplyType(ReplyType.BLOCK)
-                                                .build();
+                                        .build();
                                 perfectLink.send(clientId, reply);
                             }
 
@@ -422,12 +422,13 @@ public class BlockchainMember {
         }
 
         // target adress is hexadecimal string
-        if (!EVMUtils.isHexAddress(targetAddress)) {
+        // only for DepCoin related operations as contract address are padded with 0s
+        if (type == TransactionType.TRANSFER_DEPCOIN &&
+                !EVMUtils.isHexAddress(targetAddress)) {
             Logger.log(LogLevel.ERROR, "Invalid target address: " + targetAddress);
             t.setStatus(Transaction.TransactionStatus.REJECTED);
             return t;
         }
-        
 
         switch (type) {
             case TRANSFER_DEPCOIN:
@@ -500,7 +501,6 @@ public class BlockchainMember {
                 break;
         }
 
-
         return t;
     }
 
@@ -517,17 +517,34 @@ public class BlockchainMember {
             targetAddress = tx.getRecipient();
 
             // check if target address is a valid address
-                    // target adress is hexadecimal string
-            if (!EVMUtils.isHexAddress(targetAddress)) {
+            // target adress is hexadecimal string
+            // only for DepCoin related operations as contract address are padded with 0s
+            if (msg.getRequestType() == Message.RequestType.GET_DEPCOIN_BALANCE &&
+                    !EVMUtils.isHexAddress(targetAddress)) {
                 Logger.log(LogLevel.ERROR, "Invalid target address: " + targetAddress);
+                // Send CLIENT_REPLY to the client.
+                Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(), memberId)
+                        .setBlock(null).setReplyType(replyType).setTransaction(tx).setReplyValue(null).build();
+                try {
+                    Logger.log(LogLevel.DEBUG, "Reply: " + reply);
+                    perfectLink.send(msg.getSenderId(), reply);
+                } catch (Exception e) {
+                    Logger.log(LogLevel.ERROR, "Failed to send reply: " + e.getMessage());
+                }
                 return;
             }
-            
 
             switch (msg.getRequestType()) {
                 case GET_DEPCOIN_BALANCE:
+                    // check if targetAddress exists
+                    if (!blockchain.existsAccount(targetAddress)) {
+                        Logger.log(LogLevel.ERROR, "Target address not found: " + targetAddress);
+                        replyValue = null;
+                        break;
+                    }
+
                     // Get the balance of the sender
-                    
+
                     Long balanceDep = blockchain.getBalance(targetAddress);
                     replyValue = balanceDep.toString();
                     break;

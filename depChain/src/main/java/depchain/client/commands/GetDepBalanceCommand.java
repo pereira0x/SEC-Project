@@ -24,6 +24,11 @@ public class GetDepBalanceCommand implements Command {
         try {
             String targetAddress = args[0];
             String balance = clientLib.getDepCoinBalance(targetAddress);
+
+            if(balance == null) {
+                Logger.log(LogLevel.ERROR, "Failed to get DepCoin balance: Address not found");
+                return;
+            }
             Logger.log(LogLevel.INFO, "DepCoin balance for address " + targetAddress + ": " + balance);
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to get DepCoin balance: " + e.getMessage());
