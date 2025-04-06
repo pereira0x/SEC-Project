@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import depchain.blockchain.block.Block; // Ensure this is the correct package for Transaction
+import depchain.blockchain.Transaction; // Ensure this is the correct package for Transaction
 import depchain.network.Message; // Ensure this is the correct package for Block
 import depchain.network.PerfectLink;
 import depchain.utils.Config;
@@ -257,34 +258,59 @@ public class ConsensusInstance {
     // decide the value to be written based on the states of all processes
     public TimestampValuePair getValueFromCollected() {
         TimestampValuePair tmpVal = null;
+        Map<TimestampValuePair, Integer> count = new HashMap<>();
         for (State s : stateResponses.values()) {
             TimestampValuePair mostRecentWrite = s.getMostRecentWrite();
-            if (tmpVal == null || mostRecentWrite.getTimestamp() > tmpVal.getTimestamp()) {
-                tmpVal = mostRecentWrite;
-            }
-        }
+            // System.out.println("mostrecentwrite: " + mostRecentWrite);
 
+           // check if the most recent write is null - the member has not seen any writes
+           if(mostRecentWrite.getValue().getBlockHash() == null){
+                continue;
+            }
+
+           if(!count.containsKey(mostRecentWrite)) {
+                count.put(mostRecentWrite, 0);
+            }
+
+           // [ws1: 0 ws2: 0 ws3: 0]
+        }
+        // System.out.println("count: " + count);
         // check if the tmpVal appears in the write set of more than f processes
-        int count = 0;
-        for (State s : stateResponses.values()) {
-            if (s.getWriteset().contains(tmpVal)) {
-                count++;
+       for (Map.Entry<TimestampValuePair, Integer> entry : count.entrySet()) {
+            int updatedValue = entry.getValue();
+            for (State s : stateResponses.values()) {
+                if (s.getWriteset().contains(entry.getKey())) {
+                    updatedValue++;
+                }
             }
+            count.put(entry.getKey(), updatedValue);
         }
 
-        if (count <= this.f) {
+         // we do this to prevent a Byzantine member from being able to send
+         // a state with a mostRecentWrite with a timestamp abnormally high
+         // preventing the real mostRecentWrite from being chosen
+        int max = 0;
+        for (Map.Entry<TimestampValuePair, Integer> entry : count.entrySet()) {
+            if (entry.getValue() > max) {
+                max = entry.getValue();
+                tmpVal = entry.getKey();
+            }
+        }
+        // System.out.println("max: " + max);
+        // System.out.println("tmpVal: " + tmpVal);
+        if (max <= this.f) {
             tmpVal = stateResponses.get(leaderId).getMostRecentWrite();
         }
 
         if (!tmpVal.getValue().equals(this.blockProposed)) {
-            Logger.log(LogLevel.ERROR,
-                    "Decided value is not the client request: " + tmpVal.getValue() + " != " + this.blockProposed);
+            Logger.log(LogLevel.ERROR, "Decided value is not the client request: " + tmpVal.getValue() + " != " + this.blockProposed);
             return null;
         }
 
         /* Logger.log(LogLevel.INFO, "Decided value: " + tmpVal); */
         return tmpVal;
     }
+
 
     public boolean waitForStates() throws InterruptedException, ExecutionException {
         // Start a counter to keep track of the time
