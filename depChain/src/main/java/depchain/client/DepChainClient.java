@@ -53,7 +53,7 @@ public class DepChainClient {
             return;
         }
 
-        this.clientLib = new ClientLibrary(pl, 1, processIds, clientId, f);
+        this.clientLib = new ClientLibrary(pl, processIds, clientId, f);
     }
 
     public static void main(String[] args) throws Exception {
@@ -61,30 +61,31 @@ public class DepChainClient {
             Logger.log(LogLevel.ERROR, "Usage: DepChainClient <clientId> <clientPort>");
             return;
         }
-    
+
         int clientId = Integer.parseInt(args[0]);
         int clientPort = Integer.parseInt(args[1]);
-    
+
         DepChainClient client = new DepChainClient(clientId, clientPort, 1);
-    
+
         CommandManager commandManager = new CommandManager(client.clientLib);
         commandManager.registerAllCommands(client);
-        
-        Logger.log(LogLevel.INFO, "Client started. Type 'help' for a list of commands.");
 
+        Logger.log(LogLevel.INFO, "Client started. Type 'help' for a list of commands.");
 
         Scanner scanner = new Scanner(System.in);
         String line = "";
         while (!line.equals("exit")) {
             System.out.print("> ");
             line = scanner.nextLine();
-    
-            if (line.equals("exit")) break;
-            if (line.isEmpty()) continue;
-    
+
+            if (line.equals("exit"))
+                break;
+            if (line.isEmpty())
+                continue;
+
             commandManager.executeCommand(line);
         }
-    
+
         Logger.log(LogLevel.INFO, "Exiting...");
         scanner.close();
         System.exit(0);

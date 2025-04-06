@@ -1,6 +1,5 @@
 package depchain.client.commands;
 
-
 import depchain.library.ClientLibrary;
 
 public class HelpCommand implements Command {

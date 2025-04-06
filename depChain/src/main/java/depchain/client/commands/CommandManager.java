@@ -25,8 +25,9 @@ public class CommandManager {
         register("getISTBal", new GetISTBalanceCommand(client));
         register("addBlackList", new AddToBlackListCommand(client));
         register("removeBlackList", new RemoveFromBlackListCommand(client));
-        register("getBlackList", new GetBlackListCommand(client));
-        register("allowTransferFrom", new AllowTransferFromCommand(client));
+        register("isBlackListed", new IsBlackListedCommand(client));
+        register("allowance", new AllowanceCommand(client));
+        register("approve", new ApproveCommand(client));
         register("transferFrom", new TransferFromCommand(client));
 
         register("help", new HelpCommand(this));
@@ -35,7 +36,8 @@ public class CommandManager {
 
     public void executeCommand(String inputLine) {
         String[] parts = inputLine.trim().split("\\s+");
-        if (parts.length == 0) return;
+        if (parts.length == 0)
+            return;
 
         String commandName = parts[0];
         Command command = commands.get(commandName);
@@ -59,6 +61,5 @@ public class CommandManager {
             System.out.printf("  %-20s%s%n", name, usage);
         }
     }
-
 
 }

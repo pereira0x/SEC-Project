@@ -5,8 +5,8 @@ import depchain.library.ClientLibrary;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 
-public class TransferFromCommand implements Command{
-     private final DepChainClient client;
+public class TransferFromCommand implements Command {
+    private final DepChainClient client;
 
     public TransferFromCommand(DepChainClient client) {
         this.client = client;
@@ -14,18 +14,19 @@ public class TransferFromCommand implements Command{
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
-        if (args.length != 3 || !args[0].matches("\\d+") || !args[1].matches("\\d+") || !args[2].matches("\\d+")) {
+        if (args.length != 3) {
             Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
-        int sourceUserId = Integer.parseInt(args[0]);
-        int recipientUserId = Integer.parseInt(args[1]);
-        long amount = Long.parseLong(args[2]);
-
         Logger.log(LogLevel.INFO, "Client sending transfer from request...");
         try {
-            // TODO: Implement the transferFrom method in ClientLibrary
+            String senderAddress = args[0];
+            String targetAddress = args[1];
+            long amount = Long.parseLong(args[2]);
+            clientLib.transferFromISTCoin(senderAddress, targetAddress, amount);
+            Logger.log(LogLevel.INFO,
+                    "Successfully proposed to transfer " + amount + " from " + senderAddress + " to " + targetAddress);
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to transfer from: " + e.getMessage());
         }
@@ -33,6 +34,6 @@ public class TransferFromCommand implements Command{
 
     @Override
     public String getUsage() {
-        return "Usage: transferFrom <sourceUserID> <recipientUserId> <amount>";
+        return "Usage: transferFrom <senderAddress> <targetAddress> <amount>";
     }
 }

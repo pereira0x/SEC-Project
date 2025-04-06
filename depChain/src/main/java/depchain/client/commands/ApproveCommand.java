@@ -5,32 +5,34 @@ import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 import depchain.library.ClientLibrary;
 
-public class GetISTBalanceCommand implements Command {
+public class ApproveCommand implements Command {
 
     private final DepChainClient client;
 
-    public GetISTBalanceCommand(DepChainClient client) {
+    public ApproveCommand(DepChainClient client) {
         this.client = client;
     }
 
     @Override
     public void execute(String[] args, ClientLibrary clientLib) {
-        if (args.length != 1) {
+        if (args.length != 2) {
             Logger.log(LogLevel.ERROR, getUsage());
             return;
         }
 
+        Logger.log(LogLevel.INFO, "Client sending approve request...");
         try {
             String targetAddress = args[0];
-            String balance = clientLib.getISTCoinBalance(targetAddress);
-            Logger.log(LogLevel.INFO, "Target " + targetAddress + " has ISTCoin balance: " + balance);
+            long amount = Long.parseLong(args[1]);
+            clientLib.approve(targetAddress, amount);
+            Logger.log(LogLevel.INFO, "Successfully proposed to approve " + amount + " for " + targetAddress);
         } catch (Exception e) {
-            Logger.log(LogLevel.ERROR, "Failed to get ISTCoin balance: " + e.getMessage());
+            Logger.log(LogLevel.ERROR, "Failed to approve request: " + e.getMessage());
         }
     }
 
     @Override
     public String getUsage() {
-        return "Usage: getISTBal" + " <userId>";
+        return "Usage: approve <targetAddress> <amount>";
     }
 }

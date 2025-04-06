@@ -3,6 +3,8 @@ package depchain.network;
 import java.io.Serializable;
 import java.util.Map;
 
+import org.bouncycastle.cert.ocsp.Req;
+
 import depchain.blockchain.Transaction;
 import depchain.blockchain.block.Block;
 import depchain.consensus.State;
@@ -12,6 +14,15 @@ import depchain.utils.ByteArrayWrapper;
 public class Message implements Serializable {
     public enum Type {
         READ, STATE, COLLECTED, WRITE, ACCEPT, CLIENT_REQUEST, CLIENT_REPLY, ACK, START_SESSION, ACK_SESSION
+    }
+
+    public enum RequestType {
+        ADD_BLACKLIST, REMOVE_BLACKLIST, IS_BLACKLISTED, TRANSFER_DEPCOIN, TRANSFER_ISTCOIN, GET_DEPCOIN_BALANCE,
+        GET_ISTCOIN_BALANCE, APPROVE, ALLOWANCE, TRANSFER_FROM_IST_COIN
+    }
+
+    public enum ReplyType {
+        BLOCK, VALUE
     }
 
     private final Type type;
@@ -28,9 +39,13 @@ public class Message implements Serializable {
     private final State state;
     private final Map<Integer, State> statesMap;
     private final TimestampValuePair write;
+    private final RequestType requestType; // Request type for client requests.
+    private final String replyValue;
+    private final ReplyType replyType; // Reply type for client replies.
 
     private Message(MessageBuilder builder) {
         this.type = builder.type;
+        this.requestType = builder.requestType;
         this.epoch = builder.epoch;
         this.senderId = builder.senderId;
         this.clientId = builder.clientId;
@@ -42,6 +57,8 @@ public class Message implements Serializable {
         this.nonce = builder.nonce;
         this.transaction = builder.transaction;
         this.block = builder.block;
+        this.replyValue = builder.replyValue;
+        this.replyType = builder.replyType;
     }
 
     public Type getType() {
@@ -96,6 +113,17 @@ public class Message implements Serializable {
         return block;
     }
 
+    public RequestType getRequestType() {
+        return requestType;
+    }
+
+    public String getReplyValue() {
+        return replyValue;
+    }
+
+    public ReplyType getReplyType() {
+        return replyType;
+    }
 
     // Returns a string representation of the content to be signed.
     public String getSignableContent() {
@@ -125,6 +153,9 @@ public class Message implements Serializable {
         private int nonce;
         private Transaction transaction;
         private Block block;
+        private RequestType requestType;
+        private String replyValue;
+        private ReplyType replyType;
 
         public MessageBuilder(Type type, int epoch, int senderId, int clientId) {
             this.type = type;
@@ -173,6 +204,21 @@ public class Message implements Serializable {
 
         public MessageBuilder setBlock(Block block) {
             this.block = block;
+            return this;
+        }
+
+        public MessageBuilder setRequestType(RequestType requestType) {
+            this.requestType = requestType;
+            return this;
+        }
+
+        public MessageBuilder setReplyValue(String replyValue) {
+            this.replyValue = replyValue;
+            return this;
+        }
+
+        public MessageBuilder setReplyType(ReplyType replyType) {
+            this.replyType = replyType;
             return this;
         }
 

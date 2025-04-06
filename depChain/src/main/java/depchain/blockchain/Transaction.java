@@ -15,16 +15,12 @@ public class Transaction implements Serializable {
 
     // enum
     public enum TransactionType {
-        TRANSFER_DEPCOIN,
-        TRANSFER_IST_COIN,
-        TRANSFER_FROM_IST_COIN,
-        SET_BLACKLIST,
+        TRANSFER_DEPCOIN, TRANSFER_IST_COIN, TRANSFER_FROM_IST_COIN, GET_DEPCOIN_BALANCE, ADD_BLACKLIST,
+        REMOVE_BLACKLIST, GET_ISTCOIN_BALANCE, IS_BLACKLISTED, APPROVE, ALLOWANCE
     }
 
     public enum TransactionStatus {
-        PENDING,
-        CONFIRMED,
-        REJECTED,
+        PENDING, CONFIRMED, REJECTED,
     }
 
     private long nonce;
@@ -36,8 +32,11 @@ public class Transaction implements Serializable {
     private TransactionType type;
     private TransactionStatus status;
 
-    public Transaction(long nonce, String sender, String recipient, long amount, ByteArrayWrapper signature, String data,
-            TransactionType type, TransactionStatus status) {
+    // optional
+    private String spender;
+
+    public Transaction(long nonce, String sender, String recipient, long amount, ByteArrayWrapper signature,
+            String data, TransactionType type, TransactionStatus status, String spender) {
         this.nonce = nonce;
         this.sender = sender;
         this.recipient = recipient;
@@ -46,6 +45,9 @@ public class Transaction implements Serializable {
         this.data = data;
         this.type = type;
         this.status = status;
+
+        // optional
+        this.spender = spender;
     }
 
     public long getNonce() {
@@ -80,6 +82,10 @@ public class Transaction implements Serializable {
         return status;
     }
 
+    public String getSpender() {
+        return spender;
+    }
+
     public void setStatus(TransactionStatus status) {
         this.status = status;
     }
@@ -92,7 +98,7 @@ public class Transaction implements Serializable {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
-            
+
             // Write all transaction fields
             oos.writeLong(nonce);
             oos.writeUTF(sender != null ? sender : "");
@@ -101,7 +107,7 @@ public class Transaction implements Serializable {
             oos.writeUTF(data != null ? data : "");
             oos.writeInt(type != null ? type.ordinal() : -1);
             oos.writeInt(status != null ? status.ordinal() : -1);
-            
+
             oos.flush();
             return baos.toByteArray();
         } catch (IOException e) {
@@ -111,16 +117,9 @@ public class Transaction implements Serializable {
 
     @Override
     public String toString() {
-        return "Transaction{" +
-                "nonce=" + nonce +
-                ", sender='" + sender + '\'' +
-                ", recipient='" + recipient + '\'' +
-                ", amount=" + amount +
-                ", signature='" + signature + '\'' +
-                ", data='" + data + '\'' +
-                ", type=" + type +
-                ", status=" + status +
-                '}';
+        return "Transaction{" + "nonce=" + nonce + ", sender='" + sender + '\'' + ", recipient='" + recipient + '\''
+                + ", amount=" + amount + ", signature='" + signature + '\'' + ", data='" + data + '\'' + ", type="
+                + type + ", status=" + status + '}';
     }
 
     @Override
@@ -130,12 +129,8 @@ public class Transaction implements Serializable {
             Transaction other = (Transaction) obj;
             // System.out.println("-------------------- sig: " + signature);
             // System.out.println("-------------------- other sig: " + other.signature);
-            return nonce == other.nonce &&
-                    sender.equals(other.sender) &&
-                    recipient.equals(other.recipient) &&
-                    amount == other.amount &&
-                    signature.equals(other.signature) &&
-                    type == other.type;
+            return nonce == other.nonce && sender.equals(other.sender) && recipient.equals(other.recipient)
+                    && amount == other.amount && signature.equals(other.signature) && type == other.type;
         }
         return false;
     }
@@ -154,6 +149,9 @@ public class Transaction implements Serializable {
         private String data;
         private TransactionType type;
         private TransactionStatus status;
+
+        // optional
+        private String spender;
 
         public TransactionBuilder() {
         }
@@ -198,8 +196,13 @@ public class Transaction implements Serializable {
             return this;
         }
 
+        public TransactionBuilder setSpender(String spender) {
+            this.spender = spender;
+            return this;
+        }
+
         public Transaction build() {
-            return new Transaction(nonce, sender, recipient, amount, signature, data, type, status);
+            return new Transaction(nonce, sender, recipient, amount, signature, data, type, status, spender);
         }
     }
 }

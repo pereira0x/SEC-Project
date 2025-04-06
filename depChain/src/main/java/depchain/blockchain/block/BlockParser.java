@@ -15,18 +15,17 @@ import depchain.utils.Logger.LogLevel;
 import depchain.utils.ByteArrayWrapper;
 
 public class BlockParser {
-    
+
     public static Block parseBlock(JSONObject jsonFile) throws Exception {
 
         String blockHash = jsonFile.getString("block_hash");
         String previousBlockHash = jsonFile.optString("previous_block_hash", null);
 
-        
         JSONArray transactionsJson = jsonFile.getJSONArray("transactions");
         ArrayList<Transaction> transactions = new ArrayList<>();
 
         // Handle transactions being an array instead of an object
-    if (jsonFile.has("transactions")) {
+        if (jsonFile.has("transactions")) {
             for (int i = 0; i < transactionsJson.length(); i++) {
                 JSONObject transactionJson = transactionsJson.getJSONObject(i);
                 ByteArrayWrapper sig = new ByteArrayWrapper(transactionJson.getString("signature").getBytes());
@@ -34,11 +33,9 @@ public class BlockParser {
                         .setNonce(Long.parseLong(transactionJson.getString("nonce")))
                         .setSender(transactionJson.getString("sender"))
                         .setRecipient(transactionJson.getString("recipient"))
-                        .setAmount(Long.parseLong(transactionJson.getString("amount")))
-                        .setSignature(sig)
+                        .setAmount(Long.parseLong(transactionJson.getString("amount"))).setSignature(sig)
                         .setData(transactionJson.getString("data"))
-                        .setStatus(Transaction.TransactionStatus.valueOf(transactionJson.getString("status")))
-                        .build();
+                        .setStatus(Transaction.TransactionStatus.valueOf(transactionJson.getString("status"))).build();
                 transactions.add(t);
             }
         } else {
@@ -53,10 +50,8 @@ public class BlockParser {
             balances.put(accountAddress, balance);
         }
 
-       /*  return new Block(blockHash, previousBlockHash, transactions, balances); */
-       return new Block.BlockBuilder(transactions, previousBlockHash)
-                .setBlockHash(blockHash)
-                .build();
+        /* return new Block(blockHash, previousBlockHash, transactions, balances); */
+        return new Block.BlockBuilder(transactions, previousBlockHash).setBlockHash(blockHash).build();
     }
 
     public static JSONObject blockToJson(Block block) {
@@ -64,7 +59,7 @@ public class BlockParser {
             // First convert the Block to a JSON string using Jackson
             ObjectMapper objectMapper = new ObjectMapper();
             String blockAsString = objectMapper.writeValueAsString(block);
-            
+
             // Then create a JSONObject from the string
             return new JSONObject(blockAsString);
         } catch (Exception e) {
