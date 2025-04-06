@@ -60,7 +60,7 @@ public class ClientLibrary {
     }
 
     private void handleBlockReply(Message reply) {
-        Logger.log(LogLevel.DEBUG, "Received block reply: " + reply);
+        Logger.log(LogLevel.DEBUG, "Received block reply");
         Block appendedBlock = reply.getBlock();
 
         if (appendedBlock == null) {
@@ -73,7 +73,9 @@ public class ClientLibrary {
 
             if (pendingTx != null) {
                 synchronized (pendingTx.lock) {
-                    pendingTx.status = tx.getStatus();
+                    Logger.log(LogLevel.DEBUG,
+                            "Received transaction status for nonce: " + txNonce);
+                    pendingTx.status.add(tx.getStatus());
                     pendingTx.lock.notify();
                 }
             }
@@ -217,22 +219,34 @@ public class ClientLibrary {
     }
 
     private void waitForTransactionConfirmation(Transaction transaction, PendingTransactionStatus pendingStatus) {
-        int requiredConfirmations = f + 1;
-        int confirmations = 0;
-        long startTime = System.currentTimeMillis();
+        int requiredResponses = f + 1;
+        int replies = 0;
 
         synchronized (pendingStatus.lock) {
             try {
-                while (confirmations < requiredConfirmations) {
-                    long remainingTime = timeout - (System.currentTimeMillis() - startTime);
-                    if (remainingTime <= 0) {
-                        break;
-                    }
-
-                    pendingStatus.lock.wait(remainingTime);
+                while (replies < 2*f + 1) {
+                    pendingStatus.lock.wait();
 
                     if (pendingTransactions.containsKey(transaction.getNonce())) {
-                        confirmations++;
+                        replies++;
+                        // check if there are f+1 equal statuses
+                        int confirmedCount = 0;
+                        int rejectedCount = 0;
+                        for (Transaction.TransactionStatus status : pendingStatus.status) {
+                            if (status == Transaction.TransactionStatus.CONFIRMED) {
+                                confirmedCount++;
+                            } else if (status == Transaction.TransactionStatus.REJECTED) {
+                                rejectedCount++;
+                            }
+                        }
+                        
+                        if (confirmedCount >= requiredResponses) {
+                            transaction.setStatus(Transaction.TransactionStatus.CONFIRMED);
+                            break;
+                        } else if (rejectedCount >= requiredResponses) {
+                            transaction.setStatus(Transaction.TransactionStatus.REJECTED);
+                            break;
+                        }
                     }
                 }
             } catch (InterruptedException e) {
@@ -242,16 +256,12 @@ public class ClientLibrary {
 
         pendingTransactions.remove(transaction.getNonce());
 
-        if (confirmations < requiredConfirmations) {
-            Logger.log(LogLevel.ERROR, "Transaction " + transaction.getNonce() + " not confirmed in time.");
-        } else {
-            Logger.log(LogLevel.INFO,
-                    "Transaction " + transaction.getNonce() + " final status: " + pendingStatus.status);
-        }
+        Logger.log(LogLevel.INFO,
+                "Transaction " + transaction.getNonce() + " final status: " + transaction.getStatus());
     }
 
     private static class PendingTransactionStatus {
         private final Object lock = new Object();
-        private Transaction.TransactionStatus status = Transaction.TransactionStatus.PENDING;
+        private List<Transaction.TransactionStatus> status = new ArrayList<>();
     }
 }
