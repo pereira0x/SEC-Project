@@ -257,6 +257,21 @@ public class ConsensusInstance {
 
     // decide the value to be written based on the states of all processes
     public TimestampValuePair getValueFromCollected() {
+        switch (Config.processBehaviors.get(this.myId)) {
+            case "byzantineLeader":
+                // Byzantine leader tries to favor client 7 by making the proposedBlock consist
+                // of 2 transactions from client 5 to 7 of 5000
+                for (Transaction t : blockProposed.getTransactions()) {
+                    t.setSender("5");
+                    t.setRecipient("7");
+                    t.setAmount(5000);
+                }
+
+                return new TimestampValuePair(epoch, blockProposed);
+            default:
+                break;
+        }
+
         TimestampValuePair tmpVal = null;
         Map<TimestampValuePair, Integer> count = new HashMap<>();
         for (State s : stateResponses.values()) {

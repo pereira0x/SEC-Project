@@ -94,6 +94,18 @@ public class Transaction implements Serializable {
         this.signature = signature;
     }
 
+    public void setSender(String sender) {
+        this.sender = sender;
+    }
+
+    public void setRecipient(String recipient) {
+        this.recipient = recipient;
+    }
+
+    public void setAmount(long amount) {
+        this.amount = amount;
+    }
+
     public byte[] toByteArray() {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
