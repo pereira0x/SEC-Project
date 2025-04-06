@@ -17,9 +17,16 @@ public class Message implements Serializable {
     }
 
     public enum RequestType {
-        ADD_BLACKLIST, REMOVE_BLACKLIST, IS_BLACKLISTED, TRANSFER_DEPCOIN, 
-        TRANSFER_ISTCOIN, GET_DEPCOIN_BALANCE, GET_ISTCOIN_BALANCE,
-        APPROVE, ALLOWANCE, TRANSFER_FROM
+      ADD_BLACKLIST,
+      REMOVE_BLACKLIST,
+      IS_BLACKLISTED,
+      TRANSFER_DEPCOIN,
+      TRANSFER_ISTCOIN,
+      GET_DEPCOIN_BALANCE,
+      GET_ISTCOIN_BALANCE,
+      APPROVE,
+      ALLOWANCE,
+      TRANSFER_FROM_IST_COIN
     }
 
     public enum ReplyType {

@@ -85,6 +85,12 @@ public class ClientLibrary {
                                    targetAddress);
     }
 
+    public String removeFromBlackList(String targetAddress) throws Exception {
+      return performBlockOperation(Transaction.TransactionType.REMOVE_BLACKLIST,
+                                   Message.RequestType.REMOVE_BLACKLIST, 0L,
+                                   targetAddress);
+    }
+
     public String approve(String targetAddress, Long amount) throws Exception {
         return performBlockOperation(Transaction.TransactionType.APPROVE,
                                      Message.RequestType.APPROVE, amount,
@@ -99,10 +105,21 @@ public class ClientLibrary {
       return performBlockOperation(Transaction.TransactionType.TRANSFER_IST_COIN, Message.RequestType.TRANSFER_ISTCOIN, amount, targetAddress);
     }
 
+    public String transferFromISTCoin(String spenderAddress, String targetAddress, Long amount) throws Exception {
+      return performBlockOperation(
+          Transaction.TransactionType.TRANSFER_FROM_IST_COIN,
+          Message.RequestType.TRANSFER_FROM_IST_COIN, amount, targetAddress,
+          spenderAddress);
+    }
+
     public String performBlockOperation(Transaction.TransactionType transactionType,
                              Message.RequestType requestType, Long amount, String... args)
             throws Exception {
-        String targetAddress = args[0];
+      String targetAddress = args[0];
+      String spenderAddress = null;
+      if (args.length > 1) {
+        spenderAddress = args[1];
+      }
         Transaction transaction =
                 new Transaction.TransactionBuilder()
                         .setSender(String.valueOf(this.clientId))
@@ -110,6 +127,7 @@ public class ClientLibrary {
                         .setAmount(amount)
                         .setNonce(CryptoUtil.generateNonce())
                         .setType(transactionType)
+                        .setSpender(spenderAddress) // null if not needed
                         .setStatus(Transaction.TransactionStatus.PENDING)
                         .build();
         // Convert the transaction to bytes and sign it
@@ -164,9 +182,9 @@ public class ClientLibrary {
                              Message.RequestType requestType, String... args)
             throws Exception {
       String targetAddress = args[0];
-      String spender = null;
+      String spenderAddress = null;
       if (args.length > 1) {
-        spender = args[1];
+        spenderAddress = args[1];
       }
       Transaction transaction =
           new Transaction.TransactionBuilder()
@@ -176,7 +194,7 @@ public class ClientLibrary {
               .setNonce(CryptoUtil.generateNonce())
               .setType(transactionType)
               .setStatus(Transaction.TransactionStatus.PENDING)
-              .setSpender(spender) // null if not needed
+              .setSpender(spenderAddress) // null if not needed
               .build();
       // Convert the transaction to bytes and sign it
       byte[] transactionBytes = transaction.toByteArray();

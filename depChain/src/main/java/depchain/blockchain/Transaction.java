@@ -20,6 +20,7 @@ public class Transaction implements Serializable {
       TRANSFER_FROM_IST_COIN,
       GET_DEPCOIN_BALANCE,
       ADD_BLACKLIST,
+      REMOVE_BLACKLIST,
       GET_ISTCOIN_BALANCE,
       IS_BLACKLISTED,
       APPROVE,

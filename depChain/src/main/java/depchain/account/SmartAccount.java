@@ -252,7 +252,11 @@ public class SmartAccount {
         String paddedAddress = padHexStringTo256Bit(accountAddress);
         executor.callData(Bytes.fromHexString("537df3b6" + paddedAddress)); // removeFromBlacklist(address)
         executor.execute();
-        return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
+        try {
+          return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
+        } catch (Exception e) {
+          return false;
+        }
     }
     
     public boolean isBlacklisted(String senderAddress, String accountAddress) {
@@ -261,7 +265,11 @@ public class SmartAccount {
         String paddedAddress = padHexStringTo256Bit(accountAddress);
         executor.callData(Bytes.fromHexString("fe575a87" + paddedAddress)); // isBlacklisted(address)
         executor.execute();
-        return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
+        try {
+          return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
+        } catch (Exception e) {
+          return false;
+        }
     }
 }
 

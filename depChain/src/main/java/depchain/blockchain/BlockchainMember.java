@@ -147,6 +147,8 @@ public class BlockchainMember {
             case TRANSFER_ISTCOIN:
             case TRANSFER_DEPCOIN:
             case ADD_BLACKLIST:
+            case REMOVE_BLACKLIST:
+            case TRANSFER_FROM_IST_COIN:
             case APPROVE:
               ConsensusInstanceAndBlock result =
                   verifyTransactionAndAddOrProposeBlock(msg, consensusInstance,
@@ -343,6 +345,8 @@ public class BlockchainMember {
         case TRANSFER_DEPCOIN:
         case TRANSFER_IST_COIN:
         case APPROVE:
+        case TRANSFER_FROM_IST_COIN:
+        case REMOVE_BLACKLIST:
         case ADD_BLACKLIST:
           updatedTransactions.add(processBlockOperation(transaction, transaction.getType()));
           break;
@@ -475,6 +479,32 @@ public class BlockchainMember {
       boolean approved = smartAccount.approve(
           senderAddress, targetAddress, BigInteger.valueOf(t.getAmount()));
       if (approved) {
+        t.setStatus(Transaction.TransactionStatus.CONFIRMED);
+        Logger.log(LogLevel.INFO, "Transaction processed: " + t);
+      } else {
+        t.setStatus(Transaction.TransactionStatus.REJECTED);
+        Logger.log(LogLevel.ERROR, "Transaction failed: " + t);
+      }
+      break;
+    case REMOVE_BLACKLIST:
+      // Remove from blacklist
+      boolean removed = smartAccount.removeFromBlacklist(
+          senderAddress, targetAddress);
+      if (removed) {
+        t.setStatus(Transaction.TransactionStatus.CONFIRMED);
+        Logger.log(LogLevel.INFO, "Transaction processed: " + t);
+      } else {
+        t.setStatus(Transaction.TransactionStatus.REJECTED);
+        Logger.log(LogLevel.ERROR, "Transaction failed: " + t);
+      }
+      break;
+    case TRANSFER_FROM_IST_COIN:
+      // Transfer from IST Coin
+      BigInteger amountFrom = BigInteger.valueOf(t.getAmount());
+      String spenderAddress = t.getSpender();
+      boolean validTransferFrom = smartAccount.transferFrom(
+          senderAddress, spenderAddress, targetAddress, amountFrom);
+      if (validTransferFrom) {
         t.setStatus(Transaction.TransactionStatus.CONFIRMED);
         Logger.log(LogLevel.INFO, "Transaction processed: " + t);
       } else {
