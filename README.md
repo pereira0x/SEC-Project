@@ -5,44 +5,42 @@
 DepChain is a simplified permissioned blockchain system with high dependability guarantees. This project is developed iteratively in two stages:
 
 - **Stage 1**: Focuses on the consensus layer, specifically implementing a version of the Byzantine Read/Write Epoch Consensus algorithm.
-- **Stage 2**: Targets the transaction processing layer.
+- **Stage 2**: Targets the transaction processing layer, introducing a smart contract system for managing transactions (in ISTCoin token) and a native cryptocurrency DepCoin
 
 ## Features
 
 - Static system membership with a pre-defined leader.
-- Use of Public Key Infrastructure (PKI) for secure identity verification.
+- Use of symmetric session keys and Public Key Infrastructure (PKI) for secure identity verification.
 - Implementation of the Byzantine Read/Write Epoch Consensus algorithm.
-- Support for Byzantine behavior among blockchain members.
-- UDP-based network communication with custom abstraction layers.
-- Client interface for submitting transactions (string appends).
+- Support for Byzantine behavior among blockchain members and clients.
+- UDP-based network communication with abstraction layers.
+- Client interface for submitting transactions and state getters.
 
 ## Project Structure
 
 ```
-DepChain/
+depChain/
 │── src/                        
 │   ├── main/
 |   |   ├── java/
 │   |   |   ├── depchain/
-│   |   |   |   ├── blockchain/     # Blockchain member implementation
-│   |   |   |   ├── client/         # Client CLI for submitting transactions
+│   |   |   |   ├── account/        # EOA and Smart contract accounts implementation
+│   |   |   |   ├── blockchain/     # Blockchain related classes
+│   |   |   |   ├── client/         # Client CLI for submitting transactions and the respective commands
 │   |   |   |   ├── consensus/      # Byzantine Read/Write Epoch Consensus implementation
 │   |   |   |   ├── library/        # Client library for submitting transactions
-│   |   |   |   ├── network/        # UDP-based communication and message handling
+│   |   |   |   ├── network/        # UDP-based communication and message handling logic
 │   |   |   |   ├── utils/          # Utility classes and helper functions
 |   |   |   ├── resources/
-|   |   |   |   ├── config/         # Configuration files for testing
-|   |   |   |   |   ├── byzantineStateConfig.json
-|   |   |   |   |   ├── correctConfig.json
-|   |   |   |   |   ├── ignoreMessagesConfig.json
-|   |   |   |   |   ├── impersonateConfig.json
-|   |   |   |   |   ├── spamConfig.json
+|   |   |   |   ├── blocks/         # Contains the genesis block and other nodes' execution state
+|   |   |   |   ├── config/         # Configuration files for several byzantine behaviors
 |   |   |   |   ├── keys/           # Cryptographic keys
 │   ├── test/
 │   |   ├──  java/
-│   |   |   ├── depchain/
-│   |   |   |    ├── ClientServerCorrectCommunicationTest/  # Append test
-│── README.md                   # Project description and usage guide
+│   |   |   ├── depchain/           # Unit and integration tests for the system
+|   test.py                         # Test script for running the system
+README.md                           # Project description and usage guide
+report.pdf                          # Project report
 ```
 
 ## Installation and Setup
@@ -63,36 +61,18 @@ mvn clean install
 To run the system:
 
 ```sh
-mvn exec:java -Dexec.mainClass="<CLASS>"
-```
-
-Replace `<CLASS>` with the desired main class, e.g., `depchain.client.DepChainClient`.
-
-If you need to pass arguments to the main class, use the `-Dexec.args` parameter:
-
-```sh
-mvn exec:java -Dexec.mainClass="<CLASS>" -Dexec.args="arg1 arg2"
-```
-
-To run the server:
-
-```sh
-mvn exec:java -Dexec.mainClass="depchain.blockchain.BlockchainMember" -Dexec.args="1 8001"
-```
-
-To run the client:
-
-```sh
-mvn exec:java -Dexec.mainClass="depchain.client.DepChainClient" -Dexec.args="5 9001"
+python3 ./depChain/test.py
 ```
 
 ### Configuration
 
 Environment variables can be set in the `.env` file located in the root directory. The following variables are available:
 
-- `CONFIG_FILE_PATH`: Path to the configuration file.
+- `CONFIG_FILE_PATH`: Path to the behavior configuration file.
 - `KEYS_FOLDER_PATH`: Path to the folder containing cryptographic keys.
 - `DEBUG`: Enable/disable debug mode.
+- `BLOCKS_FOLDER`: Path to the folder containing the persisted blocks.
+- `TRANSACTIONS_THRESHOLD`: Number of transactions to be processed in a block.
 
 ### Formatting
 
@@ -142,7 +122,7 @@ Then you can interact with the blockchain as a client:
 - **Client-Consensus Integration**: The client submits requests that are transformed into consensus proposals.
 - **Security**: Cryptographic operations ensure message authentication and integrity.
 
-## Future Work (Stage 2)
+## Future Work
 
 - Implementing leader election and dynamic membership.
 - Expanding transaction processing capabilities.
@@ -162,8 +142,3 @@ Project developed for the Highly Dependable Systems course at Instituto Superior
 
 [1] Introduction to Reliable and Secure Distributed Programming. 2nd Edition.
 [2] Springer Computer Science Proceedings Guidelines: https://www.springer.com/gp/computer-science/lncs/conference-proceedings-guidelines
-
-
-
-O balance da smart account é o dinheiro que está dentro do smart contract. Na construção do smart contract o balance é todo do onwer. As trocas de iST coins são corridas somente pelo contrato. As trocas de depcoin são apenas registadas nos json
-
