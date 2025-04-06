@@ -136,4 +136,12 @@ public class EVMUtils {
         return hexString.toString().substring(0, 32);
     }
 
+    // method to check if an address only contains hex characters
+    public static boolean isHexAddress(String address) {
+        if (address.startsWith("0x")) {
+            address = address.substring(2);
+        }
+        return address.matches("^[0-9a-fA-F]+$") && address.length() == 32;
+    }
+
 }

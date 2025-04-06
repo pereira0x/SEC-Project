@@ -21,12 +21,12 @@ public class TransferFromCommand implements Command {
 
         Logger.log(LogLevel.INFO, "Client sending transfer from request...");
         try {
-            String senderAddress = args[0];
+            String sourceAddress = args[0];
             String targetAddress = args[1];
             long amount = Long.parseLong(args[2]);
-            clientLib.transferFromISTCoin(senderAddress, targetAddress, amount);
+            clientLib.transferFromISTCoin(sourceAddress, targetAddress, amount);
             Logger.log(LogLevel.INFO,
-                    "Successfully proposed to transfer " + amount + " from " + senderAddress + " to " + targetAddress);
+                    "Successfully proposed to transfer " + amount + " from " + sourceAddress + " to " + targetAddress);
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to transfer from: " + e.getMessage());
         }
@@ -34,6 +34,6 @@ public class TransferFromCommand implements Command {
 
     @Override
     public String getUsage() {
-        return "Usage: transferFrom <senderAddress> <targetAddress> <amount>";
+        return "Usage: transferFrom <sourceAddress> <targetAddress> <amount>";
     }
 }

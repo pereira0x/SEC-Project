@@ -31,6 +31,6 @@ public class GetISTBalanceCommand implements Command {
 
     @Override
     public String getUsage() {
-        return "Usage: getISTBal" + " <userId>";
+        return "Usage: getISTBal" + " <targetAddress>";
     }
 }

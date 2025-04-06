@@ -34,6 +34,6 @@ public class AllowanceCommand implements Command {
 
     @Override
     public String getUsage() {
-        return "Usage: allowance <source> <spender>";
+        return "Usage: allowance <sourceAddress> <spenderAddress>";
     }
 }

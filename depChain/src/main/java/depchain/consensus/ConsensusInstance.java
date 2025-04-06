@@ -131,7 +131,6 @@ public class ConsensusInstance {
                         case "byzantineState":
                             // Send a state message with a random state.
                             State currentStateCopy = state;
-                            // TODO: empty block instead of hardcoded string "Byzantine"
                             currentStateCopy.setMostRecentWrite(new TimestampValuePair(1, new Block()));
                             currentStateCopy.addToWriteSet(new TimestampValuePair(1, new Block()));
                             stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId)
@@ -148,7 +147,6 @@ public class ConsensusInstance {
                             break;
                         case "spam":
                             State currentStateCopySpam = state;
-                            // TODO: empty block instead of hardcoded string "Spam"
                             currentStateCopySpam.setMostRecentWrite(new TimestampValuePair(1, new Block()));
                             currentStateCopySpam.addToWriteSet(new TimestampValuePair(1, new Block()));
 

@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.hyperledger.besu.evm.EVM;
+
 public class BlockchainMember {
     private final int memberId;
     private final int memberPort;
@@ -184,6 +186,7 @@ public class BlockchainMember {
                                 // Append the decided value to the blockchain.
                                 processedBlock.setPreviousBlockHash(this.blockchain.getMostRecentBlock()
                                         .getBlockHash());
+
                                 this.blockchain.addBlock(processedBlock);
                                 Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain.getHashesChain());
 
@@ -406,6 +409,7 @@ public class BlockchainMember {
 
         try {
             senderAddress = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(t.getSender())));
+            t.setSender(senderAddress);
             targetAddress = t.getRecipient();
         } catch (NoSuchAlgorithmException e) {
             Logger.log(LogLevel.ERROR, "Failed to get EOAccountAddress: " + e.getMessage());
@@ -416,6 +420,14 @@ public class BlockchainMember {
             t.setStatus(Transaction.TransactionStatus.REJECTED);
             return t;
         }
+
+        // target adress is hexadecimal string
+        if (!EVMUtils.isHexAddress(targetAddress)) {
+            Logger.log(LogLevel.ERROR, "Invalid target address: " + targetAddress);
+            t.setStatus(Transaction.TransactionStatus.REJECTED);
+            return t;
+        }
+        
 
         switch (type) {
             case TRANSFER_DEPCOIN:
@@ -488,6 +500,7 @@ public class BlockchainMember {
                 break;
         }
 
+
         return t;
     }
 
@@ -503,9 +516,18 @@ public class BlockchainMember {
             senderAddress = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(tx.getSender())));
             targetAddress = tx.getRecipient();
 
+            // check if target address is a valid address
+                    // target adress is hexadecimal string
+            if (!EVMUtils.isHexAddress(targetAddress)) {
+                Logger.log(LogLevel.ERROR, "Invalid target address: " + targetAddress);
+                return;
+            }
+            
+
             switch (msg.getRequestType()) {
                 case GET_DEPCOIN_BALANCE:
                     // Get the balance of the sender
+                    
                     Long balanceDep = blockchain.getBalance(targetAddress);
                     replyValue = balanceDep.toString();
                     break;
@@ -537,7 +559,7 @@ public class BlockchainMember {
 
         // Send CLIENT_REPLY to the client.
         Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(), memberId)
-                .setBlock(null).setReplyType(replyType).setReplyValue(replyValue).build();
+                .setBlock(null).setReplyType(replyType).setTransaction(tx).setReplyValue(replyValue).build();
         try {
             Logger.log(LogLevel.DEBUG, "Reply: " + reply);
             perfectLink.send(msg.getSenderId(), reply);
