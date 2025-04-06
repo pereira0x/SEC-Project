@@ -130,7 +130,6 @@ public class Transaction implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        // TODO: consider data
         if (obj instanceof Transaction) {
             Transaction other = (Transaction) obj;
             // System.out.println("-------------------- sig: " + signature);

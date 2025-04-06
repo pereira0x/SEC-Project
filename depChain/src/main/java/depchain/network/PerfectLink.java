@@ -183,7 +183,6 @@ public class PerfectLink {
                 packet.getLength());
                 ObjectInputStream ois = new ObjectInputStream(bis)) {
 
-            // TODO: Deal with EOFException
             Message msg = (Message) ois.readObject();
 
             /*
@@ -268,7 +267,6 @@ public class PerfectLink {
 
                     default:
                         // Check authenticity of the message
-                        // TODO: sometimes this fails and I suspect it's due to concurrent access <-
                         // assess this
                         if (!CryptoUtil.checkHMACHmacSHA256(msg.getSignableContent().getBytes(), msg.getSignature(),
                                 sessions.get(msg.getSenderId()).getSessionKey())) {
@@ -293,7 +291,7 @@ public class PerfectLink {
             } else {
                 Logger.log(LogLevel.ERROR, "Unknown sender: " + msg.getSenderId());
             }
-        } catch (EOFException eof) { // TODO: Deal with EOFException
+        } catch (EOFException eof) {
             // Logger.log(LogLevel.ERROR, "EOF reached");
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Exception: " + e.toString());
