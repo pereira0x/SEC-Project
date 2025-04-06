@@ -23,9 +23,9 @@ public class ClientLibrary {
     // Thread-safe storage for pending transactions
     private final Map<Long, PendingTransactionStatus> pendingTransactions = new ConcurrentHashMap<>();
 
+    private final Map<Long, PendingReadRequestValues> pendingReadRequests = new ConcurrentHashMap<>();
+
     // Thread-safe handling of read requests
-    private final Object pendingReadRequestLock = new Object();
-    private volatile String readValue;
 
     public ClientLibrary(PerfectLink perfectLink, List<Integer> nodeIds, int clientId, int f) {
         this.perfectLink = perfectLink;
@@ -83,10 +83,21 @@ public class ClientLibrary {
     }
 
     private void handleValueReply(Message reply) {
-        this.readValue = reply.getReplyValue();
-        synchronized (pendingReadRequestLock) {
-            pendingReadRequestLock.notify();
+        /* this.readValue = reply.getReplyValue(); */
+
+        String replyValue = reply.getReplyValue();
+        // check which transaction it belongs to
+        Long txNonce = reply.getTransaction().getNonce();
+        PendingReadRequestValues pendingReadRequest = pendingReadRequests.get(txNonce);
+        if (pendingReadRequest == null) {
+            return;
         }
+
+        synchronized (pendingReadRequest.lock) {
+            pendingReadRequest.values.add(replyValue);
+            pendingReadRequest.lock.notify();
+        }
+
     }
 
     // Transaction operations
@@ -163,13 +174,13 @@ public class ClientLibrary {
         Transaction transaction = buildTransaction(transactionType, 0L, args);
         Message reqMsg = buildRequestMessage(requestType, transaction);
 
-        PendingTransactionStatus pendingStatus = new PendingTransactionStatus();
-        pendingTransactions.put(transaction.getNonce(), pendingStatus);
+        PendingReadRequestValues pendingReadRequest = new PendingReadRequestValues();
+        pendingReadRequests.put(transaction.getNonce(), pendingReadRequest);
 
         broadcast(reqMsg);
         nonce.incrementAndGet();
 
-        return waitForReadResponse();
+        return waitForReadResponse(transaction, pendingReadRequest);
     }
 
     private Transaction buildTransaction(Transaction.TransactionType transactionType, Long amount, String... args)
@@ -194,36 +205,46 @@ public class ClientLibrary {
                 .setTransaction(transaction).setRequestType(requestType).setNonce(nonce.get()).build();
     }
 
-    private String waitForReadResponse() {
+    private String waitForReadResponse(Transaction transaction, PendingReadRequestValues pendingReadRequest) {
         int requiredResponses = f + 1;
-        int replies = 0;
-        Map<String, Integer> responseCounts = new HashMap<>();
-
-        synchronized (pendingReadRequestLock) {
-            try {
-                while (replies < 2 * f + 1) {
-                    pendingReadRequestLock.wait(timeout);
-
-                    if (readValue != null) {
-                        replies++;
-                        responseCounts.put(readValue, responseCounts.getOrDefault(readValue, 0) + 1);
-
-                    }
+        String decidedValue = null;
+    
+        synchronized (pendingReadRequest.lock) {
+            Map<String, Integer> responseCounts = new HashMap<>();
+    
+            while (pendingReadRequest.values.size() < 2 * f + 1) {
+                try {
+                    pendingReadRequest.lock.wait(); // Wait until notified
+                } catch (InterruptedException e) {
+                    Logger.log(LogLevel.ERROR, "Error waiting for reply: " + e.getMessage());
+                    break;
                 }
-                if (responseCounts.get(readValue) >= requiredResponses) {
-                    // print the reponse counts
-                    /* for (Map.Entry<String, Integer> entry : responseCounts.entrySet()) {
-                        Logger.log(LogLevel.INFO, "Response: " + entry.getKey() + ", Count: " + entry.getValue());
-                    } */
-                    return readValue;
-                }
-            } catch (InterruptedException e) {
-                Logger.log(LogLevel.ERROR, "Error waiting for reply: " + e.getMessage());
+            }
+    
+            responseCounts.clear();
+            for (String readValue : pendingReadRequest.values) {
+                responseCounts.put(readValue, responseCounts.getOrDefault(readValue, 0) + 1);
+            }
+    
+            // Decide based on counts
+            String mostFreqValue = Collections.max(responseCounts.entrySet(), Map.Entry.comparingByValue()).getKey();
+            if (responseCounts.get(mostFreqValue) >= requiredResponses) {
+                decidedValue = mostFreqValue;
+                
+    
+                /* for (Map.Entry<String, Integer> entry : responseCounts.entrySet()) {
+                    Logger.log(LogLevel.INFO, "Value: " + entry.getKey() + ", Count: " + entry.getValue());
+                } */
             }
         }
-
-
-        Logger.log(LogLevel.WARNING, "Failed to get consistent response within timeout");
+    
+        pendingReadRequests.remove(transaction.getNonce());
+    
+        if (decidedValue != null) {
+            return decidedValue;
+        }
+    
+        Logger.log(LogLevel.WARNING, "Failed to get consistent response.");
         return null;
     }
 
@@ -284,5 +305,10 @@ public class ClientLibrary {
     private static class PendingTransactionStatus {
         private final Object lock = new Object();
         private List<Transaction.TransactionStatus> status = new ArrayList<>();
+    }
+
+    private static class PendingReadRequestValues {
+        private final Object lock = new Object();
+        private List<String> values = new ArrayList<>();
     }
 }

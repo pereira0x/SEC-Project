@@ -506,6 +506,7 @@ public class BlockchainMember {
             switch (msg.getRequestType()) {
                 case GET_DEPCOIN_BALANCE:
                     // Get the balance of the sender
+                    
                     Long balanceDep = blockchain.getBalance(targetAddress);
                     replyValue = balanceDep.toString();
                     break;
@@ -537,7 +538,7 @@ public class BlockchainMember {
 
         // Send CLIENT_REPLY to the client.
         Message reply = new Message.MessageBuilder(Type.CLIENT_REPLY, msg.getEpoch(), memberId)
-                .setBlock(null).setReplyType(replyType).setReplyValue(replyValue).build();
+                .setBlock(null).setReplyType(replyType).setTransaction(tx).setReplyValue(replyValue).build();
         try {
             Logger.log(LogLevel.DEBUG, "Reply: " + reply);
             perfectLink.send(msg.getSenderId(), reply);
