@@ -25,7 +25,6 @@ public class ClientLibrary {
     // Map to store waiting transactions and their notifier objects
     private final Map<Long, PendingTransactionStatus> pendingTransactions = new ConcurrentHashMap<>();
 
-
     // I want to have a pendingReqadRequest that stores 1 request at a time
     // Single pending read request
     private final Object pendingReadRequestLock = new Object();
@@ -47,7 +46,7 @@ public class ClientLibrary {
             try {
                 Message reply = perfectLink.deliver();
                 if (reply.getType() == Message.Type.CLIENT_REPLY) {
-                    if(reply.getReplyType() == Message.ReplyType.BLOCK) {
+                    if (reply.getReplyType() == Message.ReplyType.BLOCK) {
 
                         System.out.println("Received reply: " + reply);
                         Block appendedBlock = reply.getBlock();
@@ -63,13 +62,11 @@ public class ClientLibrary {
                                 }
                             }
                         }
-                    }
-                    else if (reply.getReplyType() == Message.ReplyType.VALUE) {
+                    } else if (reply.getReplyType() == Message.ReplyType.VALUE) {
                         this.readValue = reply.getReplyValue();
                         synchronized (pendingReadRequestLock) {
                             pendingReadRequestLock.notify(); // Notify the waiting thread
                         }
-                       
 
                     }
                 }
@@ -80,70 +77,54 @@ public class ClientLibrary {
     }
 
     public String addToBlackList(String targetAddress) throws Exception {
-      return performBlockOperation(Transaction.TransactionType.ADD_BLACKLIST,
-                                   Message.RequestType.ADD_BLACKLIST, 0L,
-                                   targetAddress);
+        return performBlockOperation(Transaction.TransactionType.ADD_BLACKLIST, Message.RequestType.ADD_BLACKLIST, 0L,
+                targetAddress);
     }
 
     public String removeFromBlackList(String targetAddress) throws Exception {
-      return performBlockOperation(Transaction.TransactionType.REMOVE_BLACKLIST,
-                                   Message.RequestType.REMOVE_BLACKLIST, 0L,
-                                   targetAddress);
+        return performBlockOperation(Transaction.TransactionType.REMOVE_BLACKLIST, Message.RequestType.REMOVE_BLACKLIST,
+                0L, targetAddress);
     }
 
     public String approve(String targetAddress, Long amount) throws Exception {
-        return performBlockOperation(Transaction.TransactionType.APPROVE,
-                                     Message.RequestType.APPROVE, amount,
-                                     targetAddress);
+        return performBlockOperation(Transaction.TransactionType.APPROVE, Message.RequestType.APPROVE, amount,
+                targetAddress);
     }
 
     public String transferDepcoin(String targetAddress, Long amount) throws Exception {
-      return performBlockOperation(Transaction.TransactionType.TRANSFER_DEPCOIN, Message.RequestType.TRANSFER_DEPCOIN, amount, targetAddress);
+        return performBlockOperation(Transaction.TransactionType.TRANSFER_DEPCOIN, Message.RequestType.TRANSFER_DEPCOIN,
+                amount, targetAddress);
     }
 
     public String transferISTCoin(String targetAddress, Long amount) throws Exception {
-      return performBlockOperation(Transaction.TransactionType.TRANSFER_IST_COIN, Message.RequestType.TRANSFER_ISTCOIN, amount, targetAddress);
+        return performBlockOperation(Transaction.TransactionType.TRANSFER_IST_COIN,
+                Message.RequestType.TRANSFER_ISTCOIN, amount, targetAddress);
     }
 
     public String transferFromISTCoin(String spenderAddress, String targetAddress, Long amount) throws Exception {
-      return performBlockOperation(
-          Transaction.TransactionType.TRANSFER_FROM_IST_COIN,
-          Message.RequestType.TRANSFER_FROM_IST_COIN, amount, targetAddress,
-          spenderAddress);
+        return performBlockOperation(Transaction.TransactionType.TRANSFER_FROM_IST_COIN,
+                Message.RequestType.TRANSFER_FROM_IST_COIN, amount, targetAddress, spenderAddress);
     }
 
-    public String performBlockOperation(Transaction.TransactionType transactionType,
-                             Message.RequestType requestType, Long amount, String... args)
-            throws Exception {
-      String targetAddress = args[0];
-      String spenderAddress = null;
-      if (args.length > 1) {
-        spenderAddress = args[1];
-      }
-        Transaction transaction =
-                new Transaction.TransactionBuilder()
-                        .setSender(String.valueOf(this.clientId))
-                        .setRecipient(String.valueOf(targetAddress))
-                        .setAmount(amount)
-                        .setNonce(CryptoUtil.generateNonce())
-                        .setType(transactionType)
-                        .setSpender(spenderAddress) // null if not needed
-                        .setStatus(Transaction.TransactionStatus.PENDING)
-                        .build();
+    public String performBlockOperation(Transaction.TransactionType transactionType, Message.RequestType requestType,
+            Long amount, String... args) throws Exception {
+        String targetAddress = args[0];
+        String spenderAddress = null;
+        if (args.length > 1) {
+            spenderAddress = args[1];
+        }
+        Transaction transaction = new Transaction.TransactionBuilder().setSender(String.valueOf(this.clientId))
+                .setRecipient(String.valueOf(targetAddress)).setAmount(amount).setNonce(CryptoUtil.generateNonce())
+                .setType(transactionType).setSpender(spenderAddress) // null if not needed
+                .setStatus(Transaction.TransactionStatus.PENDING).build();
         // Convert the transaction to bytes and sign it
         byte[] transactionBytes = transaction.toByteArray();
-        byte[] signature =
-                CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
+        byte[] signature = CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
         ByteArrayWrapper sig = new ByteArrayWrapper(signature);
         transaction.setSignature(sig);
         // Create message
-        Message reqMsg = new Message
-                .MessageBuilder(Message.Type.CLIENT_REQUEST, 0,
-                clientId, clientId)
-                .setTransaction(transaction)
-                .setRequestType(requestType)
-                .setNonce(nonce)
-                .build();
+        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
+                .setTransaction(transaction).setRequestType(requestType).setNonce(nonce).build();
         // Register the transaction as pending
         PendingTransactionStatus pendingStatus = new PendingTransactionStatus();
         pendingTransactions.put(transaction.getNonce(), pendingStatus);
@@ -158,76 +139,65 @@ public class ClientLibrary {
         return "Transaction Sent: " + transaction.getNonce();
     }
 
-      public String getDepCoinBalance(String targetAddress) throws Exception {
-        return performReadOperation(Transaction.TransactionType.GET_DEPCOIN_BALANCE, Message.RequestType.GET_DEPCOIN_BALANCE, targetAddress);        
+    public String getDepCoinBalance(String targetAddress) throws Exception {
+        return performReadOperation(Transaction.TransactionType.GET_DEPCOIN_BALANCE,
+                Message.RequestType.GET_DEPCOIN_BALANCE, targetAddress);
     }
 
     public String isBlacklisted(String targetAddress) throws Exception {
-      return performReadOperation(
-          Transaction.TransactionType.IS_BLACKLISTED,
-          Message.RequestType.IS_BLACKLISTED, targetAddress);
+        return performReadOperation(Transaction.TransactionType.IS_BLACKLISTED, Message.RequestType.IS_BLACKLISTED,
+                targetAddress);
     }
 
     public String getISTCoinBalance(String targetAddress) throws Exception {
-      return performReadOperation(Transaction.TransactionType.GET_ISTCOIN_BALANCE, Message.RequestType.GET_ISTCOIN_BALANCE, targetAddress);
+        return performReadOperation(Transaction.TransactionType.GET_ISTCOIN_BALANCE,
+                Message.RequestType.GET_ISTCOIN_BALANCE, targetAddress);
     }
 
     public String allowance(String source, String spender) throws Exception {
-        return performReadOperation(Transaction.TransactionType.ALLOWANCE, Message.RequestType.ALLOWANCE, source, spender);
+        return performReadOperation(Transaction.TransactionType.ALLOWANCE, Message.RequestType.ALLOWANCE, source,
+                spender);
     }
 
-
-    public String
-        performReadOperation(Transaction.TransactionType transactionType,
-                             Message.RequestType requestType, String... args)
-            throws Exception {
-      String targetAddress = args[0];
-      String spenderAddress = null;
-      if (args.length > 1) {
-        spenderAddress = args[1];
-      }
-      Transaction transaction =
-          new Transaction.TransactionBuilder()
-              .setSender(String.valueOf(this.clientId))
-              .setRecipient(String.valueOf(targetAddress))
-              .setAmount(0L)
-              .setNonce(CryptoUtil.generateNonce())
-              .setType(transactionType)
-              .setStatus(Transaction.TransactionStatus.PENDING)
-              .setSpender(spenderAddress) // null if not needed
-              .build();
-      // Convert the transaction to bytes and sign it
-      byte[] transactionBytes = transaction.toByteArray();
-      byte[] signature =
-          CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
-      ByteArrayWrapper sig = new ByteArrayWrapper(signature);
-      transaction.setSignature(sig);
-      // Create message
-      Message reqMsg = new Message
-                           .MessageBuilder(Message.Type.CLIENT_REQUEST, 0,
-                                           clientId, clientId)
-                           .setTransaction(transaction)
-                           .setRequestType(requestType)
-                           .setNonce(nonce)
-                           .build();
-      // Register the transaction as pending
-      PendingTransactionStatus pendingStatus = new PendingTransactionStatus();
-      pendingTransactions.put(transaction.getNonce(), pendingStatus);
-      // Send the transaction
-      broadcast(reqMsg);
-      // Wait for the reply
-      nonce++;
-      synchronized (pendingReadRequestLock) {
-        try {
-          pendingReadRequestLock.wait(timeout);
-
-        } catch (InterruptedException e) {
-          this.readValue = null; // Reset readValue on interruption
-          Logger.log(LogLevel.ERROR,
-                     "Error waiting for reply: " + e.getMessage());
+    public String performReadOperation(Transaction.TransactionType transactionType, Message.RequestType requestType,
+            String... args) throws Exception {
+        String targetAddress = args[0];
+        String spenderAddress = null;
+        if (args.length > 1) {
+            spenderAddress = args[1];
         }
-      }
-      return readValue;
+        Transaction transaction = new Transaction.TransactionBuilder().setSender(String.valueOf(this.clientId))
+                .setRecipient(String.valueOf(targetAddress)).setAmount(0L).setNonce(CryptoUtil.generateNonce())
+                .setType(transactionType).setStatus(Transaction.TransactionStatus.PENDING).setSpender(spenderAddress) // null
+                                                                                                                      // if
+                                                                                                                      // not
+                                                                                                                      // needed
+                .build();
+        // Convert the transaction to bytes and sign it
+        byte[] transactionBytes = transaction.toByteArray();
+        byte[] signature = CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
+        ByteArrayWrapper sig = new ByteArrayWrapper(signature);
+        transaction.setSignature(sig);
+        // Create message
+        Message reqMsg = new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
+                .setTransaction(transaction).setRequestType(requestType).setNonce(nonce).build();
+        // Register the transaction as pending
+        PendingTransactionStatus pendingStatus = new PendingTransactionStatus();
+        pendingTransactions.put(transaction.getNonce(), pendingStatus);
+        // Send the transaction
+        broadcast(reqMsg);
+        // Wait for the reply
+        nonce++;
+        synchronized (pendingReadRequestLock) {
+            try {
+                pendingReadRequestLock.wait(timeout);
+
+            } catch (InterruptedException e) {
+                this.readValue = null; // Reset readValue on interruption
+                Logger.log(LogLevel.ERROR, "Error waiting for reply: " + e.getMessage());
+            }
+        }
+        return readValue;
     }
 
     public void broadcast(Message msg) throws Exception {
@@ -279,4 +249,4 @@ public class ClientLibrary {
         private final Object lock = new Object();
         private Transaction.TransactionStatus status = Transaction.TransactionStatus.PENDING;
     }
-    }
+}

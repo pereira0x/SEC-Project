@@ -1,6 +1,5 @@
 package depchain.account;
 
-
 import static depchain.utils.EVMUtils.*;
 
 import org.apache.tuweni.bytes.Bytes;
@@ -27,11 +26,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-
 import io.github.cdimascio.dotenv.Dotenv;
 
 public class SmartAccount {
-    
+
     private String address;
     private Long balance;
     private SimpleWorld simpleWorld;
@@ -48,7 +46,6 @@ public class SmartAccount {
         this.balance = balance;
     }
 
-
     public String getAddress() {
         return address;
     }
@@ -56,7 +53,7 @@ public class SmartAccount {
     public Long getBalance() {
         return balance;
     }
- 
+
     public Address getOwner() {
         return ownerAddress;
     }
@@ -73,10 +70,10 @@ public class SmartAccount {
         }
     }
 
-
     public SmartAccount() {
         setupEnvironment();
     }
+
     private void setupEnvironment() {
         this.simpleWorld = new SimpleWorld();
 
@@ -84,7 +81,7 @@ public class SmartAccount {
         String genesisPath = Dotenv.load().get("BLOCKS_FOLDER") + "/genesisBlock.json";
         if (genesisPath == null)
             throw new IllegalArgumentException("Environment variable BLOCKS_FOLDER is not set.");
-  
+
         Path path = Paths.get(genesisPath);
         String content = null;
         try {
@@ -94,7 +91,8 @@ public class SmartAccount {
         }
         JsonObject json = JsonParser.parseString(content).getAsJsonObject();
         JsonObject state = json.getAsJsonObject("state");
-        String contractAddressKey = state.keySet().stream().reduce((first, second) -> second).orElseThrow(() -> new RuntimeException("State is empty"));
+        String contractAddressKey = state.keySet().stream().reduce((first, second) -> second)
+                .orElseThrow(() -> new RuntimeException("State is empty"));
         JsonObject contractAccount1 = state.getAsJsonObject(contractAddressKey);
         String ownerAddressHex = contractAccount1.getAsJsonObject("storage").get("owner").getAsString();
 
@@ -102,11 +100,12 @@ public class SmartAccount {
 
         // and contract account
         this.contractAddress = Address.fromHexString(contractAddressKey);
-        simpleWorld.createAccount(contractAddress,0, Wei.fromEth(0));
+        simpleWorld.createAccount(contractAddress, 0, Wei.fromEth(0));
         MutableAccount contractAccount = (MutableAccount) simpleWorld.get(contractAddress);
         String paddedAddress = padHexStringTo256Bit(ownerAddress.toHexString());
         String stateVariableIndex = convertIntegerToHex256Bit(1);
-        String storageSlotMapping = Numeric.toHexStringNoPrefix(Hash.sha3(Numeric.hexStringToByteArray(paddedAddress + stateVariableIndex)));
+        String storageSlotMapping = Numeric
+                .toHexStringNoPrefix(Hash.sha3(Numeric.hexStringToByteArray(paddedAddress + stateVariableIndex)));
 
         this.byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(byteArrayOutputStream);
@@ -122,9 +121,9 @@ public class SmartAccount {
         executor.execute();
         executor.code(Bytes.fromHexString(runtimeBytecode)); // Set contract bytecode
         executor.commitWorldState();
-}
+    }
 
-// ISTCoin methods implementation
+    // ISTCoin methods implementation
     public String name(String senderAddress) {
         byteArrayOutputStream.reset();
         executor.sender(Address.fromHexString(senderAddress));
@@ -132,7 +131,7 @@ public class SmartAccount {
         executor.execute();
         return extractStringFromReturnData(byteArrayOutputStream);
     }
-    
+
     public String symbol(String senderAddress) {
         byteArrayOutputStream.reset();
         executor.sender(Address.fromHexString(senderAddress));
@@ -140,7 +139,7 @@ public class SmartAccount {
         executor.execute();
         return extractStringFromReturnData(byteArrayOutputStream);
     }
-    
+
     public int decimals(String senderAddress) {
         byteArrayOutputStream.reset();
         executor.sender(Address.fromHexString(senderAddress));
@@ -148,7 +147,7 @@ public class SmartAccount {
         executor.execute();
         return extractIntegerFromReturnData(byteArrayOutputStream);
     }
-    
+
     public BigInteger totalSupply(String senderAddress) {
         byteArrayOutputStream.reset();
         executor.sender(Address.fromHexString(senderAddress));
@@ -166,7 +165,7 @@ public class SmartAccount {
         executor.execute();
         return extractBigIntegerFromReturnData(byteArrayOutputStream);
     }
-    
+
     public boolean transfer(String senderAddress, String recipientAddress, BigInteger amount) {
         byteArrayOutputStream.reset();
         executor.sender(Address.fromHexString(senderAddress));
@@ -181,6 +180,7 @@ public class SmartAccount {
             return false;
         }
     }
+
     public BigInteger allowance(String senderAddress, String sourceAddress, String spenderAddress) {
         byteArrayOutputStream.reset();
         executor.sender(Address.fromHexString(senderAddress));
@@ -191,7 +191,7 @@ public class SmartAccount {
         executor.execute();
         return extractBigIntegerFromReturnData(byteArrayOutputStream);
     }
-    
+
     public boolean approve(String senderAddress, String spenderAddress, BigInteger amount) {
         byteArrayOutputStream.reset();
         executor.sender(Address.fromHexString(senderAddress));
@@ -206,15 +206,17 @@ public class SmartAccount {
             return false;
         }
     }
-    
-    public boolean transferFrom(String senderAddress, String sourceAddress, String recipientAddress, BigInteger amount) {
+
+    public boolean transferFrom(String senderAddress, String sourceAddress, String recipientAddress,
+            BigInteger amount) {
         byteArrayOutputStream.reset();
         executor.sender(Address.fromHexString(senderAddress));
         // Format: function selector + sender address + recipient address + amount (all padded to 32 bytes)
         String paddedSourceAddress = padHexStringTo256Bit(sourceAddress);
         String paddedRecipientAddress = padHexStringTo256Bit(recipientAddress);
         String paddedAmount = padHexStringTo256Bit(amount.toString(16));
-        executor.callData(Bytes.fromHexString("23b872dd" + paddedSourceAddress + paddedRecipientAddress + paddedAmount)); // transferFrom(address,address,uint256)
+        executor.callData(
+                Bytes.fromHexString("23b872dd" + paddedSourceAddress + paddedRecipientAddress + paddedAmount)); // transferFrom(address,address,uint256)
         executor.execute();
         try {
             return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
@@ -222,7 +224,7 @@ public class SmartAccount {
             return false;
         }
     }
-    
+
     // AccessControl methods
     public String owner(String senderAddress) {
         executor.sender(Address.fromHexString(senderAddress));
@@ -232,7 +234,7 @@ public class SmartAccount {
         // This needs to be handled differently as it returns an address
         return extractAddressFromReturnData(byteArrayOutputStream);
     }
-    
+
     public boolean addToBlacklist(String senderAddress, String accountAddress) {
         byteArrayOutputStream.reset();
         executor.sender(Address.fromHexString(senderAddress));
@@ -240,12 +242,12 @@ public class SmartAccount {
         executor.callData(Bytes.fromHexString("44337ea1" + paddedAddress)); // addToBlacklist(address)
         executor.execute();
         try {
-          return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
+            return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
         } catch (Exception e) {
-          return false;
+            return false;
         }
     }
-    
+
     public boolean removeFromBlacklist(String senderAddress, String accountAddress) {
         byteArrayOutputStream.reset();
         executor.sender(Address.fromHexString(senderAddress));
@@ -253,12 +255,12 @@ public class SmartAccount {
         executor.callData(Bytes.fromHexString("537df3b6" + paddedAddress)); // removeFromBlacklist(address)
         executor.execute();
         try {
-          return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
+            return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
         } catch (Exception e) {
-          return false;
+            return false;
         }
     }
-    
+
     public boolean isBlacklisted(String senderAddress, String accountAddress) {
         byteArrayOutputStream.reset();
         executor.sender(Address.fromHexString(senderAddress));
@@ -266,11 +268,9 @@ public class SmartAccount {
         executor.callData(Bytes.fromHexString("fe575a87" + paddedAddress)); // isBlacklisted(address)
         executor.execute();
         try {
-          return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
+            return extractIntegerFromReturnData(byteArrayOutputStream) == 1;
         } catch (Exception e) {
-          return false;
+            return false;
         }
     }
 }
-
-

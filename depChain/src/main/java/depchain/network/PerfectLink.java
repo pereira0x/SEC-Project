@@ -84,8 +84,8 @@ public class PerfectLink {
 
         if (myId <= processAddresses.size() - Config.clientIds.size()) {
 
-            while (activeSessionMap.size() < processAddresses.size() - 1 ||
-                    activeSessionMap.values().stream().anyMatch(value -> value == false)) {
+            while (activeSessionMap.size() < processAddresses.size() - 1
+                    || activeSessionMap.values().stream().anyMatch(value -> value == false)) {
                 // Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
                 // print sessions that have been established
                 for (int i = 1; i <= processAddresses.size(); i++) {
@@ -102,8 +102,8 @@ public class PerfectLink {
         }
         // if client wait for processAddresses.size() - numberOfClients
         else {
-            while (activeSessionMap.size() < processAddresses.size() - Config.clientIds.size() ||
-                    activeSessionMap.values().stream().anyMatch(value -> value == false)) {
+            while (activeSessionMap.size() < processAddresses.size() - Config.clientIds.size()
+                    || activeSessionMap.values().stream().anyMatch(value -> value == false)) {
                 // Logger.log(LogLevel.INFO, "Waiting for all sessions to be established...");
                 // print sessions that have been established
                 for (int i = 1; i <= processAddresses.size(); i++) {
@@ -187,9 +187,8 @@ public class PerfectLink {
             Message msg = (Message) ois.readObject();
 
             /*
-             * Logger.log(LogLevel.DEBUG, "Received message of type " + msg.getType() +
-             * " from " + msg.getSenderId()
-             * + " with nonce " + msg.getNonce());
+             * Logger.log(LogLevel.DEBUG, "Received message of type " + msg.getType() + " from " + msg.getSenderId() +
+             * " with nonce " + msg.getNonce());
              */
 
             PublicKey senderKey = publicKeys.get(msg.getSenderId());
@@ -225,9 +224,8 @@ public class PerfectLink {
                                     sessionKey);
                             sessions.put(msg.getSenderId(), newSession);
                             /*
-                             * Logger.log(LogLevel.INFO, "MY ID " + myId +
-                             * " Session established with process "
-                             * + msg.getSenderId() + " session: " + newSession.toString());
+                             * Logger.log(LogLevel.INFO, "MY ID " + myId + " Session established with process " +
+                             * msg.getSenderId() + " session: " + newSession.toString());
                              */
 
                             activeSessionMap.put(msg.getSenderId(), true);
@@ -251,9 +249,8 @@ public class PerfectLink {
                             activeSessionMap.put(msg.getSenderId(), true);
 
                             /*
-                             * Logger.log(LogLevel.INFO, "MY ID " + myId +
-                             * " Session established with process "
-                             * + msg.getSenderId() + " session: " + newSession.toString());
+                             * Logger.log(LogLevel.INFO, "MY ID " + myId + " Session established with process " +
+                             * msg.getSenderId() + " session: " + newSession.toString());
                              */
                         }
 
@@ -264,8 +261,7 @@ public class PerfectLink {
 
                         // send ACK_SESSION
                         Message ackMsgSession = new Message.MessageBuilder(Message.Type.ACK_SESSION, msg.getEpoch(),
-                                myId, -1)
-                                .setNonce(msg.getNonce()).setSessionKey(encryptedSessionKeyWrapper).build();
+                                myId, -1).setNonce(msg.getNonce()).setSessionKey(encryptedSessionKeyWrapper).build();
                         send(msg.getSenderId(), ackMsgSession);
 
                         break;
@@ -282,8 +278,8 @@ public class PerfectLink {
                         }
 
                         // Send ACK to sender
-                        Message ackMsg = new Message.MessageBuilder(Message.Type.ACK, msg.getEpoch(),
-                                myId, -1).setNonce(msg.getNonce()).build();
+                        Message ackMsg = new Message.MessageBuilder(Message.Type.ACK, msg.getEpoch(), myId, -1)
+                                .setNonce(msg.getNonce()).build();
                         send(msg.getSenderId(), ackMsg);
 
                         // Process the message if we haven't seen it before
@@ -344,59 +340,54 @@ public class PerfectLink {
             SecretKey sessionKey = s.getSessionKey();
             if (sessionKey != null) {
                 if (msg.getType() == Message.Type.STATE) {
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(),
-                            msg.getSenderId(), msg.getClientId()).setSignature(sig).setNonce(msg.getNonce())
-                            .setState(msg.getState())
-                            .setBlock(msg.getBlock()).setTransaction(msg.getTransaction()).build();
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
+                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
+                                    .setBlock(msg.getBlock()).setTransaction(msg.getTransaction()).build();
 
                 } else if (msg.getType() == Message.Type.ACK_SESSION) {
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(),
-                            msg.getSenderId(), msg.getClientId()).setSignature(sig).setNonce(msg.getNonce())
-                            .setSessionKey(msg.getSessionKey()).setBlock(msg.getBlock()).build();
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
+                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce())
+                                    .setSessionKey(msg.getSessionKey()).setBlock(msg.getBlock()).build();
 
                 } else if (msg.getType() == Message.Type.COLLECTED) {
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(),
-                            msg.getSenderId(), msg.getClientId()).setSignature(sig).setNonce(msg.getNonce())
-                            .setState(msg.getState())
-                            .setStatesMap(msg.getStatesMap()).setBlock(msg.getBlock())
-                            .setTransaction(msg.getTransaction()).build();
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
+                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
+                                    .setStatesMap(msg.getStatesMap()).setBlock(msg.getBlock())
+                                    .setTransaction(msg.getTransaction()).build();
 
                 } else if (msg.getType() == Message.Type.WRITE) {
 
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(),
-                            msg.getSenderId(), msg.getClientId()).setSignature(sig).setNonce(msg.getNonce())
-                            .setState(msg.getState())
-                            .setStatesMap(msg.getStatesMap()).setWrite(msg.getWrite()).setBlock(msg.getBlock())
-                            .setTransaction(msg.getTransaction()).build();
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
+                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
+                                    .setStatesMap(msg.getStatesMap()).setWrite(msg.getWrite()).setBlock(msg.getBlock())
+                                    .setTransaction(msg.getTransaction()).build();
                 } else if (msg.getType() == Message.Type.CLIENT_REQUEST) {
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(),
-                            msg.getSenderId(), msg.getClientId()).setSignature(sig).setNonce(msg.getNonce())
-                            .setBlock(msg.getBlock()).setTransaction(msg.getTransaction())
-                            .setRequestType(msg.getRequestType()).build();
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
+                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
+                                    .setTransaction(msg.getTransaction()).setRequestType(msg.getRequestType()).build();
 
                 } else if (msg.getType() == Message.Type.CLIENT_REPLY) {
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(),
-                            msg.getSenderId(), msg.getClientId()).setSignature(sig).setNonce(msg.getNonce())
-                            .setBlock(msg.getBlock()).setTransaction(msg.getTransaction()).setReplyType(msg.getReplyType()).setReplyValue(msg.getReplyValue()).build();
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
+                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
+                                    .setTransaction(msg.getTransaction()).setReplyType(msg.getReplyType())
+                                    .setReplyValue(msg.getReplyValue()).build();
 
                 } else {
 
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(),
-                            msg.getSenderId(), msg.getClientId()).setSignature(sig).setNonce(msg.getNonce())
-                            .setBlock(msg.getBlock()).setTransaction(msg.getTransaction()).build();
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
+                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
+                                    .setTransaction(msg.getTransaction()).build();
                 }
             } else {
                 signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
-                        msg.getClientId())
-                        .setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
-                        .setTransaction(msg.getTransaction()).build();
+                        msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
+                                .setTransaction(msg.getTransaction()).build();
             }
 
             try {
                 /*
-                 * Logger.log(LogLevel.DEBUG,
-                 * "Sending message to " + destId + " of type " + msg.getType() + " with nonce "
-                 * + msg.getNonce());
+                 * Logger.log(LogLevel.DEBUG, "Sending message to " + destId + " of type " + msg.getType() +
+                 * " with nonce " + msg.getNonce());
                  */
                 // if not ack, then send as true
                 if (msg.getType() != Message.Type.ACK && msg.getType() != Message.Type.ACK_SESSION
@@ -466,9 +457,8 @@ public class PerfectLink {
                 try {
                     if (msg.getNonce() >= session.getSentCounter()) {
                         /*
-                         * Logger.log(LogLevel.DEBUG, "Resending message to " + destId + " of type " +
-                         * msg.getType()
-                         * + " with nonce " + msg.getNonce());
+                         * Logger.log(LogLevel.DEBUG, "Resending message to " + destId + " of type " + msg.getType() +
+                         * " with nonce " + msg.getNonce());
                          */
                         sendMessage(processAddresses.get(destId), msg, false, destId);
                     } else {

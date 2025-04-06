@@ -1,7 +1,7 @@
 package depchain.account;
 
 public class EOAccount {
-    
+
     private String address;
     private Long balance;
 

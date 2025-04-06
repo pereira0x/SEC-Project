@@ -22,11 +22,10 @@ public class AllowanceCommand implements Command {
         // How much can the spender spend on behalf of the source
         Logger.log(LogLevel.INFO, "Client sending allowance request...");
         try {
-          String source = args[0];
-          String spender = args[1];
-          String allowance = clientLib.allowance(source, spender);
-            Logger.log(LogLevel.INFO,
-                    "Allowance for spender " + spender + " on source " + source + ": " + allowance);
+            String source = args[0];
+            String spender = args[1];
+            String allowance = clientLib.allowance(source, spender);
+            Logger.log(LogLevel.INFO, "Allowance for spender " + spender + " on source " + source + ": " + allowance);
 
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to allowance request: " + e.getMessage());

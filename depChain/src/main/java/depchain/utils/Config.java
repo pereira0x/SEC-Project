@@ -48,7 +48,7 @@ public class Config {
 
     private static void loadAddresses(String configFilePath) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_COMMENTS, true);   // Allow comments in JSON
+        mapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_COMMENTS, true); // Allow comments in JSON
         JsonNode rootNode = mapper.readTree(new File(configFilePath));
 
         for (JsonNode node : rootNode) {
@@ -62,7 +62,7 @@ public class Config {
 
             InetSocketAddress address = new InetSocketAddress(host, port);
 
-            if(type.equals("client")) {
+            if (type.equals("client")) {
                 clientIds.add(id);
             }
 
@@ -84,7 +84,6 @@ public class Config {
             privateKeys.put(serverId, priv);
             publicKeys.put(serverId, pub);
         }
-
 
         // For the client 1 (ID=1 in config.txt)
         String privKeyClientPath = resourcesFolder + "/priv_key_client1.pem";
@@ -162,7 +161,7 @@ public class Config {
         } catch (Exception e) {
             throw new RuntimeException("Error getting public key for ID " + id, e);
         }
-       
+
     }
 
     public static List<PublicKey> getClientPublicKeys() {
@@ -174,7 +173,7 @@ public class Config {
             }
         }
 
-        return clientKeys;  
+        return clientKeys;
     }
 
     public static List<Integer> getClientIds() {

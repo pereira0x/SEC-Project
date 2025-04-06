@@ -20,7 +20,6 @@ public class GetDepBalanceCommand implements Command {
             return;
         }
 
-
         Logger.log(LogLevel.INFO, "Client sending get DepCoin balance request...");
         try {
             String targetAddress = args[0];

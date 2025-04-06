@@ -23,19 +23,17 @@ import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 import io.github.cdimascio.dotenv.Dotenv;
 
-
 public class Blockchain {
-    
+
     private int memberId;
     private List<Block> blocks = new ArrayList<>();
     private List<EOAccount> eoAccounts = new ArrayList<>();
     private SmartAccount smartAccount;
     private final Path serverDir;
 
-
     public Blockchain(int memberId, List<PublicKey> clientPublicKeys) throws IOException {
         this.memberId = memberId;
-        
+
         // Directory path is env variable - Dotenv
         String genesisPath = Dotenv.load().get("BLOCKS_FOLDER") + "/genesisBlock.json";
         if (genesisPath == null)
@@ -47,10 +45,8 @@ public class Blockchain {
         serverDir = Paths.get(serverPath);
         if (Files.exists(serverDir)) {
             try {
-                Files.walk(serverDir)
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(file -> file.delete());
+                Files.walk(serverDir).sorted(Comparator.reverseOrder()).map(Path::toFile)
+                        .forEach(file -> file.delete());
             } catch (IOException e) {
                 throw new RuntimeException("Error deleting server directory: " + serverPath, e);
             }
@@ -67,7 +63,7 @@ public class Blockchain {
 
         // Create Externally Owned Accounts (EOA)
         JSONObject state = json.getJSONObject("state");
-        for(PublicKey clientKey : clientPublicKeys)
+        for (PublicKey clientKey : clientPublicKeys)
             createEOAccount(clientKey, state);
 
         // Create Smart Contract Account (SCA)
@@ -119,7 +115,7 @@ public class Blockchain {
         }
         JSONObject account = state.getJSONObject(accountAddress);
         Long balance = account.getLong("balance");
-        
+
         EOAccount eoAccount = new EOAccount(accountAddress, balance);
 
         Logger.log(LogLevel.INFO, "EOAccount: " + eoAccount.getAddress() + " Balance: " + eoAccount.getBalance());
@@ -160,7 +156,7 @@ public class Blockchain {
         for (EOAccount account : eoAccounts)
             if (account.getAddress().equals(address))
                 return account.getBalance();
-        
+
         return null;
     }
 
@@ -168,7 +164,7 @@ public class Blockchain {
         for (EOAccount account : eoAccounts)
             if (account.getAddress().equals(address))
                 return true;
-        
+
         return false;
     }
 

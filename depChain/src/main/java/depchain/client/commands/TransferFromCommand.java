@@ -5,8 +5,8 @@ import depchain.library.ClientLibrary;
 import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 
-public class TransferFromCommand implements Command{
-     private final DepChainClient client;
+public class TransferFromCommand implements Command {
+    private final DepChainClient client;
 
     public TransferFromCommand(DepChainClient client) {
         this.client = client;
@@ -25,7 +25,8 @@ public class TransferFromCommand implements Command{
             String targetAddress = args[1];
             long amount = Long.parseLong(args[2]);
             clientLib.transferFromISTCoin(senderAddress, targetAddress, amount);
-            Logger.log(LogLevel.INFO, "Successfully proposed to transfer " + amount + " from " + senderAddress + " to " + targetAddress);
+            Logger.log(LogLevel.INFO,
+                    "Successfully proposed to transfer " + amount + " from " + senderAddress + " to " + targetAddress);
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to transfer from: " + e.getMessage());
         }

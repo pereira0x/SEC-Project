@@ -21,10 +21,9 @@ public class GetISTBalanceCommand implements Command {
         }
 
         try {
-          String targetAddress = args[0];
-          String balance = clientLib.getISTCoinBalance(targetAddress);
-          Logger.log(LogLevel.INFO,
-                     "Target " +targetAddress  + " has ISTCoin balance: " + balance);
+            String targetAddress = args[0];
+            String balance = clientLib.getISTCoinBalance(targetAddress);
+            Logger.log(LogLevel.INFO, "Target " + targetAddress + " has ISTCoin balance: " + balance);
         } catch (Exception e) {
             Logger.log(LogLevel.ERROR, "Failed to get ISTCoin balance: " + e.getMessage());
         }

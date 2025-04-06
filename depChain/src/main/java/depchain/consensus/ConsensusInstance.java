@@ -107,9 +107,8 @@ public class ConsensusInstance {
         state.setMostRecentWrite(new TimestampValuePair(epoch, candidate));
 
         acceptedValues.add(candidate);
-        Message acceptMsg = new Message.MessageBuilder(Message.Type.ACCEPT, epoch, myId, clientId)
-                                        .setBlock(candidate)
-                                        .build();
+        Message acceptMsg = new Message.MessageBuilder(Message.Type.ACCEPT, epoch, myId, clientId).setBlock(candidate)
+                .build();
         for (int pid : allProcessIds) {
             if (pid != myId) {
                 try {
@@ -144,8 +143,8 @@ public class ConsensusInstance {
                             // Send a state message impersonating another process - signature check should
                             // fail
                             int otherProcessId = myId == 3 ? 2 : 3;
-                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch,
-                                    otherProcessId, clientId).setState(state).setBlock(msg.getBlock()).build();
+                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, otherProcessId, clientId)
+                                    .setState(state).setBlock(msg.getBlock()).build();
                             Logger.log(LogLevel.WARNING, "Invalid signature sent: " + stateMsg);
                             break;
                         case "spam":
@@ -280,7 +279,8 @@ public class ConsensusInstance {
         }
 
         if (!tmpVal.getValue().equals(this.blockProposed)) {
-            Logger.log(LogLevel.ERROR, "Decided value is not the client request: " + tmpVal.getValue() + " != " + this.blockProposed);
+            Logger.log(LogLevel.ERROR,
+                    "Decided value is not the client request: " + tmpVal.getValue() + " != " + this.blockProposed);
             return null;
         }
 
@@ -306,7 +306,7 @@ public class ConsensusInstance {
         }
 
         // print all the states received
-       /*  Logger.log(LogLevel.INFO, "States received: " + stateResponses); */
+        /* Logger.log(LogLevel.INFO, "States received: " + stateResponses); */
 
         return true;
     }
@@ -342,7 +342,7 @@ public class ConsensusInstance {
                 }
             }
 
-            if ((max >= (2*f + 1)) && blockToWrite.equals(candidate))
+            if ((max >= (2 * f + 1)) && blockToWrite.equals(candidate))
                 break;
 
             // Check if the time has exceeded the maximum wait time
@@ -354,12 +354,13 @@ public class ConsensusInstance {
 
             blockToWrite = null;
             /* Logger.log(LogLevel.DEBUG, "Still waiting for write responses..."); */
-        } while (numWrites < 3*f+1);
+        } while (numWrites < 3 * f + 1);
 
         // Print all the writes received
-        /* Logger.log(LogLevel.DEBUG, "Writes received: " + writeResponses);
-
-        Logger.log(LogLevel.DEBUG, "Value to write: " + blockToWrite); */
+        /*
+         * Logger.log(LogLevel.DEBUG, "Writes received: " + writeResponses); Logger.log(LogLevel.DEBUG,
+         * "Value to write: " + blockToWrite);
+         */
         return blockToWrite;
     }
 
@@ -393,7 +394,7 @@ public class ConsensusInstance {
                 }
             }
 
-            if ((max >= (2*f + 1)) && blockToAppend.equals(candidate))
+            if ((max >= (2 * f + 1)) && blockToAppend.equals(candidate))
                 break;
 
             // Check if the time has exceeded the maximum wait time
@@ -404,13 +405,14 @@ public class ConsensusInstance {
             }
 
             blockToAppend = null;
-           /*  Logger.log(LogLevel.DEBUG, "Still waiting for accept responses..."); */
-        } while (numAccepts < 3*f+1);
+            /* Logger.log(LogLevel.DEBUG, "Still waiting for accept responses..."); */
+        } while (numAccepts < 3 * f + 1);
 
         // Print all the writes received
-        /* Logger.log(LogLevel.INFO, "Accepts received: " + acceptedValues);
-
-        Logger.log(LogLevel.INFO, "Value to append: " + blockToAppend); */
+        /*
+         * Logger.log(LogLevel.INFO, "Accepts received: " + acceptedValues); Logger.log(LogLevel.INFO,
+         * "Value to append: " + blockToAppend);
+         */
         return blockToAppend;
     }
 

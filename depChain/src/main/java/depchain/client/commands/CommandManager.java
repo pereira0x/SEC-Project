@@ -36,7 +36,8 @@ public class CommandManager {
 
     public void executeCommand(String inputLine) {
         String[] parts = inputLine.trim().split("\\s+");
-        if (parts.length == 0) return;
+        if (parts.length == 0)
+            return;
 
         String commandName = parts[0];
         Command command = commands.get(commandName);
@@ -60,6 +61,5 @@ public class CommandManager {
             System.out.printf("  %-20s%s%n", name, usage);
         }
     }
-
 
 }

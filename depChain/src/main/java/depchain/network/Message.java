@@ -17,16 +17,8 @@ public class Message implements Serializable {
     }
 
     public enum RequestType {
-      ADD_BLACKLIST,
-      REMOVE_BLACKLIST,
-      IS_BLACKLISTED,
-      TRANSFER_DEPCOIN,
-      TRANSFER_ISTCOIN,
-      GET_DEPCOIN_BALANCE,
-      GET_ISTCOIN_BALANCE,
-      APPROVE,
-      ALLOWANCE,
-      TRANSFER_FROM_IST_COIN
+        ADD_BLACKLIST, REMOVE_BLACKLIST, IS_BLACKLISTED, TRANSFER_DEPCOIN, TRANSFER_ISTCOIN, GET_DEPCOIN_BALANCE,
+        GET_ISTCOIN_BALANCE, APPROVE, ALLOWANCE, TRANSFER_FROM_IST_COIN
     }
 
     public enum ReplyType {
@@ -41,14 +33,13 @@ public class Message implements Serializable {
     private int nonce; // nonce for the message (computed by sender).
     private Transaction transaction;
     private Block block;
-    
 
     // Optional fields
     private ByteArrayWrapper sessionKey; // session key for the message (computed by sender).
     private final State state;
     private final Map<Integer, State> statesMap;
     private final TimestampValuePair write;
-    private final RequestType requestType;  // Request type for client requests.
+    private final RequestType requestType; // Request type for client requests.
     private final String replyValue;
     private final ReplyType replyType; // Reply type for client replies.
 
@@ -133,7 +124,6 @@ public class Message implements Serializable {
     public ReplyType getReplyType() {
         return replyType;
     }
-
 
     // Returns a string representation of the content to be signed.
     public String getSignableContent() {

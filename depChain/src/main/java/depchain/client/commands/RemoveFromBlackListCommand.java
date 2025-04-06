@@ -6,7 +6,7 @@ import depchain.utils.Logger;
 import depchain.utils.Logger.LogLevel;
 
 public class RemoveFromBlackListCommand implements Command {
-        private final DepChainClient client;
+    private final DepChainClient client;
 
     public RemoveFromBlackListCommand(DepChainClient client) {
         this.client = client;

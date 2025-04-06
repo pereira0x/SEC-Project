@@ -60,11 +60,8 @@ public class Block implements Serializable {
     // toString method
     @Override
     public String toString() {
-        return "Block{"
-                + "blockHash='" + blockHash + '\''
-                + ", previousBlockHash='" + previousBlockHash + '\''
-                + ", transactions=" + transactions
-                + '}';
+        return "Block{" + "blockHash='" + blockHash + '\'' + ", previousBlockHash='" + previousBlockHash + '\''
+                + ", transactions=" + transactions + '}';
     }
 
     @Override
