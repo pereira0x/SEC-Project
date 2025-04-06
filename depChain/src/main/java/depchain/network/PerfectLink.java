@@ -138,7 +138,7 @@ public class PerfectLink {
         }
 
         int nonce = CryptoUtil.generateNonce();
-        Message msg = new Message.MessageBuilder(Message.Type.START_SESSION, 0, myId, -1).setNonce(nonce).build();
+        Message msg = new Message.MessageBuilder(Message.Type.START_SESSION, 0, myId).setNonce(nonce).build();
 
         try {
             activeSessionMap.put(destId, false); // Mark session as initiating
@@ -261,7 +261,7 @@ public class PerfectLink {
 
                         // send ACK_SESSION
                         Message ackMsgSession = new Message.MessageBuilder(Message.Type.ACK_SESSION, msg.getEpoch(),
-                                myId, -1).setNonce(msg.getNonce()).setSessionKey(encryptedSessionKeyWrapper).build();
+                                myId).setNonce(msg.getNonce()).setSessionKey(encryptedSessionKeyWrapper).build();
                         send(msg.getSenderId(), ackMsgSession);
 
                         break;
@@ -278,7 +278,7 @@ public class PerfectLink {
                         }
 
                         // Send ACK to sender
-                        Message ackMsg = new Message.MessageBuilder(Message.Type.ACK, msg.getEpoch(), myId, -1)
+                        Message ackMsg = new Message.MessageBuilder(Message.Type.ACK, msg.getEpoch(), myId)
                                 .setNonce(msg.getNonce()).build();
                         send(msg.getSenderId(), ackMsg);
 
@@ -340,47 +340,47 @@ public class PerfectLink {
             SecretKey sessionKey = s.getSessionKey();
             if (sessionKey != null) {
                 if (msg.getType() == Message.Type.STATE) {
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
-                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId())
+                                    .setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
                                     .setBlock(msg.getBlock()).setTransaction(msg.getTransaction()).build();
 
                 } else if (msg.getType() == Message.Type.ACK_SESSION) {
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
-                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce())
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId())
+                                    .setSignature(sig).setNonce(msg.getNonce())
                                     .setSessionKey(msg.getSessionKey()).setBlock(msg.getBlock()).build();
 
                 } else if (msg.getType() == Message.Type.COLLECTED) {
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
-                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId())
+                                    .setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
                                     .setStatesMap(msg.getStatesMap()).setBlock(msg.getBlock())
                                     .setTransaction(msg.getTransaction()).build();
 
                 } else if (msg.getType() == Message.Type.WRITE) {
 
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
-                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId())
+                                    .setSignature(sig).setNonce(msg.getNonce()).setState(msg.getState())
                                     .setStatesMap(msg.getStatesMap()).setWrite(msg.getWrite()).setBlock(msg.getBlock())
                                     .setTransaction(msg.getTransaction()).build();
                 } else if (msg.getType() == Message.Type.CLIENT_REQUEST) {
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
-                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId())
+                                    .setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
                                     .setTransaction(msg.getTransaction()).setRequestType(msg.getRequestType()).build();
 
                 } else if (msg.getType() == Message.Type.CLIENT_REPLY) {
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
-                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId())
+                                    .setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
                                     .setTransaction(msg.getTransaction()).setReplyType(msg.getReplyType())
                                     .setReplyValue(msg.getReplyValue()).build();
 
                 } else {
 
-                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
-                            msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
+                    signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId())
+                                    .setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
                                     .setTransaction(msg.getTransaction()).build();
                 }
             } else {
-                signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId(),
-                        msg.getClientId()).setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
+                signedMsg = new Message.MessageBuilder(msg.getType(), msg.getEpoch(), msg.getSenderId())
+                                .setSignature(sig).setNonce(msg.getNonce()).setBlock(msg.getBlock())
                                 .setTransaction(msg.getTransaction()).build();
             }
 

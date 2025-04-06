@@ -29,10 +29,9 @@ public class ConsensusInstance {
     private boolean aborted = false;
     private final long maxWaitTime = 5000; // 5 seconds
     private Block blockProposed;
-    private final int clientId;
 
     public ConsensusInstance(int myId, int leaderId, List<Integer> allProcessIds, PerfectLink perfectLink, int epoch,
-            int f, Block blockProposed, int clientId) {
+            int f, Block blockProposed) {
 
         this.myId = myId;
         this.leaderId = leaderId;
@@ -42,13 +41,12 @@ public class ConsensusInstance {
         this.epoch = epoch;
         this.quorumSize = (float) 2 * f + 1;
         this.blockProposed = blockProposed;
-        this.clientId = clientId;
 
     }
 
     // Leader sends READ messages to all.
     private void broadcastRead() {
-        Message readMsg = new Message.MessageBuilder(Message.Type.READ, epoch, myId, clientId).build();
+        Message readMsg = new Message.MessageBuilder(Message.Type.READ, epoch, myId).setBlock(blockProposed).build();
 
         // Start by appending the leader's own state.
         stateResponses.put(leaderId, state);
@@ -64,7 +62,7 @@ public class ConsensusInstance {
     }
 
     private void broadcastCollected() {
-        Message collectedMsg = new Message.MessageBuilder(Message.Type.COLLECTED, epoch, myId, clientId)
+        Message collectedMsg = new Message.MessageBuilder(Message.Type.COLLECTED, epoch, myId).setBlock(blockProposed)
                 .setStatesMap(stateResponses).build();
         for (int pid : allProcessIds) {
             if (pid != leaderId) {
@@ -84,7 +82,7 @@ public class ConsensusInstance {
             e.printStackTrace();
         }
 
-        Message writeMsg = new Message.MessageBuilder(Message.Type.WRITE, epoch, myId, clientId).setWrite(candidate)
+        Message writeMsg = new Message.MessageBuilder(Message.Type.WRITE, epoch, myId).setBlock(blockProposed).setWrite(candidate)
                 .build();
 
         // append to the writeset of my state the candidate
@@ -107,7 +105,7 @@ public class ConsensusInstance {
         state.setMostRecentWrite(new TimestampValuePair(epoch, candidate));
 
         acceptedValues.add(candidate);
-        Message acceptMsg = new Message.MessageBuilder(Message.Type.ACCEPT, epoch, myId, clientId).setBlock(candidate)
+        Message acceptMsg = new Message.MessageBuilder(Message.Type.ACCEPT, epoch, myId).setBlock(candidate)
                 .build();
         for (int pid : allProcessIds) {
             if (pid != myId) {
@@ -126,7 +124,7 @@ public class ConsensusInstance {
             switch (msg.getType()) {
                 case READ:
 
-                    Message stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId, clientId)
+                    Message stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId)
                             .setState(state).setBlock(msg.getBlock()).build();
                     switch (Config.processBehaviors.get(this.myId)) {
                         case "byzantineState":
@@ -135,7 +133,7 @@ public class ConsensusInstance {
                             // TODO: empty block instead of hardcoded string "Byzantine"
                             currentStateCopy.setMostRecentWrite(new TimestampValuePair(1, new Block()));
                             currentStateCopy.addToWriteSet(new TimestampValuePair(1, new Block()));
-                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId, clientId)
+                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId)
                                     .setState(currentStateCopy).setBlock(msg.getBlock()).build();
                             Logger.log(LogLevel.WARNING, "Byzantine state sent: " + currentStateCopy);
                             break;
@@ -143,7 +141,7 @@ public class ConsensusInstance {
                             // Send a state message impersonating another process - signature check should
                             // fail
                             int otherProcessId = myId == 3 ? 2 : 3;
-                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, otherProcessId, clientId)
+                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, otherProcessId)
                                     .setState(state).setBlock(msg.getBlock()).build();
                             Logger.log(LogLevel.WARNING, "Invalid signature sent: " + stateMsg);
                             break;
@@ -153,7 +151,7 @@ public class ConsensusInstance {
                             currentStateCopySpam.setMostRecentWrite(new TimestampValuePair(1, new Block()));
                             currentStateCopySpam.addToWriteSet(new TimestampValuePair(1, new Block()));
 
-                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId, clientId)
+                            stateMsg = new Message.MessageBuilder(Message.Type.STATE, epoch, myId)
                                     .setState(currentStateCopySpam).setBlock(msg.getBlock()).build();
                             Logger.log(LogLevel.WARNING, "Spam state sent, 100 times: " + currentStateCopySpam);
                             for (int i = 0; i < 100; i++) {
@@ -478,5 +476,9 @@ public class ConsensusInstance {
 
     public void setBlockProposed(Block blockProposed) {
         this.blockProposed = blockProposed;
+    }
+
+    public String getBlockHash() {
+        return blockProposed.getBlockHash();
     }
 }

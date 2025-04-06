@@ -188,7 +188,7 @@ public class ClientLibrary {
         byte[] signature = CryptoUtil.sign(transactionBytes, perfectLink.getPrivateKey());
         transaction.setSignature(new ByteArrayWrapper(signature));
 
-        return new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId, clientId)
+        return new Message.MessageBuilder(Message.Type.CLIENT_REQUEST, 0, clientId)
                 .setTransaction(transaction).setRequestType(requestType).setNonce(nonce.get()).build();
     }
 
