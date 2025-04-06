@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.hyperledger.besu.evm.EVM;
+
 public class BlockchainMember {
     private final int memberId;
     private final int memberPort;
@@ -419,6 +421,14 @@ public class BlockchainMember {
             return t;
         }
 
+        // target adress is hexadecimal string
+        if (!EVMUtils.isHexAddress(targetAddress)) {
+            Logger.log(LogLevel.ERROR, "Invalid target address: " + targetAddress);
+            t.setStatus(Transaction.TransactionStatus.REJECTED);
+            return t;
+        }
+        
+
         switch (type) {
             case TRANSFER_DEPCOIN:
                 t = processDepCoinTransfer(t, senderAddress, targetAddress);
@@ -505,6 +515,14 @@ public class BlockchainMember {
         try {
             senderAddress = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(tx.getSender())));
             targetAddress = tx.getRecipient();
+
+            // check if target address is a valid address
+                    // target adress is hexadecimal string
+            if (!EVMUtils.isHexAddress(targetAddress)) {
+                Logger.log(LogLevel.ERROR, "Invalid target address: " + targetAddress);
+                return;
+            }
+            
 
             switch (msg.getRequestType()) {
                 case GET_DEPCOIN_BALANCE:

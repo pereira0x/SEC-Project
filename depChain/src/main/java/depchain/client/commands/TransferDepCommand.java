@@ -33,6 +33,6 @@ public class TransferDepCommand implements Command {
 
     @Override
     public String getUsage() {
-        return "Usage: transferDep <recipientId> <amount>";
+        return "Usage: transferDep <targetAddress> <amount>";
     }
 }
