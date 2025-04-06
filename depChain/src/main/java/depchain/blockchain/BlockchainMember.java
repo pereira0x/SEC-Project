@@ -201,8 +201,8 @@ public class BlockchainMember {
                     // Check if the consensus was aborted
                     if (consensusInstance != null && consensusInstance.isAborted()) {
                         Logger.log(LogLevel.ERROR, "Consensus aborted.");
-                        consensusInstance = null;
                         consensusInstances.remove(consensusInstance.getBlockHash());
+                        consensusInstance = null;
                     }
 
                     // Print blockchain transactions
@@ -264,6 +264,18 @@ public class BlockchainMember {
             }
 
             if (memberId == leaderId) {
+                switch (Config.processBehaviors.get(this.memberId)) {
+                    case "byzantineLeader":
+                        // Byzantine leader tries to favor client 7 by making the proposedBlock consist
+                        // of 2 transactions from client 5 to 7 of 5000
+                        for (Transaction t : block.getTransactions()) {
+                            t.setSender("5");
+                            t.setRecipient("7");
+                            t.setAmount(5000);
+                        }
+                    default:
+                        break;
+                }
                 consensusInstance.setBlockchainMostRecentWrite(new TimestampValuePair(0, block));
                 Logger.log(LogLevel.DEBUG, "Waiting for consensus decision...");
                 decidedBlock = consensusInstance.decideBlock();
