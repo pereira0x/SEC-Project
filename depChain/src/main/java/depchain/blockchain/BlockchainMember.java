@@ -184,6 +184,7 @@ public class BlockchainMember {
                                 // Append the decided value to the blockchain.
                                 processedBlock.setPreviousBlockHash(this.blockchain.getMostRecentBlock()
                                         .getBlockHash());
+
                                 this.blockchain.addBlock(processedBlock);
                                 Logger.log(LogLevel.WARNING, "Blockchain updated: " + this.blockchain.getHashesChain());
 
@@ -406,6 +407,7 @@ public class BlockchainMember {
 
         try {
             senderAddress = EVMUtils.getEOAccountAddress(Config.getPublicKey(Integer.parseInt(t.getSender())));
+            t.setSender(senderAddress);
             targetAddress = t.getRecipient();
         } catch (NoSuchAlgorithmException e) {
             Logger.log(LogLevel.ERROR, "Failed to get EOAccountAddress: " + e.getMessage());
@@ -487,6 +489,7 @@ public class BlockchainMember {
                 t.setStatus(Transaction.TransactionStatus.REJECTED);
                 break;
         }
+
 
         return t;
     }
