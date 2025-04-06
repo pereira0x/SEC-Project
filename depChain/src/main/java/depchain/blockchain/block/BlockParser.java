@@ -34,7 +34,6 @@ public class BlockParser {
                         .setSender(transactionJson.getString("sender"))
                         .setRecipient(transactionJson.getString("recipient"))
                         .setAmount(Long.parseLong(transactionJson.getString("amount"))).setSignature(sig)
-                        .setData(transactionJson.getString("data"))
                         .setStatus(Transaction.TransactionStatus.valueOf(transactionJson.getString("status"))).build();
                 transactions.add(t);
             }

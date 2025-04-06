@@ -28,7 +28,6 @@ public class Transaction implements Serializable {
     private String recipient;
     private long amount;
     private ByteArrayWrapper signature;
-    private String data;
     private TransactionType type;
     private TransactionStatus status;
 
@@ -36,13 +35,12 @@ public class Transaction implements Serializable {
     private String spender;
 
     public Transaction(long nonce, String sender, String recipient, long amount, ByteArrayWrapper signature,
-            String data, TransactionType type, TransactionStatus status, String spender) {
+            TransactionType type, TransactionStatus status, String spender) {
         this.nonce = nonce;
         this.sender = sender;
         this.recipient = recipient;
         this.amount = amount;
         this.signature = signature;
-        this.data = data;
         this.type = type;
         this.status = status;
 
@@ -70,9 +68,6 @@ public class Transaction implements Serializable {
         return signature.getData();
     }
 
-    public String getData() {
-        return data;
-    }
 
     public TransactionType getType() {
         return type;
@@ -116,7 +111,6 @@ public class Transaction implements Serializable {
             oos.writeUTF(sender != null ? sender : "");
             oos.writeUTF(recipient != null ? recipient : "");
             oos.writeLong(amount);
-            oos.writeUTF(data != null ? data : "");
             oos.writeInt(type != null ? type.ordinal() : -1);
             oos.writeInt(status != null ? status.ordinal() : -1);
 
@@ -130,7 +124,7 @@ public class Transaction implements Serializable {
     @Override
     public String toString() {
         return "Transaction{" + "nonce=" + nonce + ", sender='" + sender + '\'' + ", recipient='" + recipient + '\''
-                + ", amount=" + amount + ", signature='" + signature + '\'' + ", data='" + data + '\'' + ", type="
+                + ", amount=" + amount + ", signature='" + signature + '\'' + '\'' + ", type="
                 + type + ", status=" + status + '}';
     }
 
@@ -158,7 +152,6 @@ public class Transaction implements Serializable {
         private String recipient;
         private long amount;
         private ByteArrayWrapper signature;
-        private String data;
         private TransactionType type;
         private TransactionStatus status;
 
@@ -193,10 +186,6 @@ public class Transaction implements Serializable {
             return this;
         }
 
-        public TransactionBuilder setData(String data) {
-            this.data = data;
-            return this;
-        }
 
         public TransactionBuilder setType(TransactionType type) {
             this.type = type;
@@ -214,7 +203,7 @@ public class Transaction implements Serializable {
         }
 
         public Transaction build() {
-            return new Transaction(nonce, sender, recipient, amount, signature, data, type, status, spender);
+            return new Transaction(nonce, sender, recipient, amount, signature, type, status, spender);
         }
     }
 }
